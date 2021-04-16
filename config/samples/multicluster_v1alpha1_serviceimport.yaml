@@ -1,0 +1,7 @@
+apiVersion: multicluster.k8s.aws/v1alpha1
+kind: ServiceImport
+metadata:
+  name: serviceimport-sample
+spec:
+  # Add fields here
+  foo: bar

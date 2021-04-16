@@ -1,0 +1,20 @@
+# permissions for end users to view serviceexports.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: serviceexport-viewer-role
+rules:
+- apiGroups:
+  - multicluster.k8s.aws
+  resources:
+  - serviceexports
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - multicluster.k8s.aws
+  resources:
+  - serviceexports/status
+  verbs:
+  - get

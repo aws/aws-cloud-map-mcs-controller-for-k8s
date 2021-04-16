@@ -1,0 +1,7 @@
+mode: set
+github.com/aws/aws-k8s-mcs-controller/controllers/serviceexport_controller.go:41.105,48.74 5 0
+github.com/aws/aws-k8s-mcs-controller/controllers/serviceexport_controller.go:52.2,54.27 2 0
+github.com/aws/aws-k8s-mcs-controller/controllers/serviceexport_controller.go:48.74,50.3 1 0
+github.com/aws/aws-k8s-mcs-controller/controllers/serviceexport_controller.go:57.76,61.2 1 0
+github.com/aws/aws-k8s-mcs-controller/controllers/serviceimport_controller.go:50.105,56.2 2 0
+github.com/aws/aws-k8s-mcs-controller/controllers/serviceimport_controller.go:59.76,63.2 1 0

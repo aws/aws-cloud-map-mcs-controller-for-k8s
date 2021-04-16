@@ -1,0 +1,24 @@
+# permissions for end users to edit serviceimports.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: serviceimport-editor-role
+rules:
+- apiGroups:
+  - multicluster.k8s.aws
+  resources:
+  - serviceimports
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - multicluster.k8s.aws
+  resources:
+  - serviceimports/status
+  verbs:
+  - get
