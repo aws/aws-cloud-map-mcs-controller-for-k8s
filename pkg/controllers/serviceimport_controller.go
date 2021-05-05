@@ -24,7 +24,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	multiclusterv1alpha1 "github.com/aws/aws-k8s-mcs-controller/api/v1alpha1"
+	multiclusterv1alpha1 "github.com/aws/aws-k8s-mcs-controller/pkg/api/v1alpha1"
 )
 
 // ServiceImportReconciler reconciles a ServiceImport object

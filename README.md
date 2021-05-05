@@ -41,5 +41,5 @@ kubectl apply -f my-export.yaml
 Check running controller if it correctly detects newly created resource
 
 ```
-2021-04-16T14:41:01.686-0700	INFO	controllers.ServiceExport	ServiceExport detected: demo/my-service-name
+2021-05-10T18:23:28.674-0700	ERROR	controllers.ServiceExport	no service found for ServiceExport	{"serviceexport": "demo/my-service-name", "Namespace": "demo", "Name": "my-service-name", "error": "Service \"my-service-name\" not found"}
 ```

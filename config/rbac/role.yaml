@@ -11,8 +11,6 @@ rules:
   resources:
   - serviceexports
   verbs:
-  - create
-  - delete
   - get
   - list
   - patch
@@ -21,10 +19,9 @@ rules:
 - apiGroups:
   - multicluster.k8s.aws
   resources:
-  - serviceexports/status
+  - serviceexports/finalizers
   verbs:
   - get
-  - patch
   - update
 - apiGroups:
   - multicluster.k8s.aws

@@ -30,8 +30,8 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	multiclusterv1alpha1 "github.com/aws/aws-k8s-mcs-controller/api/v1alpha1"
-	//+kubebuilder:scaffold:imports
+	multiclusterv1alpha1 "github.com/aws/aws-k8s-mcs-controller/pkg/api/v1alpha1"
+	// +kubebuilder:scaffold:imports
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to

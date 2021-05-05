@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"github.com/aws/aws-k8s-mcs-controller/pkg/cloudmap"
 	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -31,9 +32,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	multiclusterv1alpha1 "github.com/aws/aws-k8s-mcs-controller/api/v1alpha1"
-	"github.com/aws/aws-k8s-mcs-controller/controllers"
-	//+kubebuilder:scaffold:imports
+	multiclusterv1alpha1 "github.com/aws/aws-k8s-mcs-controller/pkg/api/v1alpha1"
+	"github.com/aws/aws-k8s-mcs-controller/pkg/controllers"
+	// +kubebuilder:scaffold:imports
 )
 
 var (
@@ -79,13 +80,15 @@ func main() {
 	}
 
 	if err = (&controllers.ServiceExportReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("ServiceExport"),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("ServiceExport"),
+		Scheme:   mgr.GetScheme(),
+		Cloudmap: &cloudmap.ClientMock{Log: ctrl.Log.WithName("cloudmap")},
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServiceExport")
 		os.Exit(1)
 	}
+
 	if err = (&controllers.ServiceImportReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("ServiceImport"),
