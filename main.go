@@ -17,9 +17,13 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
-	"github.com/aws/aws-k8s-mcs-controller/pkg/cloudmap"
+
+	"github.com/aws/aws-sdk-go-v2/config"
 	"os"
+
+	"github.com/aws/aws-k8s-mcs-controller/pkg/cloudmap"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -79,11 +83,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	// TODO: configure session
+	awsCfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(os.Getenv("AWS_REGION")),
+	)
+	if err != nil {
+		setupLog.Error(err, "unable to configure AWS session")
+		os.Exit(1)
+	}
+
 	if err = (&controllers.ServiceExportReconciler{
 		Client:   mgr.GetClient(),
 		Log:      ctrl.Log.WithName("controllers").WithName("ServiceExport"),
 		Scheme:   mgr.GetScheme(),
-		Cloudmap: &cloudmap.ClientMock{Log: ctrl.Log.WithName("cloudmap")},
+		Cloudmap: cloudmap.NewServiceDiscoveryClient(&awsCfg),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServiceExport")
 		os.Exit(1)

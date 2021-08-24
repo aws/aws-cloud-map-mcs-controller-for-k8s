@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	cloudmapmock "github.com/aws/aws-k8s-mcs-controller/mocks/pkg/cloudmap"
 	"github.com/aws/aws-k8s-mcs-controller/pkg/api/v1alpha1"
 	"github.com/aws/aws-k8s-mcs-controller/pkg/cloudmap"
@@ -28,18 +29,19 @@ func TestServiceExportReconciler_Reconcile_NewServiceExport(t *testing.T) {
 		Namespace: "my-namespace",
 		Name:      "exported-service",
 		Endpoints: []*model.Endpoint{{
-			Id:   "1_1_1_1",
-			IP:   "1.1.1.1",
-			Port: 80,
+			Id:         "1_1_1_1",
+			IP:         "1.1.1.1",
+			Port:       80,
+			Attributes: map[string]string{},
 		}},
 	}
 
-	cloudmapMock := cloudmapmock.NewMockClient(mockController)
-
+	cloudmapMock := cloudmapmock.NewMockServiceDiscoveryClient(mockController)
+	fmt.Printf("test output")
 	// expected interactions with the Cloud Map client
-	cloudmapMock.EXPECT().GetService(gomock.Any(), gomock.Any()).Return(nil, nil)
-	cloudmapMock.EXPECT().CreateService(gomock.Any()).Return(nil).Times(1)
-	cloudmapMock.EXPECT().RegisterEndpoints(gomock.Eq(&expectedService)).Return(nil).Times(1)
+	cloudmapMock.EXPECT().GetService(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+	cloudmapMock.EXPECT().CreateService(gomock.Any(), gomock.Any()).Return(nil).Times(1)
+	cloudmapMock.EXPECT().RegisterEndpoints(gomock.Any(), gomock.Eq(&expectedService)).Return(nil).Times(1)
 
 	reconciler := setupServiceExportReconciler(t, cloudmapMock)
 
@@ -71,17 +73,18 @@ func TestServiceExportReconciler_Reconcile_ExistingServiceNewEndpoint(t *testing
 		Namespace: "my-namespace",
 		Name:      "exported-service",
 		Endpoints: []*model.Endpoint{{
-			Id:   "1_1_1_1",
-			IP:   "1.1.1.1",
-			Port: 80,
+			Id:         "1_1_1_1",
+			IP:         "1.1.1.1",
+			Port:       80,
+			Attributes: map[string]string{},
 		}},
 	}
 
-	cloudmapMock := cloudmapmock.NewMockClient(mockController)
+	cloudmapMock := cloudmapmock.NewMockServiceDiscoveryClient(mockController)
 
 	// expected interactions with the Cloud Map client
-	cloudmapMock.EXPECT().GetService(gomock.Any(), gomock.Any()).Return(&emptyService, nil)
-	cloudmapMock.EXPECT().RegisterEndpoints(gomock.Eq(&expectedService)).Return(nil).Times(1)
+	cloudmapMock.EXPECT().GetService(gomock.Any(), gomock.Any(), gomock.Any()).Return(&emptyService, nil)
+	cloudmapMock.EXPECT().RegisterEndpoints(gomock.Any(), gomock.Eq(&expectedService)).Return(nil).Times(1)
 
 	request := ctrl.Request{
 		NamespacedName: types.NamespacedName{
@@ -100,7 +103,7 @@ func TestServiceExportReconciler_Reconcile_ExistingServiceNewEndpoint(t *testing
 	assert.Equal(t, ctrl.Result{}, got, "Result should be empty")
 }
 
-func setupServiceExportReconciler(t *testing.T, cloudmapMock cloudmap.Client) *ServiceExportReconciler {
+func setupServiceExportReconciler(t *testing.T, cloudmapMock cloudmap.ServiceDiscoveryClient) *ServiceExportReconciler {
 	k8sClient := setupK8sClient()
 
 	return &ServiceExportReconciler{
