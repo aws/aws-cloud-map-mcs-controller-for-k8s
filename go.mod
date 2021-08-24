@@ -3,6 +3,9 @@ module github.com/aws/aws-k8s-mcs-controller
 go 1.15
 
 require (
+	github.com/aws/aws-sdk-go-v2 v1.8.1
+	github.com/aws/aws-sdk-go-v2/config v1.6.1
+	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.7.3
 	github.com/go-logr/logr v0.3.0
 	github.com/golang/mock v1.6.0
 	github.com/onsi/ginkgo v1.14.1

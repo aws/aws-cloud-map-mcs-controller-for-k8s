@@ -43,7 +43,7 @@ type ServiceExportReconciler struct {
 	client.Client
 	Log      logr.Logger
 	Scheme   *runtime.Scheme
-	Cloudmap cloudmap.Client
+	Cloudmap cloudmap.ServiceDiscoveryClient
 }
 
 // +kubebuilder:rbac:groups=multicluster.k8s.aws,resources=serviceexports,verbs=get;list;watch;update;patch
@@ -98,13 +98,13 @@ func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, log logr.Log
 	}
 
 	log.Info("updating Cloud Map service", "namespace", svc.Namespace, "name", svc.Name)
-	srv, err := r.Cloudmap.GetService(svc.Namespace, svc.Name)
+	srv, err := r.Cloudmap.GetService(ctx, svc.Namespace, svc.Name)
 	if err != nil {
 		log.Error(err, "error when fetching service from Cloud Map API", "namespace", svc.Namespace, "name", svc.Name)
 		return ctrl.Result{}, err
 	}
 	if srv == nil {
-		if err := r.Cloudmap.CreateService(cloudMapService); err != nil {
+		if err := r.Cloudmap.CreateService(ctx, cloudMapService); err != nil {
 			log.Error(err, "error when creating new service in Cloud Map", "namespace", svc.Namespace, "name", svc.Name)
 			return ctrl.Result{}, err
 		}
@@ -117,26 +117,34 @@ func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, log logr.Log
 		changes = plan.CalculateChanges()
 	}
 
-	if len(changes.Create) > 0 || len(changes.Update) > 0 {
+	createRequired := len(changes.Create) > 0
+	updateRequired := len(changes.Update) > 0
+	deleteRequired := len(changes.Delete) > 0
+
+	if createRequired || updateRequired {
 		// merge creates and updates (Cloud Map RegisterEndpoints can handle both)
 		cloudMapService.Endpoints = changes.Create
 		cloudMapService.Endpoints = append(cloudMapService.Endpoints, changes.Update...)
 
-		if err := r.Cloudmap.RegisterEndpoints(cloudMapService); err != nil {
+		if err := r.Cloudmap.RegisterEndpoints(ctx, cloudMapService); err != nil {
 			log.Error(err, "error when registering endpoints to Cloud Map",
 				"namespace", svc.Namespace, "name", svc.Name)
 			return ctrl.Result{}, err
 		}
 	}
 
-	if len(changes.Delete) > 0 {
+	if deleteRequired {
 		cloudMapService.Endpoints = changes.Delete
 
-		if err := r.Cloudmap.DeleteEndpoints(cloudMapService); err != nil {
+		if err := r.Cloudmap.DeleteEndpoints(ctx, cloudMapService); err != nil {
 			log.Error(err, "error when deleting endpoints from Cloud Map",
 				"namespace", srv.Namespace, "name", srv.Name)
 			return ctrl.Result{}, err
 		}
+	}
+
+	if !createRequired && !updateRequired && !deleteRequired {
+		log.Info("no changes to export", "namespace", svc.Namespace, "name", svc.Name)
 	}
 
 	return ctrl.Result{}, nil
@@ -147,14 +155,14 @@ func (r *ServiceExportReconciler) handleDelete(ctx context.Context, log logr.Log
 
 		log.Info("removing Cloud Map service", "namespace", svcExport.Namespace, "name", svcExport.Name)
 
-		srv, err := r.Cloudmap.GetService(svcExport.Namespace, svcExport.Name)
+		srv, err := r.Cloudmap.GetService(ctx, svcExport.Namespace, svcExport.Name)
 		if err != nil {
 			log.Error(err, "error when fetching service from Cloud Map API",
 				"namespace", svcExport.Namespace, "name", svcExport.Name)
 			return ctrl.Result{}, err
 		}
 		if srv != nil {
-			if err := r.Cloudmap.DeleteEndpoints(srv); err != nil {
+			if err := r.Cloudmap.DeleteEndpoints(ctx, srv); err != nil {
 				log.Error(err, "error when deleting endpoints from Cloud Map",
 					"namespace", srv.Namespace, "name", srv.Name)
 				return ctrl.Result{}, err
@@ -191,9 +199,10 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 			for _, ep := range slice.Endpoints {
 				for _, IP := range ep.Addresses {
 					result = append(result, &model.Endpoint{
-						Id:   model.EndpointIdFromIPAddress(IP),
-						IP:   IP,
-						Port: *port.Port,
+						Id:         model.EndpointIdFromIPAddress(IP),
+						IP:         IP,
+						Port:       *port.Port,
+						Attributes: make(map[string]string, 0),
 						// TODO extract attributes - pod, node and other useful details if possible
 					})
 				}
