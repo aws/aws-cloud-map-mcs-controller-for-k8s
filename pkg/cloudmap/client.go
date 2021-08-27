@@ -244,9 +244,8 @@ func (sdc *serviceDiscoveryClient) listServicesFromCloudMap(ctx context.Context,
 	svcs := make([]*types.ServiceSummary, 0)
 
 	nsId, nsErr := sdc.getNamespaceId(ctx, nsName)
-
 	if nsErr != nil {
-		return svcs, nsErr
+		return svcs, nil
 	}
 
 	filter := types.ServiceFilter{

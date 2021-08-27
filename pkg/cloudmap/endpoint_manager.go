@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	defaultEndpointsCacheTTL  = 5 * time.Minute
+	defaultEndpointsCacheTTL  = 5 * time.Second
 	defaultEndpointsCacheSize = 1024
 
 	defaultOperationPollInterval = 3 * time.Second
