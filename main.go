@@ -19,7 +19,6 @@ package main
 import (
 	"context"
 	"flag"
-
 	"github.com/aws/aws-sdk-go-v2/config"
 	"os"
 
@@ -102,14 +101,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.ServiceImportReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("ServiceImport"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ServiceImport")
+	cloudMapReconciler := &controllers.CloudMapReconciler{
+		Client:   mgr.GetClient(),
+		Cloudmap: cloudmap.NewServiceDiscoveryClient(&awsCfg),
+		Logger:   ctrl.Log.WithName("controllers").WithName("CloudMap"),
+	}
+
+	if err = mgr.Add(cloudMapReconciler); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CloudMap")
 		os.Exit(1)
 	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

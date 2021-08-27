@@ -28,24 +28,7 @@ rules:
   resources:
   - serviceimports
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - multicluster.k8s.aws
-  resources:
-  - serviceimports/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - multicluster.k8s.aws
-  resources:
-  - serviceimports/status
-  verbs:
-  - get
   - patch
   - update
