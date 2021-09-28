@@ -32,10 +32,10 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Tag image for github container repository with commit SHA
-      run: 'docker tag controller:latest $GITHUB_REPOSITORY:${{env.GITHUB_SHA}}'
+      run: 'docker tag controller:latest $GITHUB_REPOSITORY:$GITHUB_SHA'
 
     - name: Push image for github container repository with commit SHA
-      run: 'docker push controller:latest $GITHUB_REPOSITORY:${{env.GITHUB_SHA}}'
+      run: 'docker push controller:latest $GITHUB_REPOSITORY:$GITHUB_SHA'
 
     - name: Tag image for github container repository with latest
       run: 'docker tag controller:latest $GITHUB_REPOSITORY:latest'
