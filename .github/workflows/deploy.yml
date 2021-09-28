@@ -35,10 +35,10 @@ jobs:
       run: 'docker tag controller:latest $GITHUB_REPOSITORY:$GITHUB_SHA'
 
     - name: Push image for github container repository with commit SHA
-      run: 'docker push controller:latest $GITHUB_REPOSITORY:$GITHUB_SHA'
+      run: 'docker push $GITHUB_REPOSITORY:$GITHUB_SHA'
 
     - name: Tag image for github container repository with latest
       run: 'docker tag controller:latest $GITHUB_REPOSITORY:latest'
 
     - name: Push image for github container repository with latest
-      run: 'docker push controller:latest $GITHUB_REPOSITORY:latest'
+      run: 'docker push $GITHUB_REPOSITORY:latest'
