@@ -1,6 +1,9 @@
 name: deploy
 
 on:
+  # This is for testing purposes. Will remove prior to merge
+  pull_request:
+    branches: [ main ]
   push:
     branches: [ main ]
 
