@@ -9,7 +9,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      GITHUB_REPOSITORY: ghcr.io/${{ github.repository }}
+      REGISTRY: ghcr.io/${{ github.repository }}
     permissions:
       contents: read
       packages: write
@@ -32,13 +32,13 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Tag image for github container repository with commit SHA
-      run: 'docker tag controller:latest $GITHUB_REPOSITORY:$GITHUB_SHA'
+      run: 'docker tag controller:latest $REGISTRY:$GITHUB_SHA'
 
     - name: Push image for github container repository with commit SHA
-      run: 'docker push $GITHUB_REPOSITORY:$GITHUB_SHA'
+      run: 'docker push $REGISTRY:$GITHUB_SHA'
 
     - name: Tag image for github container repository with latest
-      run: 'docker tag controller:latest $GITHUB_REPOSITORY:latest'
+      run: 'docker tag controller:latest $REGISTRY:latest'
 
     - name: Push image for github container repository with latest
-      run: 'docker push $GITHUB_REPOSITORY:latest'
+      run: 'docker push $REGISTRY:latest'
