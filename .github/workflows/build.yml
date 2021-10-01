@@ -2,7 +2,9 @@ name: build
 
 on:
   pull_request:
-    branches: [ main ]
+    branches:
+    - main
+    - dhemmerl-e2e
 
 jobs:
 
@@ -16,5 +18,8 @@ jobs:
       with:
         go-version: 1.17
 
-    - name: make test
+    - name: Run unit tests
       run: make test
+
+    - name: Run acceptance tests
+      run: make e2e-test

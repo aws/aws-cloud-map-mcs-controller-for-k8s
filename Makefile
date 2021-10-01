@@ -55,6 +55,10 @@ test: manifests generate generate-mocks fmt vet ## Run tests.
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.7.2/hack/setup-envtest.sh
 	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test ./... -coverprofile cover.out
 
+e2e-test: generate kubetest2 fmt vet
+	$(KUBETEST2-KIND) --cluster-name aws-cloudmap-mcs-e2e --up
+	$(KUBETEST2-KIND) --cluster-name aws-cloudmap-mcs-e2e --down
+
 ##@ Build
 
 build: generate fmt vet ## Build manager binary.
@@ -100,6 +104,9 @@ MOCKGEN = $(shell pwd)/bin/mockgen
 mockgen: ## Download mockgen
 	$(call go-get-tool,$(MOCKGEN),github.com/golang/mock/mockgen@v1.6.0)
 
+KUBETEST2-KIND = $(shell pwd)/bin/kubetest2-kind
+kubetest2: ## Download kubetest2
+	$(call go-get-tool,$(KUBETEST2-KIND),sigs.k8s.io/kubetest2/kubetest2-kind@latest)
 
 # go-get-tool will 'go get' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))

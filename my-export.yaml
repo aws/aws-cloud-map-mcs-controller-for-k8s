@@ -1,0 +1,7 @@
+# my-export.yaml
+
+kind: ServiceExport
+apiVersion: multicluster.k8s.aws/v1alpha1
+metadata:
+ namespace: demo
+ name: my-service-name
