@@ -75,7 +75,7 @@ func main() {
 		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "db692913.k8s.aws",
+		LeaderElectionID:       "db692913.x-k8s.io",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

@@ -84,7 +84,7 @@ Create a testing ServiceExport resource
 # my-export.yaml
 
 kind: ServiceExport
-apiVersion: multicluster.k8s.aws/v1alpha1
+apiVersion: multicluster.x-k8s.io/v1alpha1
 metadata:
  namespace: demo
  name: my-service-name
