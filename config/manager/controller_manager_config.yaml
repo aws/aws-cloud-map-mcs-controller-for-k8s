@@ -8,4 +8,4 @@ webhook:
   port: 9443
 leaderElection:
   leaderElect: true
-  resourceName: db692913.k8s.aws
+  resourceName: db692913.x-k8s.io

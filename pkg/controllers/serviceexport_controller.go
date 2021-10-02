@@ -46,8 +46,8 @@ type ServiceExportReconciler struct {
 	Cloudmap cloudmap.ServiceDiscoveryClient
 }
 
-// +kubebuilder:rbac:groups=multicluster.k8s.aws,resources=serviceexports,verbs=get;list;watch;update;patch
-// +kubebuilder:rbac:groups=multicluster.k8s.aws,resources=serviceexports/finalizers,verbs=get;update
+// +kubebuilder:rbac:groups=multicluster.x-k8s.io,resources=serviceexports,verbs=get;list;watch;update;patch
+// +kubebuilder:rbac:groups=multicluster.x-k8s.io,resources=serviceexports/finalizers,verbs=get;update
 
 func (r *ServiceExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	ctx, cancel := context.WithCancel(ctx)

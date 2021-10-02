@@ -6,9 +6,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
-  name: serviceimports.multicluster.k8s.aws
+  name: serviceimports.multicluster.x-k8s.io
 spec:
-  group: multicluster.k8s.aws
+  group: multicluster.x-k8s.io
   names:
     kind: ServiceImport
     listKind: ServiceImportList
