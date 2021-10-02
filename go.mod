@@ -1,4 +1,4 @@
-module github.com/aws/aws-k8s-mcs-controller
+module github.com/aws/aws-cloud-map-mcs-controller-for-k8s
 
 go 1.15
 

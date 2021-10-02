@@ -22,7 +22,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"os"
 
-	"github.com/aws/aws-k8s-mcs-controller/pkg/cloudmap"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -35,8 +35,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	multiclusterv1alpha1 "github.com/aws/aws-k8s-mcs-controller/pkg/api/v1alpha1"
-	"github.com/aws/aws-k8s-mcs-controller/pkg/controllers"
+	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/api/v1alpha1"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/controllers"
 	// +kubebuilder:scaffold:imports
 )
 

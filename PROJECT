@@ -1,8 +1,8 @@
 domain: k8s.aws
 layout:
 - go.kubebuilder.io/v3
-projectName: migration
-repo: github.com/aws/aws-k8s-mcs-controller
+projectName: aws-cloud-map-mcs-controller-for-k8s
+repo: github.com/aws/aws-cloud-map-mcs-controller-for-k8s
 resources:
 - api:
     crdVersion: v1
@@ -11,7 +11,7 @@ resources:
   domain: k8s.aws
   group: multicluster
   kind: ServiceExport
-  path: github.com/aws/aws-k8s-mcs-controller/api/v1alpha1
+  path: github.com/aws/aws-cloud-map-mcs-controller-for-k8s/api/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
@@ -20,6 +20,6 @@ resources:
   domain: k8s.aws
   group: multicluster
   kind: ServiceImport
-  path: github.com/aws/aws-k8s-mcs-controller/api/v1alpha1
+  path: github.com/aws/aws-cloud-map-mcs-controller-for-k8s/api/v1alpha1
   version: v1alpha1
 version: "3"
