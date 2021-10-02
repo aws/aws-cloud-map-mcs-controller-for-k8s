@@ -14,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
@@ -139,6 +140,11 @@ func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Se
 		return nil
 	}
 
+	// update ServiceImport to match IP and port of previously created service
+	if err = r.updateServiceImport(ctx, svcImport, existingService); err != nil {
+		return err
+	}
+
 	err = r.updateEndpointSlices(ctx, svc, existingService)
 	if err != nil {
 		return err
@@ -162,6 +168,7 @@ func (r *CloudMapReconciler) createServiceImport(ctx context.Context, namespace 
 			Annotations: map[string]string{DerivedServiceAnnotation: DerivedName(namespace, name)},
 		},
 		Spec: v1alpha1.ServiceImportSpec{
+			IPs:   []string{},
 			Type:  v1alpha1.ClusterSetIP,
 			Ports: []v1alpha1.ServicePort{},
 		},
@@ -329,4 +336,42 @@ func extractPorts(svc *model.Service) []int32 {
 	}
 
 	return ports
+}
+
+func (r *CloudMapReconciler) updateServiceImport(ctx context.Context, svcImport *v1alpha1.ServiceImport, svc *v1.Service) error {
+	if len(svcImport.Spec.IPs) != 1 || svcImport.Spec.IPs[0] != svc.Spec.ClusterIP || !portsEqual(svcImport, svc) {
+		svcImport.Spec.IPs = []string{svc.Spec.ClusterIP}
+
+		svcImport.Spec.Ports = make([]v1alpha1.ServicePort, 0)
+		for _, p := range svc.Spec.Ports {
+			svcImport.Spec.Ports = append(svcImport.Spec.Ports, servicePortToServiceImport(p))
+		}
+		if err := r.Update(ctx, svcImport); err != nil {
+			return err
+		}
+		r.Logger.Info("updated ServiceImport",
+			"namespace", svcImport.Namespace, "name", svcImport.Name,
+			"IP", svcImport.Spec.IPs, "ports", svcImport.Spec.Ports)
+	}
+
+	return nil
+}
+
+func portsEqual(svcImport *v1alpha1.ServiceImport, svc *v1.Service) bool {
+	impPorts := svcImport.Spec.Ports
+	svcPorts := make([]v1alpha1.ServicePort, 0)
+	for _, p := range svc.Spec.Ports {
+		svcPorts = append(svcPorts, servicePortToServiceImport(p))
+	}
+
+	return reflect.DeepEqual(impPorts, svcPorts)
+}
+
+func servicePortToServiceImport(port v1.ServicePort) v1alpha1.ServicePort {
+	return v1alpha1.ServicePort{
+		Name:        port.Name,
+		Protocol:    port.Protocol,
+		AppProtocol: port.AppProtocol,
+		Port:        port.Port,
+	}
 }
