@@ -5,7 +5,7 @@ metadata:
   name: serviceimport-editor-role
 rules:
 - apiGroups:
-  - multicluster.k8s.aws
+  - multicluster.x-k8s.io
   resources:
   - serviceimports
   verbs:
@@ -17,7 +17,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - multicluster.k8s.aws
+  - multicluster.x-k8s.io
   resources:
   - serviceimports/status
   verbs:

@@ -7,7 +7,7 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - multicluster.k8s.aws
+  - multicluster.x-k8s.io
   resources:
   - serviceexports
   verbs:
@@ -17,14 +17,14 @@ rules:
   - update
   - watch
 - apiGroups:
-  - multicluster.k8s.aws
+  - multicluster.x-k8s.io
   resources:
   - serviceexports/finalizers
   verbs:
   - get
   - update
 - apiGroups:
-  - multicluster.k8s.aws
+  - multicluster.x-k8s.io
   resources:
   - serviceimports
   verbs:

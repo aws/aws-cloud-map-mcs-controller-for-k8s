@@ -33,7 +33,7 @@ type CloudMapReconciler struct {
 	logr.Logger
 }
 
-// +kubebuilder:rbac:groups=multicluster.k8s.aws,resources=serviceimports,verbs=get;list;update;patch
+// +kubebuilder:rbac:groups=multicluster.x-k8s.io,resources=serviceimports,verbs=get;list;update;patch
 
 // Start implements manager.Runnable
 func (r *CloudMapReconciler) Start(ctx context.Context) error {

@@ -1,4 +1,4 @@
-domain: k8s.aws
+domain: x-k8s.io
 layout:
 - go.kubebuilder.io/v3
 projectName: aws-cloud-map-mcs-controller-for-k8s
@@ -8,7 +8,7 @@ resources:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: k8s.aws
+  domain: x-k8s.io
   group: multicluster
   kind: ServiceExport
   path: github.com/aws/aws-cloud-map-mcs-controller-for-k8s/api/v1alpha1
@@ -17,7 +17,7 @@ resources:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: k8s.aws
+  domain: x-k8s.io
   group: multicluster
   kind: ServiceImport
   path: github.com/aws/aws-cloud-map-mcs-controller-for-k8s/api/v1alpha1
