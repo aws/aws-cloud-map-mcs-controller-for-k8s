@@ -57,14 +57,15 @@ test: manifests generate generate-mocks fmt vet ## Run tests.
 
 KUBECTL=$(ENVTEST_ASSETS_DIR)/bin/kubectl
 TEST_CONFIG=$(shell pwd)/testconfig
+E2E_CLUSTER=aws-cloudmap-mcs-e2e
 e2e-test: manifests kustomize kubetest2 fmt vet
-	$(KUBETEST2-KIND) --cluster-name aws-cloudmap-mcs-e2e --up
+	$(KUBETEST2-KIND) --cluster-name $(E2E_CLUSTER) --up
 	$(KUSTOMIZE) build config/crd | $(KUBECTL) apply -f -
 	$(KUBECTL) create namespace aws-cloudmap-mcs-e2e
 	$(KUBECTL) apply -f $(TEST_CONFIG)/e2e-deployment.yaml
 	$(KUBECTL) apply -f $(TEST_CONFIG)/e2e-service-one.yaml
 	$(KUBECTL) apply -f $(TEST_CONFIG)/e2e-export.yaml
-	$(KUBETEST2-KIND) --cluster-name aws-cloudmap-mcs-e2e --down
+	$(KUBETEST2-KIND) --cluster-name $(E2E_CLUSTER) --down
 
 ##@ Build
 
