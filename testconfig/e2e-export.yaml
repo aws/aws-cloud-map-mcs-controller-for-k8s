@@ -1,0 +1,7 @@
+# e2e-export.yaml
+
+kind: ServiceExport
+apiVersion: multicluster.k8s.aws/v1alpha1
+metadata:
+ namespace: aws-cloudmap-mcs-e2e
+ name: e2e-service-one
