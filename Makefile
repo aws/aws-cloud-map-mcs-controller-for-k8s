@@ -55,8 +55,15 @@ test: manifests generate generate-mocks fmt vet ## Run tests.
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.7.2/hack/setup-envtest.sh
 	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test ./... -coverprofile cover.out
 
-e2e-test: generate kubetest2 fmt vet
+KUBECTL=$(ENVTEST_ASSETS_DIR)/bin/kubectl
+TEST_CONFIG=$(shell pwd)/testconfig
+e2e-test: manifests kustomize kubetest2 fmt vet
 	$(KUBETEST2-KIND) --cluster-name aws-cloudmap-mcs-e2e --up
+	$(KUSTOMIZE) build config/crd | $(KUBECTL) apply -f -
+	$(KUBECTL) create namespace aws-cloudmap-mcs-e2e
+	$(KUBECTL) apply -f $(TEST_CONFIG)/e2e-deployment.yaml
+	$(KUBECTL) apply -f $(TEST_CONFIG)/e2e-service-one.yaml
+	$(KUBECTL) apply -f $(TEST_CONFIG)/e2e-export.yaml
 	$(KUBETEST2-KIND) --cluster-name aws-cloudmap-mcs-e2e --down
 
 ##@ Build
