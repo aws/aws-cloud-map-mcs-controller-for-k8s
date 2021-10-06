@@ -69,7 +69,7 @@ e2e-test: manifests kustomize kubetest2 fmt vet
 
 ##@ Build
 
-build: generate fmt vet ## Build manager binary.
+build: manifests generate generate-mocks fmt vet ## Build manager binary.
 	go build -o bin/manager main.go
 
 run: manifests generate fmt vet ## Run a controller from your host.
