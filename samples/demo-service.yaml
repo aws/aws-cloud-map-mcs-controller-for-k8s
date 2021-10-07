@@ -1,0 +1,11 @@
+kind: Service
+apiVersion: v1
+metadata:
+  namespace: demo
+  name: demo-service
+spec:
+  selector:
+    app: nginx
+  ports:
+    - port: 8080
+      targetPort: 80

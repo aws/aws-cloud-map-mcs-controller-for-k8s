@@ -1,113 +1,26 @@
 # AWS Cloud Map MCS Controller for K8s
 
-AWS Cloud Map MCS Controller for K8s is a controller that implements existing multi-cluster services API that allows services to communicate across multiple clusters. The implementation relies on [AWS Cloud Map](https://aws.amazon.com/cloud-map/) for enabling cross-cluster service discovery.
+[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/issues)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg?color=success)](http://www.apache.org/licenses/LICENSE-2.0)
+![GitHub issues](https://img.shields.io/github/issues-raw/aws/aws-cloud-map-mcs-controller-for-k8s?style=flat)
 
 [![Deploy status](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/actions/workflows/deploy.yml/badge.svg)](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/actions/workflows/deploy.yml)
-[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/issues)
+[![Go Report Card](https://goreportcard.com/badge/github.com/aws/aws-cloud-map-mcs-controller-for-k8s)](https://goreportcard.com/report/github.com/aws/aws-cloud-map-mcs-controller-for-k8s)
 
-# How to build and run
+## Introduction
+AWS Cloud Map multi-cluster service discovery for Kubernetes (K8s) is a controller that implements existing multi-cluster services API that allows services to communicate across multiple clusters. The implementation relies on [AWS Cloud Map](https://aws.amazon.com/cloud-map/) for enabling cross-cluster service discovery.
 
-Pre-requisite: Create Private DNS Namespace in Cloud Map `demo`
+## Releases
 
-Set region
-```
-export AWS_REGION=us-west-2
-```
+AWS Cloud Map MCS Controller for K8s adheres to the [SemVer](https://semver.org/) specification. Each release updates the major version tag (eg. `vX`), a major/minor version tag (eg. `vX.Y`) and a major/minor/patch version tag (eg. `vX.Y.Z`). To see a full list of all releases, refer to our [Github releases page](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/releases).
 
-Spin up a local Kubernetes cluster using `kind`
+We also maintain a `latest` tag, which is updated to stay in line with the `main` branch. We **do not** recommend installing this on any production cluster, as any new major versions updated on the `main` branch will introduce breaking changes.
 
-```
-kind create cluster
-kind export kubeconfig
-```
+## Contributing
+`aws-cloud-map-mcs-controller-for-k8s` is an open source project. See [CONTRIBUTING](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/blob/main/CONTRIBUTING.md) for details.
 
-Install custom CRDs (`ServiceImport`, `ServiceExport`) to the cluster
+## License
 
-```
-make install
-```
-
-Run controller
-
-```
-make run
-```
-
-Create a testing deployment
-
-```
-# my-deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  namespace: demo
-  name: nginx-deployment
-  labels:
-    app: nginx
-spec:
-  replicas: 5
-  selector:
-    matchLabels:
-      app: nginx
-  template:
-    metadata:
-      labels:
-        app: nginx
-    spec:
-      containers:
-      - name: nginx
-        image: nginx:1.14.2
-        ports:
-        - containerPort: 80
-```
-
-Create a testing Service
-
-```
-# my-service.yaml
-kind: Service
-apiVersion: v1
-metadata:
-  namespace: demo
-  name: my-service-name
-spec:
-  selector:
-    app: nginx
-  ports:
-    - port: 8080
-      targetPort: 80
-```
-
-Create a testing ServiceExport resource
-
-```
-# my-export.yaml
-
-kind: ServiceExport
-apiVersion: multicluster.x-k8s.io/v1alpha1
-metadata:
- namespace: demo
- name: my-service-name
-```
-
-Apply config files
-
-```
-kubectl create namespace demo
-kubectl apply -f my-deployment.yaml
-kubectl apply -f my-service.yaml
-kubectl apply -f my-export.yaml
-```
-
-Check running controller if it correctly detects newly created resource
-
-```
-2021-07-09T14:31:26.933-0700	INFO	controllers.ServiceExport	updating Cloud Map service	{"serviceexport": "demo/my-service-name", "namespace": "demo", "name": "my-service-name"}
-2021-07-09T14:31:26.933-0700	INFO	cloudmap	fetching a service	{"namespaceName": "demo", "serviceName": "my-service-name"}
-2021-07-09T14:31:27.341-0700	INFO	cloudmap	creating a new service	{"namespace": "demo", "name": "my-service-name"}
-```
-
-# How to generate mocks and run unit tests
-```
-make test
-```
+This project is distributed under the
+[Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0),
+see [LICENSE](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/blob/main/LICENSE) and [NOTICE](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/blob/main/NOTICE) for more information.

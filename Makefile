@@ -72,7 +72,7 @@ e2e-test: manifests kustomize kubetest2 fmt vet
 build: manifests generate generate-mocks fmt vet ## Build manager binary.
 	go build -o bin/manager main.go
 
-run: manifests generate fmt vet ## Run a controller from your host.
+run: manifests generate generate-mocks fmt vet ## Run a controller from your host.
 	go run ./main.go
 
 docker-build: test ## Build docker image with the manager.
@@ -80,6 +80,9 @@ docker-build: test ## Build docker image with the manager.
 
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
+
+clean:
+	rm -rf $(MOCKS_DESTINATION) bin/ testbin/ cover.out
 
 ##@ Deployment
 
