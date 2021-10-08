@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/version"
 	v1 "k8s.io/api/core/v1"
 	discovery "k8s.io/api/discovery/v1beta1"
 	"k8s.io/apimachinery/pkg/types"
@@ -198,12 +199,17 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 		for _, port := range slice.Ports {
 			for _, ep := range slice.Endpoints {
 				for _, IP := range ep.Addresses {
+					attributes := make(map[string]string, 0)
+					if version.GetVersion() != "" {
+						attributes["K8S_CONTROLLER"] = version.PackageName + " " + version.GetVersion()
+					}
+					// TODO extract attributes - pod, node and other useful details if possible
+
 					result = append(result, &model.Endpoint{
 						Id:         model.EndpointIdFromIPAddress(IP),
 						IP:         IP,
 						Port:       *port.Port,
-						Attributes: make(map[string]string, 0),
-						// TODO extract attributes - pod, node and other useful details if possible
+						Attributes: attributes,
 					})
 				}
 			}

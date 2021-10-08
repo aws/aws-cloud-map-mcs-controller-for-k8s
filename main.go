@@ -19,10 +19,10 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/version"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"os"
-
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -68,6 +68,9 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	v := version.GetVersion()
+	setupLog.Info("starting AWS Cloud Map MCS Controller for K8s", "version", v)
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,

@@ -1,3 +1,6 @@
+GIT_COMMIT:=$(shell git describe --dirty --always)
+GIT_TAG:=$(shell git describe --dirty --always --tags)
+PKG:=github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/version
 
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
@@ -70,7 +73,7 @@ e2e-test: manifests kustomize kubetest2 fmt vet
 ##@ Build
 
 build: manifests generate generate-mocks fmt vet ## Build manager binary.
-	go build -o bin/manager main.go
+	go build -ldflags="-s -w -X ${PKG}.GitVersion=${GIT_TAG} -X ${PKG}.GitCommit=${GIT_COMMIT}" -o bin/manager main.go
 
 run: manifests generate generate-mocks fmt vet ## Run a controller from your host.
 	go run ./main.go
