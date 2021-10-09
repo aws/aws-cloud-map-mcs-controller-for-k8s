@@ -1,7 +1,7 @@
 name: deploy
 
 on:
-  push:
+  pull_request:
     branches: [ main ]
 
 jobs:
@@ -9,7 +9,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      REGISTRY: ghcr.io/${{ github.repository }}
+      REGISTRY: ghcr.io/${{ github.repository }}/controller
     permissions:
       contents: read
       packages: write
