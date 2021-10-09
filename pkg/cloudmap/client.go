@@ -88,7 +88,23 @@ func (sdc *serviceDiscoveryClient) CreateService(ctx context.Context, service *m
 	nsId, nsErr := sdc.getNamespaceId(ctx, service.Namespace)
 
 	if nsErr != nil {
-		return nsErr
+
+		namespaceOutput, nsErr := sdc.sdApi.CreateHttpNamespace(ctx, &sd.CreateHttpNamespaceInput{
+			Name: &service.Namespace,
+		})
+		if nsErr != nil {
+			return nsErr
+		}
+		opResult, opErr := sdc.sdApi.GetOperation(ctx, &sd.GetOperationInput{
+			OperationId: namespaceOutput.OperationId,
+		})
+		if opErr != nil {
+			return opErr
+		}
+		nsId = opResult.Operation.Targets["NAMESPACE"]
+		sdc.namespaceIdCache.Add(
+			service.Namespace,
+			opResult.Operation.Targets["NAMESPACE"], defaultServiceIdCacheTTL)
 	}
 
 	//TODO: Handle non-http namespaces
