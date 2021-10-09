@@ -9,7 +9,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      REGISTRY: ghcr.io/${{ github.repository }}/controller
+      REGISTRY: ghcr.io/${{ github.repository }}
     permissions:
       contents: read
       packages: write
