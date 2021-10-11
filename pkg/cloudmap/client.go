@@ -130,12 +130,6 @@ func (sdc *serviceDiscoveryClient) WaitUntilSuccessOperation(ctx context.Context
 		return nil, opErr
 	}
 	for opResult.Operation.Status == types.OperationStatusPending || opResult.Operation.Status == types.OperationStatusSubmitted {
-		if opResult.Operation.Status == types.OperationStatusFail {
-			opErr = fmt.Errorf("failed to create namespace. error:  %s", *opResult.Operation.ErrorMessage)
-		}
-		if opErr != nil {
-			break
-		}
 
 		opResult, opErr = sdc.sdApi.GetOperation(ctx, &sd.GetOperationInput{
 			OperationId: operationId,
@@ -143,6 +137,10 @@ func (sdc *serviceDiscoveryClient) WaitUntilSuccessOperation(ctx context.Context
 		if opErr != nil {
 			break
 		}
+	}
+	if opResult.Operation.Status == types.OperationStatusFail {
+		opErr = fmt.Errorf("failed to create namespace. error:  %s", *opResult.Operation.ErrorMessage)
+		return nil, opErr
 	}
 	return opResult, opErr
 }
