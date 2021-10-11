@@ -89,15 +89,14 @@ func (sdc *serviceDiscoveryClient) CreateService(ctx context.Context, service *m
 
 	if nsErr != nil {
 
-		namespaceOutput, nsErr := sdc.sdApi.CreateHttpNamespace(ctx, &sd.CreateHttpNamespaceInput{
+		nsOutput, nsErr := sdc.sdApi.CreateHttpNamespace(ctx, &sd.CreateHttpNamespaceInput{
 			Name: &service.Namespace,
 		})
+
 		if nsErr != nil {
 			return nsErr
 		}
-		opResult, opErr := sdc.sdApi.GetOperation(ctx, &sd.GetOperationInput{
-			OperationId: namespaceOutput.OperationId,
-		})
+		opResult, opErr := sdc.WaitUntilSuccessOperation(ctx, nsOutput.OperationId)
 		if opErr != nil {
 			return opErr
 		}
@@ -121,6 +120,31 @@ func (sdc *serviceDiscoveryClient) CreateService(ctx context.Context, service *m
 		*sdSrv.Service.Id, defaultServiceIdCacheTTL)
 
 	return sdc.RegisterEndpoints(ctx, service)
+}
+func (sdc *serviceDiscoveryClient) WaitUntilSuccessOperation(ctx context.Context, operationId *string) (*sd.GetOperationOutput, error) {
+
+	opResult, opErr := sdc.sdApi.GetOperation(ctx, &sd.GetOperationInput{
+		OperationId: operationId,
+	})
+	if opErr != nil {
+		return nil, opErr
+	}
+	for opResult.Operation.Status == types.OperationStatusPending || opResult.Operation.Status == types.OperationStatusSubmitted {
+		if opResult.Operation.Status == types.OperationStatusFail {
+			opErr = fmt.Errorf("failed to create namespace. error:  %s", *opResult.Operation.ErrorMessage)
+		}
+		if opErr != nil {
+			break
+		}
+
+		opResult, opErr = sdc.sdApi.GetOperation(ctx, &sd.GetOperationInput{
+			OperationId: operationId,
+		})
+		if opErr != nil {
+			break
+		}
+	}
+	return opResult, opErr
 }
 
 func (sdc *serviceDiscoveryClient) GetService(ctx context.Context, namespaceName string, serviceName string) (*model.Service, error) {
