@@ -16,6 +16,11 @@ AWS Cloud Map MCS Controller for K8s adheres to the [SemVer](https://semver.org/
 
 We also maintain a `latest` tag, which is updated to stay in line with the `main` branch. We **do not** recommend installing this on any production cluster, as any new major versions updated on the `main` branch will introduce breaking changes.
 
+To install from `latest` tag run
+```sh
+kubectl apply -k github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_latest
+```
+
 ## Contributing
 `aws-cloud-map-mcs-controller-for-k8s` is an open source project. See [CONTRIBUTING](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/blob/main/CONTRIBUTING.md) for details.
 
