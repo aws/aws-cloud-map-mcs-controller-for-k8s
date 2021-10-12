@@ -21,14 +21,14 @@ kubectl apply -k github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/cont
 
 Example to install v0.1.0
 ```sh
-kubectl apply -k github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_release?ref=v0.1.0
+kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_release?ref=v0.1.0"
 ```
 
 We also maintain a `latest` tag, which is updated to stay in line with the `main` branch. We **do not** recommend installing this on any production cluster, as any new major versions updated on the `main` branch will introduce breaking changes.
 
 To install from `latest` tag run
 ```sh
-kubectl apply -k github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_latest
+kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_latest"
 ```
 
 ## Contributing

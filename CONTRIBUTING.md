@@ -96,7 +96,7 @@ kind delete cluster --name my-cluster
 
 ### Deploying to a cluster
 
-You must first push a Docker image containing the changes to a Docker repository like ECR.
+You must first push a Docker image containing the changes to a Docker repository like ECR, Github packages, or DockerHub. The repo is configured to use Github Actions to automatically publish the docker image upon push to `main` branch. The image URI will be `docker pull ghcr.io/[Your forked repo name here]` You can enable this for forked repos by enabling Github actions on your forked repo in the "Actions" tab of forked repo.
 
 ### Build and push docker image to ECR
 
