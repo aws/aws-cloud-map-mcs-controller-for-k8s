@@ -16,7 +16,7 @@ AWS Cloud Map MCS Controller for K8s adheres to the [SemVer](https://semver.org/
 
 To install from a release tag run
 ```sh
-kubectl apply -k github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_release?ref=[git version tag here]
+kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_release?ref=[git version tag here]"
 ```
 
 Example to install v0.1.0
