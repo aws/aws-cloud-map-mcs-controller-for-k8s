@@ -14,6 +14,16 @@ AWS Cloud Map multi-cluster service discovery for Kubernetes (K8s) is a controll
 
 AWS Cloud Map MCS Controller for K8s adheres to the [SemVer](https://semver.org/) specification. Each release updates the major version tag (eg. `vX`), a major/minor version tag (eg. `vX.Y`) and a major/minor/patch version tag (eg. `vX.Y.Z`). To see a full list of all releases, refer to our [Github releases page](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/releases).
 
+To install from a release tag run
+```sh
+kubectl apply -k github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_release?ref=[git version tag here]
+```
+
+Example to install v0.1.0
+```sh
+kubectl apply -k github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_release?ref=v0.1.0
+```
+
 We also maintain a `latest` tag, which is updated to stay in line with the `main` branch. We **do not** recommend installing this on any production cluster, as any new major versions updated on the `main` branch will introduce breaking changes.
 
 To install from `latest` tag run
