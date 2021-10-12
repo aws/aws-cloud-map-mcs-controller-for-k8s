@@ -96,7 +96,9 @@ kind delete cluster --name my-cluster
 
 ### Deploying to a cluster
 
-You must first push a Docker image containing the changes to a Docker repository like ECR, Github packages, or DockerHub. The repo is configured to use Github Actions to automatically publish the docker image upon push to `main` branch. The image URI will be `docker pull ghcr.io/[Your forked repo name here]` You can enable this for forked repos by enabling Github actions on your forked repo in the "Actions" tab of forked repo.
+You must first push a Docker image containing the changes to a Docker repository like ECR, Github packages, or DockerHub. The repo is configured to use Github Actions to automatically publish the docker image upon push to `main` branch. The image URI will be `ghcr.io/[Your forked repo name here]` You can enable this for forked repos by enabling Github actions on your forked repo in the "Actions" tab of forked repo.
+
+If you are deploying to cluster using kustomize templates from the `config` directory, you will need to override the image URI away from `ghcr.io/aws/aws-cloud-map-mcs-controller-for-k8s` in order to use your own docker images.
 
 ### Build and push docker image to ECR
 
