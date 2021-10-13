@@ -10,13 +10,67 @@
 ## Introduction
 AWS Cloud Map multi-cluster service discovery for Kubernetes (K8s) is a controller that implements existing multi-cluster services API that allows services to communicate across multiple clusters. The implementation relies on [AWS Cloud Map](https://aws.amazon.com/cloud-map/) for enabling cross-cluster service discovery.
 
+## Usage
+> ⚠ **There must exist network connectivity (i.e. VPC peering, security group rules, ACLs, etc.) between clusters**: Undefined behavior may occur if controller is set up without network connectivity between clusters.
+
+### Setup clusters
+
+First, install the controller with latest release on at least 2 AWS EKS clusters. Nodes must have sufficient IAM permissions to perform CloudMap operations.
+
+```sh
+kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_release"
+```
+
+> 📌 See [Releases](#Releases) section for details on how to install other versions.
+
+### Export services
+
+Then assuming you already have a Service installed, apply a `ServiceExport` yaml to the cluster in which you want to export a service. This can be done for each service you want to export.
+
+```yaml
+kind: ServiceExport
+apiVersion: multicluster.x-k8s.io/v1alpha1
+metadata:
+  namespace: [Your service namespace here]
+  name: [Your service name]
+```
+
+**Example:** This will export a service with name *my-amazing-service* in namespace *hello*
+```yaml
+kind: ServiceExport
+apiVersion: multicluster.x-k8s.io/v1alpha1
+metadata:
+  namespace: hello
+  name: my-amazing-service
+```
+
+*See the `samples` directory for a set of example yaml files to set up a service and export it. To apply the sample files run*
+```sh
+kubectl create namespace demo
+kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/demo-deployment.yaml
+kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/demo-service.yaml
+kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/demo-export.yaml
+```
+
+### Import services
+
+In your other cluster, the controller will automatically sync services registered in AWS CloudMap by applying the appropriate `ServiceImport`. To list them all, run
+```sh
+kubectl get ServiceImport -A
+```
+
 ## Releases
 
 AWS Cloud Map MCS Controller for K8s adheres to the [SemVer](https://semver.org/) specification. Each release updates the major version tag (eg. `vX`), a major/minor version tag (eg. `vX.Y`) and a major/minor/patch version tag (eg. `vX.Y.Z`). To see a full list of all releases, refer to our [Github releases page](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/releases).
 
-To install from a release tag run
+To install from a release run
 ```sh
-kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_release?ref=[git version tag here]"
+kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_release[?ref=*git version tag*]"
+```
+
+Example to install latest release
+```sh
+kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_release"
 ```
 
 Example to install v0.1.0
