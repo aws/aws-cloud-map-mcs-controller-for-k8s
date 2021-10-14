@@ -2,11 +2,12 @@
 
 [![Documentation](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/aws/aws-cloud-map-mcs-controller-for-k8s)
 [![CodeQL](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/actions/workflows/codeql-analysis.yml/badge.svg?branch=main)](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/actions/workflows/codeql-analysis.yml)
-[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/issues)
 [![Build status](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/actions/workflows/build.yml)
 [![Deploy status](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/actions/workflows/deploy.yml)
+[![codecov](https://codecov.io/gh/aws/aws-cloud-map-mcs-controller-for-k8s/branch/main/graph/badge.svg)](https://codecov.io/gh/aws/aws-cloud-map-mcs-controller-for-k8s)
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg?color=success)](http://www.apache.org/licenses/LICENSE-2.0)
+[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/issues)
 [![GitHub issues](https://img.shields.io/github/issues-raw/aws/aws-cloud-map-mcs-controller-for-k8s?style=flat)](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/issues)
 [![Go Report Card](https://goreportcard.com/badge/github.com/aws/aws-cloud-map-mcs-controller-for-k8s)](https://goreportcard.com/report/github.com/aws/aws-cloud-map-mcs-controller-for-k8s)
 
