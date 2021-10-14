@@ -137,7 +137,8 @@ func (sdc *serviceDiscoveryClient) WaitUntilSuccessOperation(ctx context.Context
 		opResult, opErr = sdc.sdApi.GetOperation(ctx, &sd.GetOperationInput{
 			OperationId: operationId,
 		})
-		if opErr != nil || opResult.Operation.Status == types.OperationStatusSuccess {
+		opFinished := opResult.Operation.Status == types.OperationStatusSuccess || opResult.Operation.Status == types.OperationStatusFail
+		if opErr != nil || opFinished  {
 			retry = false
 		}
 		retries++
