@@ -101,7 +101,7 @@ func (sdc *serviceDiscoveryClient) CreateService(ctx context.Context, service *m
 		nsId = opResult.Operation.Targets["NAMESPACE"]
 		sdc.namespaceIdCache.Add(
 			service.Namespace,
-			opResult.Operation.Targets["NAMESPACE"], defaultServiceIdCacheTTL)
+			opResult.Operation.Targets["NAMESPACE"], defaultNamespaceIdCacheTTL)
 	}
 
 	//TODO: Handle non-http namespaces
