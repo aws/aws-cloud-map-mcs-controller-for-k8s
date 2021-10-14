@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/util/cache"
-	"math"
+	"k8s.io/apimachinery/pkg/util/wait"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"time"
 )
@@ -86,6 +86,10 @@ func (sdc *serviceDiscoveryClient) CreateService(ctx context.Context, service *m
 	sdc.log.Info("creating a new service", "namespace", service.Namespace, "name", service.Name)
 
 	nsId, nsErr := sdc.getNamespaceId(ctx, service.Namespace)
+	if nsErr != nil {
+		return nsErr
+	}
+
 	if nsErr == nil && nsId == "" {
 		nsOutput, nsErr := sdc.sdApi.CreateHttpNamespace(ctx, &sd.CreateHttpNamespaceInput{
 			Name: &service.Namespace,
@@ -101,7 +105,7 @@ func (sdc *serviceDiscoveryClient) CreateService(ctx context.Context, service *m
 		nsId = opResult.Operation.Targets["NAMESPACE"]
 		sdc.namespaceIdCache.Add(
 			service.Namespace,
-			opResult.Operation.Targets["NAMESPACE"], defaultNamespaceIdCacheTTL)
+			nsId, defaultNamespaceIdCacheTTL)
 	}
 
 	//TODO: Handle non-http namespaces
@@ -120,30 +124,30 @@ func (sdc *serviceDiscoveryClient) CreateService(ctx context.Context, service *m
 	return sdc.RegisterEndpoints(ctx, service)
 }
 func (sdc *serviceDiscoveryClient) WaitUntilSuccessOperation(ctx context.Context, operationId *string) (*sd.GetOperationOutput, error) {
-	var retry bool
-	retries := 0
-	opResult, opErr := sdc.sdApi.GetOperation(ctx, &sd.GetOperationInput{
-		OperationId: operationId,
-	})
-	if opErr != nil {
-		return opResult, opErr
-	}
-	if opResult.Operation.Status != types.OperationStatusSuccess {
-		retry = true
-	}
-	for retry {
-
-		time.Sleep(time.Duration(math.Pow(float64(2), float64(retries))) * 100 * time.Millisecond)
+	opResult := &sd.GetOperationOutput{}
+	var opErr error
+	err := wait.PollUntil(defaultOperationPollInterval, func() (bool, error) {
 		opResult, opErr = sdc.sdApi.GetOperation(ctx, &sd.GetOperationInput{
 			OperationId: operationId,
 		})
-		opFinished := opResult.Operation.Status == types.OperationStatusSuccess || opResult.Operation.Status == types.OperationStatusFail
-		if opErr != nil || opFinished  {
-			retry = false
+		if opErr != nil {
+			return true, opErr
 		}
-		retries++
+
+		if opResult.Operation.Status == types.OperationStatusFail {
+			return true, fmt.Errorf("failed to create namespace.Reason: %s", *opResult.Operation.ErrorMessage)
+		}
+
+		if opResult.Operation.Status == types.OperationStatusSuccess {
+			return true, nil
+		}
+
+		return false, nil
+	}, ctx.Done())
+	if err != nil {
+		return nil, err
 	}
-	return opResult, opErr
+	return opResult, nil
 }
 
 func (sdc *serviceDiscoveryClient) GetService(ctx context.Context, namespaceName string, serviceName string) (*model.Service, error) {
@@ -214,7 +218,7 @@ func (sdc *serviceDiscoveryClient) getNamespaceId(ctx context.Context, nsName st
 
 	nsId, err := sdc.getNamespaceIdFromCloudMap(ctx, nsName)
 
-	if err != nil  {
+	if err != nil {
 		return "", err
 	}
 
