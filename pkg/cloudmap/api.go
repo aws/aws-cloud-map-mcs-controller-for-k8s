@@ -12,16 +12,37 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
+// ServiceDiscoveryApi handles the AWS Cloud Map API request and response processing logic, and converts results to
+// internal data structures. It manages all interactions with the AWS SDK.
 type ServiceDiscoveryApi interface {
+	// ListServices returns a list of services for a given namespace.
 	ListServices(ctx context.Context, namespaceId string) (services []*Resource, err error)
+
+	// ListInstances returns a list of service instances registered to a given service.
 	ListInstances(ctx context.Context, serviceId string) ([]*model.Endpoint, error)
+
+	// ListOperations returns a map of operations to their status matching a list of filters.
 	ListOperations(ctx context.Context, opFilters []types.OperationFilter) (operationStatusMap map[string]types.OperationStatus, err error)
+
+	// GetNamespaceId returns the namespace ID for a given namespace name.
 	GetNamespaceId(ctx context.Context, namespaceName string) (namespaceId string, err error)
+
+	// GetOperationErrorMessage returns the error message for a given operation.
 	GetOperationErrorMessage(ctx context.Context, operationId string) (operationError string, err error)
+
+	// CreateHttpNamespace creates a HTTP namespace in AWS Cloud Map for a given name.
 	CreateHttpNamespace(ctx context.Context, namespaceName string) (operationId string, err error)
+
+	// CreateService creates a named service in AWS Cloud Map under the given namespace.
 	CreateService(ctx context.Context, namespaceId string, serviceName string) (serviceId string, err error)
+
+	// RegisterInstance registers a service instance in AWS Cloud Map.
 	RegisterInstance(ctx context.Context, serviceId string, instanceId string, instanceAttrs map[string]string) (operationId string, err error)
+
+	// DeregisterInstance de-registers a service instance in Cloud Map.
 	DeregisterInstance(ctx context.Context, serviceId string, instanceId string) (operationId string, err error)
+
+	// PollCreateNamespace polls a create namespace operation, and returns the namespace ID.
 	PollCreateNamespace(ctx context.Context, operationId string) (namespaceId string, err error)
 }
 
@@ -30,11 +51,13 @@ type serviceDiscoveryApi struct {
 	awsFacade AwsFacade
 }
 
+// Resource encapsulates a ID/name pair
 type Resource struct {
 	Id   string
 	Name string
 }
 
+// NewServiceDiscoveryApiFromConfig creates a new AWS Cloud Map API connection manager from an AWS client config.
 func NewServiceDiscoveryApiFromConfig(cfg *aws.Config) ServiceDiscoveryApi {
 	return &serviceDiscoveryApi{
 		log:       ctrl.Log.WithName("cloudmap"),

@@ -20,20 +20,22 @@ const (
 	defaultEndpointsCacheSize   = 1024
 )
 
+// ServiceDiscoveryClient provides the service endpoint management functionality required by the AWS Cloud Map
+// multi-cluster service discovery for Kubernetes controller. It maintains local caches for all AWS Cloud Map resources.
 type ServiceDiscoveryClient interface {
-	// ListServices returns all services and their endpoints for a given namespace
+	// ListServices returns all services and their endpoints for a given namespace.
 	ListServices(ctx context.Context, namespaceName string) ([]*model.Service, error)
 
-	// CreateService creates a Cloud Map service resource and return created service struct
+	// CreateService creates a Cloud Map service resource and returns the created service struct.
 	CreateService(ctx context.Context, service *model.Service) error
 
-	// GetService returns a service resource fetched from the Cloud Map API or nil if not found
+	// GetService returns a service resource fetched from AWS Cloud Map or nil if not found.
 	GetService(ctx context.Context, namespaceName string, serviceName string) (*model.Service, error)
 
-	// RegisterEndpoints registers all endpoints for given service
+	// RegisterEndpoints registers all endpoints for given service.
 	RegisterEndpoints(ctx context.Context, service *model.Service) error
 
-	// DeleteEndpoints de-registers all endpoints for given service
+	// DeleteEndpoints de-registers all endpoints for given service.
 	DeleteEndpoints(ctx context.Context, service *model.Service) error
 }
 
@@ -45,6 +47,7 @@ type serviceDiscoveryClient struct {
 	endpointCache    *cache.LRUExpireCache
 }
 
+// NewServiceDiscoveryClient creates a new service discovery client for AWS Cloud Map from a given AWS client config.
 func NewServiceDiscoveryClient(cfg *aws.Config) ServiceDiscoveryClient {
 	return &serviceDiscoveryClient{
 		log:              ctrl.Log.WithName("cloudmap"),
@@ -100,7 +103,7 @@ func (sdc *serviceDiscoveryClient) ListEndpoints(ctx context.Context, serviceId 
 		return nil, endptsErr
 	}
 
-	sdc.endpointCache.Add(serviceId, endpts, defaultEndpointsCacheTTL)
+	sdc.cacheEndpoints(serviceId, endpts)
 
 	return endpts, nil
 }
@@ -182,6 +185,7 @@ func (sdc *serviceDiscoveryClient) RegisterEndpoints(ctx context.Context, servic
 		sdc.log.Info("skipping endpoint registration for empty endpoint list", "serviceName", service.Name)
 		return nil
 	}
+
 	sdc.log.Info("registering endpoints", "namespaceName", service.Namespace,
 		"serviceName", service.Name, "endpoints", service.Endpoints)
 
@@ -190,25 +194,26 @@ func (sdc *serviceDiscoveryClient) RegisterEndpoints(ctx context.Context, servic
 		return svcErr
 	}
 
-	opPoller := NewRegisterInstancePoller(sdc.sdApi, svcId, len(service.Endpoints))
+	startTime := Now()
+	opCollector := NewOperationCollector(len(service.Endpoints))
 
 	for _, endpt := range service.Endpoints {
 		go func(endpt *model.Endpoint) {
 			opId, err := sdc.sdApi.RegisterInstance(ctx, svcId, endpt.Id, endpt.GetAttributes())
-			opPoller.AddOperation(endpt.Id, opId, err)
+			opCollector.Add(endpt.Id, opId, err)
 		}(endpt)
 	}
 
-	opsErr := opPoller.PollOperations(ctx)
+	opsErr := NewRegisterInstancePoller(sdc.sdApi, svcId, opCollector.Collect(), startTime).Poll(ctx)
 
 	// Evict cache entry so next list call reflects changes
-	sdc.endpointCache.Remove(svcId)
+	sdc.evictEndpoints(svcId)
 
 	if opsErr != nil {
 		return opsErr
 	}
 
-	if !opPoller.IsAllOperationsCreated() {
+	if !opCollector.IsAllOperationsCreated() {
 		return fmt.Errorf("failure while registering endpoints")
 	}
 
@@ -220,6 +225,7 @@ func (sdc *serviceDiscoveryClient) DeleteEndpoints(ctx context.Context, service 
 		sdc.log.Info("skipping endpoint deletion for empty endpoint list", "serviceName", service.Name)
 		return nil
 	}
+
 	sdc.log.Info("deleting endpoints", "namespaceName", service.Namespace,
 		"serviceName", service.Name, "endpoints", service.Endpoints)
 
@@ -228,26 +234,26 @@ func (sdc *serviceDiscoveryClient) DeleteEndpoints(ctx context.Context, service 
 		return svcErr
 	}
 
-	opPoller := NewDeregisterInstancePoller(sdc.sdApi, svcId, len(service.Endpoints))
+	startTime := Now()
+	opCollector := NewOperationCollector(len(service.Endpoints))
 
 	for _, endpt := range service.Endpoints {
 		go func(endpt *model.Endpoint) {
 			opId, err := sdc.sdApi.DeregisterInstance(ctx, svcId, endpt.Id)
-			opPoller.AddOperation(endpt.Id, opId, err)
+			opCollector.Add(endpt.Id, opId, err)
 		}(endpt)
 	}
 
-	opsErr := opPoller.PollOperations(ctx)
+	opsErr := NewDeregisterInstancePoller(sdc.sdApi, svcId, opCollector.Collect(), startTime).Poll(ctx)
 
 	// Evict cache entry so next list call reflects changes
-	sdc.endpointCache.Remove(svcId)
+	sdc.evictEndpoints(svcId)
 
 	if opsErr != nil {
 		return opsErr
 	}
 
-
-	if !opPoller.IsAllOperationsCreated() {
+	if !opCollector.IsAllOperationsCreated() {
 		return fmt.Errorf("failure while de-registering endpoints")
 	}
 
@@ -309,6 +315,14 @@ func (sdc *serviceDiscoveryClient) cacheNamespaceId(nsName string, nsId string) 
 func (sdc *serviceDiscoveryClient) cacheServiceId(nsName string, svcName string, svcId string) {
 	cacheKey := sdc.buildServiceIdCacheKey(nsName, svcName)
 	sdc.serviceIdCache.Add(cacheKey, svcId, defaultServiceIdCacheTTL)
+}
+
+func (sdc *serviceDiscoveryClient) cacheEndpoints(svcId string, endpts []*model.Endpoint) {
+	sdc.endpointCache.Add(svcId, endpts, defaultEndpointsCacheTTL)
+}
+
+func (sdc *serviceDiscoveryClient) evictEndpoints(svcId string) {
+	sdc.endpointCache.Remove(svcId)
 }
 
 func (sdc *serviceDiscoveryClient) buildServiceIdCacheKey(nsName string, svcName string) (cacheKey string) {

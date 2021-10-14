@@ -12,110 +12,67 @@ import (
 )
 
 const (
-	// interval between each getOperation call
+	// Interval between each getOperation call.
 	defaultOperationPollInterval = 3 * time.Second
+
+	//
+	defaultOperationPollTimeout = 5 * time.Minute
 )
 
+// OperationPoller polls a list operations for a terminal status.
 type OperationPoller interface {
-	// AddOperation adds an operation to poll
-	AddOperation(endpointId string, operationId string, operationError error)
-
-	// PollOperations monitors operations until they reach terminal state
-	PollOperations(ctx context.Context) error
-
-	// IsAllOperationsCreated returns true if all operations were created successfully
-	IsAllOperationsCreated() bool
+	// Poll monitors operations until they reach terminal state.
+	Poll(ctx context.Context) error
 }
 
 type operationPoller struct {
-	log              logr.Logger
-	sdApi            ServiceDiscoveryApi
-	opChan           chan opResult
-	opIds            []string
-	createOpsSuccess bool
+	log   logr.Logger
+	sdApi ServiceDiscoveryApi
+	opIds []string
 
-	svcId   string
-	opType  types.OperationType
-	opCount int
-	start   int64
+	svcId  string
+	opType types.OperationType
+	start  int
 }
 
-type opResult struct {
-	instId string
-	opId   string
-	err    error
-}
+func newOperationPoller(sdApi ServiceDiscoveryApi, svcId string, opIds []string, startTime int) operationPoller {
+	return operationPoller{
+		log:   ctrl.Log.WithName("cloudmap"),
+		sdApi: sdApi,
 
-func newOperationPoller(sdApi ServiceDiscoveryApi, svcId string, opType types.OperationType, opCount int) OperationPoller {
-	return &operationPoller{
-		log:              ctrl.Log.WithName("cloudmap"),
-		sdApi:            sdApi,
-		opChan:           make(chan opResult),
-		opIds:            make([]string, opCount),
-		createOpsSuccess: true,
-
-		svcId:   svcId,
-		opType:  opType,
-		opCount: opCount,
-		start:   now(),
+		opIds: opIds,
+		svcId: svcId,
+		start: startTime,
 	}
 }
 
-func NewRegisterInstancePoller(sdApi ServiceDiscoveryApi, serviceId string, opCount int) OperationPoller {
-	return newOperationPoller(sdApi, serviceId, types.OperationTypeRegisterInstance, opCount)
+// NewRegisterInstancePoller creates a new operation poller for register instance operations.
+func NewRegisterInstancePoller(sdApi ServiceDiscoveryApi, serviceId string, opIds []string, startTime int) OperationPoller {
+	poller := newOperationPoller(sdApi, serviceId, opIds, startTime)
+	poller.opType = types.OperationTypeRegisterInstance
+	return &poller
 }
 
-func NewDeregisterInstancePoller(sdApi ServiceDiscoveryApi, serviceId string, opCount int) OperationPoller {
-	return newOperationPoller(sdApi, serviceId, types.OperationTypeDeregisterInstance, opCount)
+// NewDeregisterInstancePoller creates a new operation poller for de-register instance operations.
+func NewDeregisterInstancePoller(sdApi ServiceDiscoveryApi, serviceId string, opIds []string, startTime int) OperationPoller {
+	poller := newOperationPoller(sdApi, serviceId, opIds, startTime)
+	poller.opType = types.OperationTypeDeregisterInstance
+	return &poller
 }
 
-func (opPoller *operationPoller) AddOperation(endptId string, opId string, opErr error) {
-	opPoller.opChan <- opResult{endptId, opId, opErr}
-}
-
-func (opPoller *operationPoller) IsAllOperationsCreated() bool {
-	return opPoller.createOpsSuccess
-}
-
-func (opPoller *operationPoller) PollOperations(ctx context.Context) error {
+func (opPoller *operationPoller) Poll(ctx context.Context) error {
 	if len(opPoller.opIds) == 0 {
 		opPoller.log.Info("no operations to poll")
 		return nil
 	}
 
-	opPoller.collectOperations()
-	return opPoller.pollOperations(ctx)
-}
-
-func (opPoller *operationPoller) collectOperations() {
-	opPoller.createOpsSuccess = true
-
-	for i := 0; i < opPoller.opCount; i++ {
-		op := <-opPoller.opChan
-
-		if op.err != nil {
-			opPoller.log.Info("could not create operation", "error", op.err)
-			opPoller.createOpsSuccess = false
-			continue
-		}
-
-		opPoller.opIds[i] = op.opId
-	}
-}
-
-func (opPoller *operationPoller) pollOperations(ctx context.Context) error {
-	if len(opPoller.opIds) == 0 {
-		opPoller.log.Info("no operations to poll")
-		return nil
-	}
-
-	return wait.PollUntil(defaultOperationPollInterval, func() (done bool, err error) {
+	return wait.Poll(defaultOperationPollInterval, defaultOperationPollTimeout, func() (done bool, err error) {
 		opPoller.log.Info("polling operations", "operations", opPoller.opIds)
 
 		sdOps, err := opPoller.sdApi.ListOperations(ctx, opPoller.buildFilters())
 
 		if err != nil {
-			return true, nil
+			return true, err
 		}
 
 		failedOps := make([]string, 0)
@@ -141,7 +98,7 @@ func (opPoller *operationPoller) pollOperations(ctx context.Context) error {
 
 		opPoller.log.Info("operations completed successfully")
 		return true, nil
-	}, ctx.Done())
+	})
 }
 
 func (opPoller *operationPoller) buildFilters() []types.OperationFilter {
@@ -166,9 +123,9 @@ func (opPoller *operationPoller) buildFilters() []types.OperationFilter {
 		Name:      types.OperationFilterNameUpdateDate,
 		Condition: types.FilterConditionBetween,
 		Values: []string{
-			strconv.Itoa(int(opPoller.start)),
+			strconv.Itoa(opPoller.start),
 			// Add one minute to end range in case op updates while list request is in flight
-			strconv.Itoa(int(now() + 60000)),
+			strconv.Itoa(Now() + 60000),
 		},
 	}
 
@@ -186,7 +143,7 @@ func (opPoller *operationPoller) getFailedOpReason(ctx context.Context, opId str
 	return msg
 }
 
-// now returns current time with milliseconds, as used by operation UPDATE_DATE field
-func now() int64 {
-	return time.Now().UnixNano() / 1000000
+// Now returns current time with milliseconds, as used by operation UPDATE_DATE field
+func Now() int {
+	return int(time.Now().UnixNano() / 1000000)
 }
