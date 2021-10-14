@@ -90,7 +90,7 @@ func (sdc *serviceDiscoveryClient) CreateService(ctx context.Context, service *m
 		return nsErr
 	}
 
-	if nsErr == nil && nsId == "" {
+	if nsId == "" {
 		nsOutput, nsErr := sdc.sdApi.CreateHttpNamespace(ctx, &sd.CreateHttpNamespaceInput{
 			Name: &service.Namespace,
 		})
@@ -131,7 +131,7 @@ func (sdc *serviceDiscoveryClient) WaitUntilSuccessOperation(ctx context.Context
 			OperationId: operationId,
 		})
 		if opErr != nil {
-			return false, opErr
+			return true, opErr
 		}
 
 		if opResult.Operation.Status == types.OperationStatusFail {
