@@ -23,8 +23,10 @@ type Endpoint struct {
 	Attributes map[string]string
 }
 
-const ipv4Attr = "AWS_INSTANCE_IPV4"
-const portAttr = "AWS_INSTANCE_PORT"
+const (
+	Ipv4Attr = "AWS_INSTANCE_IPV4"
+	PortAttr = "AWS_INSTANCE_PORT"
+)
 
 // NewEndpointFromInstance converts a Cloud Map InstanceSummary to an endpoint
 func NewEndpointFromInstance(inst *types.InstanceSummary) (*Endpoint, error) {
@@ -33,14 +35,14 @@ func NewEndpointFromInstance(inst *types.InstanceSummary) (*Endpoint, error) {
 		Attributes: make(map[string]string, 0),
 	}
 
-	if ipv4, hasIp := inst.Attributes[ipv4Attr]; hasIp {
+	if ipv4, hasIp := inst.Attributes[Ipv4Attr]; hasIp {
 		endpoint.IP = ipv4
 	} else {
 		return nil, errors.New(fmt.Sprintf("cannot convert service instance %s to endpoint without IP address", *inst.Id))
 	}
 
-	if portStr, hasPort := inst.Attributes[portAttr]; hasPort {
-		port, parseError := strconv.Atoi(portStr)
+	if portStr, hasPort := inst.Attributes[PortAttr]; hasPort {
+		port, parseError := strconv.ParseUint(portStr, 10, 16)
 
 		if parseError != nil {
 			return nil, parseError
@@ -52,7 +54,7 @@ func NewEndpointFromInstance(inst *types.InstanceSummary) (*Endpoint, error) {
 	}
 
 	for key, val := range inst.Attributes {
-		if key != ipv4Attr && key != portAttr {
+		if key != Ipv4Attr && key != PortAttr {
 			endpoint.Attributes[key] = val
 		}
 	}
@@ -64,10 +66,10 @@ func NewEndpointFromInstance(inst *types.InstanceSummary) (*Endpoint, error) {
 func (e *Endpoint) GetAttributes() map[string]string {
 	attrs := make(map[string]string, 0)
 
-	attrs[ipv4Attr] = e.IP
+	attrs[Ipv4Attr] = e.IP
 
 	port := strconv.FormatInt(int64(e.Port), 10)
-	attrs[portAttr] = port
+	attrs[PortAttr] = port
 
 	for key, val := range e.Attributes {
 		attrs[key] = val
