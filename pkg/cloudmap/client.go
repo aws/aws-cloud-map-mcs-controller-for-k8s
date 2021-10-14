@@ -2,7 +2,6 @@ package cloudmap
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -10,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/util/cache"
+	"math"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"time"
 )
@@ -86,9 +86,7 @@ func (sdc *serviceDiscoveryClient) CreateService(ctx context.Context, service *m
 	sdc.log.Info("creating a new service", "namespace", service.Namespace, "name", service.Name)
 
 	nsId, nsErr := sdc.getNamespaceId(ctx, service.Namespace)
-
-	if nsErr != nil {
-
+	if nsErr == nil && nsId == "" {
 		nsOutput, nsErr := sdc.sdApi.CreateHttpNamespace(ctx, &sd.CreateHttpNamespaceInput{
 			Name: &service.Namespace,
 		})
@@ -122,25 +120,27 @@ func (sdc *serviceDiscoveryClient) CreateService(ctx context.Context, service *m
 	return sdc.RegisterEndpoints(ctx, service)
 }
 func (sdc *serviceDiscoveryClient) WaitUntilSuccessOperation(ctx context.Context, operationId *string) (*sd.GetOperationOutput, error) {
-
+	var retry bool
+	retries := 0
 	opResult, opErr := sdc.sdApi.GetOperation(ctx, &sd.GetOperationInput{
 		OperationId: operationId,
 	})
 	if opErr != nil {
-		return nil, opErr
+		return opResult, opErr
 	}
-	for opResult.Operation.Status == types.OperationStatusPending || opResult.Operation.Status == types.OperationStatusSubmitted {
+	if opResult.Operation.Status != types.OperationStatusSuccess {
+		retry = true
+	}
+	for retry {
 
+		time.Sleep(time.Duration(math.Pow(float64(2), float64(retries))) * 100 * time.Millisecond)
 		opResult, opErr = sdc.sdApi.GetOperation(ctx, &sd.GetOperationInput{
 			OperationId: operationId,
 		})
-		if opErr != nil {
-			break
+		if opErr != nil || opResult.Operation.Status == types.OperationStatusSuccess {
+			retry = false
 		}
-	}
-	if opResult.Operation.Status == types.OperationStatusFail {
-		opErr = fmt.Errorf("failed to create namespace. error:  %s", *opResult.Operation.ErrorMessage)
-		return nil, opErr
+		retries++
 	}
 	return opResult, opErr
 }
@@ -213,11 +213,13 @@ func (sdc *serviceDiscoveryClient) getNamespaceId(ctx context.Context, nsName st
 
 	nsId, err := sdc.getNamespaceIdFromCloudMap(ctx, nsName)
 
-	if err != nil {
+	if err != nil  {
 		return "", err
 	}
 
-	sdc.namespaceIdCache.Add(nsName, nsId, defaultNamespaceIdCacheTTL)
+	if nsId != "" {
+		sdc.namespaceIdCache.Add(nsName, nsId, defaultNamespaceIdCacheTTL)
+	}
 
 	return nsId, err
 }
@@ -239,7 +241,7 @@ func (sdc *serviceDiscoveryClient) getNamespaceIdFromCloudMap(ctx context.Contex
 		}
 	}
 
-	return "", errors.New(fmt.Sprintf("namespace %s not found", nsName))
+	return "", nil
 }
 
 func (sdc *serviceDiscoveryClient) getServiceId(ctx context.Context, nsName string, svcName string) (string, error) {
@@ -282,7 +284,7 @@ func (sdc *serviceDiscoveryClient) listServicesFromCloudMap(ctx context.Context,
 	svcs := make([]*types.ServiceSummary, 0)
 
 	nsId, nsErr := sdc.getNamespaceId(ctx, nsName)
-	if nsErr != nil {
+	if nsErr != nil || nsId == "" {
 		return svcs, nil
 	}
 
