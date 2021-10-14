@@ -131,7 +131,7 @@ func (sdc *serviceDiscoveryClient) WaitUntilSuccessOperation(ctx context.Context
 			OperationId: operationId,
 		})
 		if opErr != nil {
-			return true, opErr
+			return false, opErr
 		}
 
 		if opResult.Operation.Status == types.OperationStatusFail {
