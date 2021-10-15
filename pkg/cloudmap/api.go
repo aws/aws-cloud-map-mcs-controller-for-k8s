@@ -15,6 +15,9 @@ import (
 // ServiceDiscoveryApi handles the AWS Cloud Map API request and response processing logic, and converts results to
 // internal data structures. It manages all interactions with the AWS SDK.
 type ServiceDiscoveryApi interface {
+	// ListNamespaces returns a list of all namespaces.
+	ListNamespaces(ctx context.Context) (namespaces []*Resource, err error)
+
 	// ListServices returns a list of services for a given namespace.
 	ListServices(ctx context.Context, namespaceId string) (services []*Resource, err error)
 
@@ -24,11 +27,8 @@ type ServiceDiscoveryApi interface {
 	// ListOperations returns a map of operations to their status matching a list of filters.
 	ListOperations(ctx context.Context, opFilters []types.OperationFilter) (operationStatusMap map[string]types.OperationStatus, err error)
 
-	// GetNamespaceId returns the namespace ID for a given namespace name.
-	GetNamespaceId(ctx context.Context, namespaceName string) (namespaceId string, err error)
-
-	// GetOperationErrorMessage returns the error message for a given operation.
-	GetOperationErrorMessage(ctx context.Context, operationId string) (operationError string, err error)
+	// GetOperation returns an operation.
+	GetOperation(ctx context.Context, operationId string) (operation *types.Operation, err error)
 
 	// CreateHttpNamespace creates a HTTP namespace in AWS Cloud Map for a given name.
 	CreateHttpNamespace(ctx context.Context, namespaceName string) (operationId string, err error)
@@ -65,6 +65,27 @@ func NewServiceDiscoveryApiFromConfig(cfg *aws.Config) ServiceDiscoveryApi {
 	}
 }
 
+func (sdApi *serviceDiscoveryApi) ListNamespaces(ctx context.Context) ([]*Resource, error) {
+	namespaces := make([]*Resource, 0)
+	pages := sd.NewListNamespacesPaginator(sdApi.awsFacade, &sd.ListNamespacesInput{})
+
+	for pages.HasMorePages() {
+		output, err := pages.NextPage(ctx)
+		if err != nil {
+			return namespaces, err
+		}
+
+		for _, ns := range output.Namespaces {
+			namespaces = append(namespaces, &Resource{
+				Id:   aws.ToString(ns.Id),
+				Name: aws.ToString(ns.Name),
+			})
+		}
+	}
+
+	return namespaces, nil
+}
+
 func (sdApi *serviceDiscoveryApi) ListServices(ctx context.Context, nsId string) ([]*Resource, error) {
 	svcs := make([]*Resource, 0)
 
@@ -72,6 +93,7 @@ func (sdApi *serviceDiscoveryApi) ListServices(ctx context.Context, nsId string)
 		Name:   types.ServiceFilterNameNamespaceId,
 		Values: []string{nsId},
 	}
+	sdApi.log.Info("paginating", "nsId", nsId)
 
 	pages := sd.NewListServicesPaginator(sdApi.awsFacade, &sd.ListServicesInput{Filters: []types.ServiceFilter{filter}})
 
@@ -140,35 +162,15 @@ func (sdApi *serviceDiscoveryApi) ListOperations(ctx context.Context, opFilters 
 	return opStatusMap, nil
 }
 
-func (sdApi *serviceDiscoveryApi) GetNamespaceId(ctx context.Context, nsName string) (nsID string, err error) {
-	pages := sd.NewListNamespacesPaginator(sdApi.awsFacade, &sd.ListNamespacesInput{})
-
-	for pages.HasMorePages() {
-		output, err := pages.NextPage(ctx)
-		if err != nil {
-			return "", err
-		}
-
-		for _, ns := range output.Namespaces {
-			if nsName == aws.ToString(ns.Name) {
-				return aws.ToString(ns.Id), nil
-			}
-		}
-	}
-
-	return "", fmt.Errorf("namespace %s not found", nsName)
-}
-
-func (sdApi *serviceDiscoveryApi) GetOperationErrorMessage(ctx context.Context, opId string) (operationError string, err error) {
+func (sdApi *serviceDiscoveryApi) GetOperation(ctx context.Context, opId string) (operation *types.Operation, err error) {
 	opResp, err := sdApi.awsFacade.GetOperation(ctx, &sd.GetOperationInput{OperationId: &opId})
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return aws.ToString(opResp.Operation.ErrorMessage), nil
+	return opResp.Operation, nil
 }
-
 
 func (sdApi *serviceDiscoveryApi) CreateHttpNamespace(ctx context.Context, nsName string) (opId string, err error) {
 	output, err := sdApi.awsFacade.CreateHttpNamespace(ctx, &sd.CreateHttpNamespaceInput{
@@ -182,7 +184,7 @@ func (sdApi *serviceDiscoveryApi) CreateHttpNamespace(ctx context.Context, nsNam
 	return aws.ToString(output.OperationId), nil
 }
 
-func (sdApi *serviceDiscoveryApi) CreateService(ctx context.Context, nsId string, svcName string) (opId string, err error) {
+func (sdApi *serviceDiscoveryApi) CreateService(ctx context.Context, nsId string, svcName string) (svcId string, err error) {
 	output, err := sdApi.awsFacade.CreateService(ctx, &sd.CreateServiceInput{
 		NamespaceId: &nsId,
 		Name:        &svcName})
@@ -191,7 +193,9 @@ func (sdApi *serviceDiscoveryApi) CreateService(ctx context.Context, nsId string
 		return "", err
 	}
 
-	return aws.ToString(output.Service.Id), nil
+	svcId = aws.ToString(output.Service.Id)
+	sdApi.log.Info("service created", "svcId", svcId)
+	return svcId, nil
 }
 
 func (sdApi *serviceDiscoveryApi) RegisterInstance(ctx context.Context, svcId string, instId string, instAttrs map[string]string) (opId string, err error) {
@@ -223,30 +227,24 @@ func (sdApi *serviceDiscoveryApi) DeregisterInstance(ctx context.Context, svcId 
 }
 
 func (sdApi *serviceDiscoveryApi) PollCreateNamespace(ctx context.Context, opId string) (nsId string, err error) {
-	err = wait.PollUntil(defaultOperationPollInterval, func() (done bool, pollErr error) {
-		opResult, pollErr := sdApi.awsFacade.GetOperation(ctx, &sd.GetOperationInput{
-			OperationId: &opId,
-		})
+	return nsId, wait.Poll(defaultOperationPollInterval, defaultOperationPollTimeout, func() (done bool, pollErr error) {
+		sdApi.log.Info("polling operation", "opId", opId)
+		op, opErr := sdApi.GetOperation(ctx, opId)
 
-		if pollErr != nil {
-			return true, pollErr
+		if opErr != nil {
+			return true, opErr
 		}
 
-		if opResult.Operation.Status == types.OperationStatusFail {
-			return true, fmt.Errorf("failed to create namespace.Reason: %s", *opResult.Operation.ErrorMessage)
+		if op.Status == types.OperationStatusFail {
+			return true, fmt.Errorf("failed to create namespace: %s", aws.ToString(op.ErrorMessage))
 		}
 
-		if opResult.Operation.Status == types.OperationStatusSuccess {
-			nsId = opResult.Operation.Targets[string(types.OperationTargetTypeNamespace)]
+		if op.Status == types.OperationStatusSuccess {
+			nsId = op.Targets[string(types.OperationTargetTypeNamespace)]
+			sdApi.log.Info("namespace created", "nsId", nsId)
 			return true, nil
 		}
 
 		return false, nil
-	}, ctx.Done())
-
-	if err != nil {
-		return "", err
-	}
-
-	return nsId, nil
+	})
 }

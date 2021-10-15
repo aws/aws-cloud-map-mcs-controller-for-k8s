@@ -3,6 +3,7 @@ package cloudmap
 import (
 	"context"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -15,7 +16,7 @@ const (
 	// Interval between each getOperation call.
 	defaultOperationPollInterval = 3 * time.Second
 
-	//
+	// Time until we stop polling the operation
 	defaultOperationPollTimeout = 5 * time.Minute
 )
 
@@ -60,7 +61,7 @@ func NewDeregisterInstancePoller(sdApi ServiceDiscoveryApi, serviceId string, op
 	return &poller
 }
 
-func (opPoller *operationPoller) Poll(ctx context.Context) error {
+func (opPoller *operationPoller) Poll(ctx context.Context) (err error) {
 	if len(opPoller.opIds) == 0 {
 		opPoller.log.Info("no operations to poll")
 		return nil
@@ -134,13 +135,13 @@ func (opPoller *operationPoller) buildFilters() []types.OperationFilter {
 
 // getFailedOpReason returns operation error message, which is not available in ListOperations response
 func (opPoller *operationPoller) getFailedOpReason(ctx context.Context, opId string) string {
-	msg, err := opPoller.sdApi.GetOperationErrorMessage(ctx, opId)
+	op, err := opPoller.sdApi.GetOperation(ctx, opId)
 
 	if err != nil {
 		return "failed to retrieve operation failure reason"
 	}
 
-	return msg
+	return aws.ToString(op.ErrorMessage)
 }
 
 // Now returns current time with milliseconds, as used by operation UPDATE_DATE field
