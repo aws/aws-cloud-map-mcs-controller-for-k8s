@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	cloudmapmock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/api/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
@@ -37,7 +36,6 @@ func TestServiceExportReconciler_Reconcile_NewServiceExport(t *testing.T) {
 	}
 
 	cloudmapMock := cloudmapmock.NewMockServiceDiscoveryClient(mockController)
-	fmt.Printf("test output")
 	// expected interactions with the Cloud Map client
 	cloudmapMock.EXPECT().GetService(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
 	cloudmapMock.EXPECT().CreateService(gomock.Any(), gomock.Any()).Return(nil).Times(1)
