@@ -62,8 +62,8 @@ func NewEndpointFromInstance(inst *types.InstanceSummary) (*Endpoint, error) {
 	return &endpoint, nil
 }
 
-// GetAttributes extracts endpoint attributes for Cloud Map service instance registration
-func (e *Endpoint) GetAttributes() map[string]string {
+// GetCloudMapAttributes extracts endpoint attributes for Cloud Map service instance registration
+func (e *Endpoint) GetCloudMapAttributes() map[string]string {
 	attrs := make(map[string]string, 0)
 
 	attrs[Ipv4Attr] = e.IP
@@ -78,6 +78,7 @@ func (e *Endpoint) GetAttributes() map[string]string {
 	return attrs
 }
 
+// Equals evaluates if two Endpoints are "deeply equal" (including all fields)
 func (e *Endpoint) Equals(other *Endpoint) bool {
 	return reflect.DeepEqual(e, other)
 }
