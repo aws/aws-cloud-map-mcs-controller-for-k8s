@@ -2,7 +2,6 @@ package cloudmap
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -10,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/util/cache"
+	"k8s.io/apimachinery/pkg/util/wait"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"time"
 )
@@ -86,9 +86,26 @@ func (sdc *serviceDiscoveryClient) CreateService(ctx context.Context, service *m
 	sdc.log.Info("creating a new service", "namespace", service.Namespace, "name", service.Name)
 
 	nsId, nsErr := sdc.getNamespaceId(ctx, service.Namespace)
-
 	if nsErr != nil {
 		return nsErr
+	}
+
+	if nsId == "" {
+		nsOutput, nsErr := sdc.sdApi.CreateHttpNamespace(ctx, &sd.CreateHttpNamespaceInput{
+			Name: &service.Namespace,
+		})
+
+		if nsErr != nil {
+			return nsErr
+		}
+		opResult, opErr := sdc.WaitUntilSuccessOperation(ctx, nsOutput.OperationId)
+		if opErr != nil {
+			return opErr
+		}
+		nsId = opResult.Operation.Targets["NAMESPACE"]
+		sdc.namespaceIdCache.Add(
+			service.Namespace,
+			nsId, defaultNamespaceIdCacheTTL)
 	}
 
 	//TODO: Handle non-http namespaces
@@ -105,6 +122,32 @@ func (sdc *serviceDiscoveryClient) CreateService(ctx context.Context, service *m
 		*sdSrv.Service.Id, defaultServiceIdCacheTTL)
 
 	return sdc.RegisterEndpoints(ctx, service)
+}
+func (sdc *serviceDiscoveryClient) WaitUntilSuccessOperation(ctx context.Context, operationId *string) (*sd.GetOperationOutput, error) {
+	opResult := &sd.GetOperationOutput{}
+	var opErr error
+	err := wait.PollUntil(defaultOperationPollInterval, func() (bool, error) {
+		opResult, opErr = sdc.sdApi.GetOperation(ctx, &sd.GetOperationInput{
+			OperationId: operationId,
+		})
+		if opErr != nil {
+			return true, opErr
+		}
+
+		if opResult.Operation.Status == types.OperationStatusFail {
+			return true, fmt.Errorf("failed to create namespace.Reason: %s", *opResult.Operation.ErrorMessage)
+		}
+
+		if opResult.Operation.Status == types.OperationStatusSuccess {
+			return true, nil
+		}
+
+		return false, nil
+	}, ctx.Done())
+	if err != nil {
+		return nil, err
+	}
+	return opResult, nil
 }
 
 func (sdc *serviceDiscoveryClient) GetService(ctx context.Context, namespaceName string, serviceName string) (*model.Service, error) {
@@ -179,7 +222,9 @@ func (sdc *serviceDiscoveryClient) getNamespaceId(ctx context.Context, nsName st
 		return "", err
 	}
 
-	sdc.namespaceIdCache.Add(nsName, nsId, defaultNamespaceIdCacheTTL)
+	if nsId != "" {
+		sdc.namespaceIdCache.Add(nsName, nsId, defaultNamespaceIdCacheTTL)
+	}
 
 	return nsId, err
 }
@@ -201,7 +246,7 @@ func (sdc *serviceDiscoveryClient) getNamespaceIdFromCloudMap(ctx context.Contex
 		}
 	}
 
-	return "", errors.New(fmt.Sprintf("namespace %s not found", nsName))
+	return "", nil
 }
 
 func (sdc *serviceDiscoveryClient) getServiceId(ctx context.Context, nsName string, svcName string) (string, error) {
@@ -244,7 +289,7 @@ func (sdc *serviceDiscoveryClient) listServicesFromCloudMap(ctx context.Context,
 	svcs := make([]*types.ServiceSummary, 0)
 
 	nsId, nsErr := sdc.getNamespaceId(ctx, nsName)
-	if nsErr != nil {
+	if nsErr != nil || nsId == "" {
 		return svcs, nil
 	}
 
