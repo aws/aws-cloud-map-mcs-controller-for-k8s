@@ -179,7 +179,7 @@ func (sdc *serviceDiscoveryClient) RegisterEndpoints(ctx context.Context, servic
 
 	for _, endpt := range service.Endpoints {
 		go func(endpt *model.Endpoint) {
-			opId, endptErr := sdc.sdApi.RegisterInstance(ctx, svcId, endpt.Id, endpt.GetAttributes())
+			opId, endptErr := sdc.sdApi.RegisterInstance(ctx, svcId, endpt.Id, endpt.GetCloudMapAttributes())
 			opCollector.Add(endpt.Id, opId, endptErr)
 		}(endpt)
 	}
