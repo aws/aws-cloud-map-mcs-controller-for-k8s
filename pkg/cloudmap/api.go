@@ -93,7 +93,6 @@ func (sdApi *serviceDiscoveryApi) ListServices(ctx context.Context, nsId string)
 		Name:   types.ServiceFilterNameNamespaceId,
 		Values: []string{nsId},
 	}
-	sdApi.log.Info("paginating", "nsId", nsId)
 
 	pages := sd.NewListServicesPaginator(sdApi.awsFacade, &sd.ListServicesInput{Filters: []types.ServiceFilter{filter}})
 
