@@ -11,11 +11,11 @@ type OperationCollector interface {
 	// Add calls an operation provider function to asynchronously collect operations to poll.
 	Add(operationProvider func() (operationId string, err error))
 
-	// Collect waits for all operation results and returns a list of the successfully created operation IDs.
+	// Collect waits for all create operation results to be provided and returns a list of the successfully created operation IDs.
 	Collect() []string
 
 	// GetStartTime returns the start time range to poll the collected operations.
-	GetStartTime() int
+	GetStartTime() int64
 
 	// IsAllOperationsCreated returns true if all operations were created successfully.
 	IsAllOperationsCreated() bool
@@ -25,7 +25,7 @@ type opCollector struct {
 	log              logr.Logger
 	opChan           chan opResult
 	wg               sync.WaitGroup
-	startTime        int
+	startTime        int64
 	createOpsSuccess bool
 }
 
@@ -75,7 +75,7 @@ func (opColl *opCollector) Collect() []string {
 	return opIds
 }
 
-func (opColl *opCollector) GetStartTime() int {
+func (opColl *opCollector) GetStartTime() int64 {
 	return opColl.startTime
 }
 
