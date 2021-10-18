@@ -2,7 +2,7 @@ package cloudmap
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	"github.com/go-logr/logr"
@@ -18,6 +18,8 @@ const (
 
 	// Time until we stop polling the operation
 	defaultOperationPollTimeout = 5 * time.Minute
+
+	operationPollTimoutErrorMessage = "timed out while polling operations"
 )
 
 // OperationPoller polls a list operations for a terminal status.
@@ -27,10 +29,11 @@ type OperationPoller interface {
 }
 
 type operationPoller struct {
-	log   logr.Logger
-	sdApi ServiceDiscoveryApi
-	opIds []string
+	log     logr.Logger
+	sdApi   ServiceDiscoveryApi
+	timeout time.Duration
 
+	opIds  []string
 	svcId  string
 	opType types.OperationType
 	start  int64
@@ -38,8 +41,9 @@ type operationPoller struct {
 
 func newOperationPoller(sdApi ServiceDiscoveryApi, svcId string, opIds []string, startTime int64) operationPoller {
 	return operationPoller{
-		log:   ctrl.Log.WithName("cloudmap"),
-		sdApi: sdApi,
+		log:     ctrl.Log.WithName("cloudmap"),
+		sdApi:   sdApi,
+		timeout: defaultOperationPollTimeout,
 
 		opIds: opIds,
 		svcId: svcId,
@@ -67,7 +71,7 @@ func (opPoller *operationPoller) Poll(ctx context.Context) (err error) {
 		return nil
 	}
 
-	return wait.Poll(defaultOperationPollInterval, defaultOperationPollTimeout, func() (done bool, err error) {
+	err = wait.Poll(defaultOperationPollInterval, opPoller.timeout, func() (done bool, err error) {
 		opPoller.log.Info("polling operations", "operations", opPoller.opIds)
 
 		sdOps, err := opPoller.sdApi.ListOperations(ctx, opPoller.buildFilters())
@@ -92,14 +96,20 @@ func (opPoller *operationPoller) Poll(ctx context.Context) (err error) {
 
 		if len(failedOps) != 0 {
 			for _, failedOp := range failedOps {
-				opPoller.log.Info("Operation failed", "failedOp", failedOp, "reason", opPoller.getFailedOpReason(ctx, failedOp))
+				opPoller.log.Info("operation failed", "failedOp", failedOp, "reason", opPoller.getFailedOpReason(ctx, failedOp))
 			}
-			return true, fmt.Errorf("operation failure")
+			return true, errors.New("operation failure")
 		}
 
 		opPoller.log.Info("operations completed successfully")
 		return true, nil
 	})
+
+	if err == wait.ErrWaitTimeout {
+		return errors.New(operationPollTimoutErrorMessage)
+	}
+
+	return err
 }
 
 func (opPoller *operationPoller) buildFilters() []types.OperationFilter {
