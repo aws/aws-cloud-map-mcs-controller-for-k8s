@@ -16,10 +16,10 @@ import (
 // internal data structures. It manages all interactions with the AWS SDK.
 type ServiceDiscoveryApi interface {
 	// ListNamespaces returns a list of all namespaces.
-	ListNamespaces(ctx context.Context) (namespaces []*Resource, err error)
+	ListNamespaces(ctx context.Context) (namespaces []*model.Resource, err error)
 
 	// ListServices returns a list of services for a given namespace.
-	ListServices(ctx context.Context, namespaceId string) (services []*Resource, err error)
+	ListServices(ctx context.Context, namespaceId string) (services []*model.Resource, err error)
 
 	// ListInstances returns a list of service instances registered to a given service.
 	ListInstances(ctx context.Context, serviceId string) ([]*model.Endpoint, error)
@@ -51,12 +51,6 @@ type serviceDiscoveryApi struct {
 	awsFacade AwsFacade
 }
 
-// Resource encapsulates a ID/name pair
-type Resource struct {
-	Id   string
-	Name string
-}
-
 // NewServiceDiscoveryApiFromConfig creates a new AWS Cloud Map API connection manager from an AWS client config.
 func NewServiceDiscoveryApiFromConfig(cfg *aws.Config) ServiceDiscoveryApi {
 	return &serviceDiscoveryApi{
@@ -65,8 +59,8 @@ func NewServiceDiscoveryApiFromConfig(cfg *aws.Config) ServiceDiscoveryApi {
 	}
 }
 
-func (sdApi *serviceDiscoveryApi) ListNamespaces(ctx context.Context) ([]*Resource, error) {
-	namespaces := make([]*Resource, 0)
+func (sdApi *serviceDiscoveryApi) ListNamespaces(ctx context.Context) ([]*model.Resource, error) {
+	namespaces := make([]*model.Resource, 0)
 	pages := sd.NewListNamespacesPaginator(sdApi.awsFacade, &sd.ListNamespacesInput{})
 
 	for pages.HasMorePages() {
@@ -76,7 +70,7 @@ func (sdApi *serviceDiscoveryApi) ListNamespaces(ctx context.Context) ([]*Resour
 		}
 
 		for _, ns := range output.Namespaces {
-			namespaces = append(namespaces, &Resource{
+			namespaces = append(namespaces, &model.Resource{
 				Id:   aws.ToString(ns.Id),
 				Name: aws.ToString(ns.Name),
 			})
@@ -86,8 +80,8 @@ func (sdApi *serviceDiscoveryApi) ListNamespaces(ctx context.Context) ([]*Resour
 	return namespaces, nil
 }
 
-func (sdApi *serviceDiscoveryApi) ListServices(ctx context.Context, nsId string) ([]*Resource, error) {
-	svcs := make([]*Resource, 0)
+func (sdApi *serviceDiscoveryApi) ListServices(ctx context.Context, nsId string) ([]*model.Resource, error) {
+	svcs := make([]*model.Resource, 0)
 
 	filter := types.ServiceFilter{
 		Name:   types.ServiceFilterNameNamespaceId,
@@ -103,7 +97,7 @@ func (sdApi *serviceDiscoveryApi) ListServices(ctx context.Context, nsId string)
 		}
 
 		for _, svc := range output.Services {
-			svcs = append(svcs, &Resource{
+			svcs = append(svcs, &model.Resource{
 				Id:   aws.ToString(svc.Id),
 				Name: aws.ToString(svc.Name),
 			})
@@ -226,12 +220,12 @@ func (sdApi *serviceDiscoveryApi) DeregisterInstance(ctx context.Context, svcId 
 }
 
 func (sdApi *serviceDiscoveryApi) PollCreateNamespace(ctx context.Context, opId string) (nsId string, err error) {
-	return nsId, wait.Poll(defaultOperationPollInterval, defaultOperationPollTimeout, func() (done bool, pollErr error) {
+	err = wait.Poll(defaultOperationPollInterval, defaultOperationPollTimeout, func() (done bool, err error) {
 		sdApi.log.Info("polling operation", "opId", opId)
-		op, opErr := sdApi.GetOperation(ctx, opId)
+		op, err := sdApi.GetOperation(ctx, opId)
 
-		if opErr != nil {
-			return true, opErr
+		if err != nil {
+			return true, err
 		}
 
 		if op.Status == types.OperationStatusFail {
@@ -246,4 +240,10 @@ func (sdApi *serviceDiscoveryApi) PollCreateNamespace(ctx context.Context, opId 
 
 		return false, nil
 	})
+
+	if err == wait.ErrWaitTimeout {
+		err = fmt.Errorf(operationPollTimoutErrorMessage)
+	}
+
+	return nsId, err
 }

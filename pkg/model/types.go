@@ -10,6 +10,12 @@ import (
 	"strings"
 )
 
+// Resource encapsulates a ID/name pair
+type Resource struct {
+	Id   string
+	Name string
+}
+
 type Service struct {
 	Namespace string
 	Name      string
