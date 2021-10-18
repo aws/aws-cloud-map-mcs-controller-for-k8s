@@ -33,10 +33,10 @@ type operationPoller struct {
 
 	svcId  string
 	opType types.OperationType
-	start  int
+	start  int64
 }
 
-func newOperationPoller(sdApi ServiceDiscoveryApi, svcId string, opIds []string, startTime int) operationPoller {
+func newOperationPoller(sdApi ServiceDiscoveryApi, svcId string, opIds []string, startTime int64) operationPoller {
 	return operationPoller{
 		log:   ctrl.Log.WithName("cloudmap"),
 		sdApi: sdApi,
@@ -48,14 +48,14 @@ func newOperationPoller(sdApi ServiceDiscoveryApi, svcId string, opIds []string,
 }
 
 // NewRegisterInstancePoller creates a new operation poller for register instance operations.
-func NewRegisterInstancePoller(sdApi ServiceDiscoveryApi, serviceId string, opIds []string, startTime int) OperationPoller {
+func NewRegisterInstancePoller(sdApi ServiceDiscoveryApi, serviceId string, opIds []string, startTime int64) OperationPoller {
 	poller := newOperationPoller(sdApi, serviceId, opIds, startTime)
 	poller.opType = types.OperationTypeRegisterInstance
 	return &poller
 }
 
 // NewDeregisterInstancePoller creates a new operation poller for de-register instance operations.
-func NewDeregisterInstancePoller(sdApi ServiceDiscoveryApi, serviceId string, opIds []string, startTime int) OperationPoller {
+func NewDeregisterInstancePoller(sdApi ServiceDiscoveryApi, serviceId string, opIds []string, startTime int64) OperationPoller {
 	poller := newOperationPoller(sdApi, serviceId, opIds, startTime)
 	poller.opType = types.OperationTypeDeregisterInstance
 	return &poller
@@ -124,9 +124,9 @@ func (opPoller *operationPoller) buildFilters() []types.OperationFilter {
 		Name:      types.OperationFilterNameUpdateDate,
 		Condition: types.FilterConditionBetween,
 		Values: []string{
-			strconv.Itoa(opPoller.start),
+			Itoa(opPoller.start),
 			// Add one minute to end range in case op updates while list request is in flight
-			strconv.Itoa(Now() + 60000),
+			Itoa(Now() + 60000),
 		},
 	}
 
@@ -143,8 +143,11 @@ func (opPoller *operationPoller) getFailedOpReason(ctx context.Context, opId str
 
 	return aws.ToString(op.ErrorMessage)
 }
+func Itoa(i int64) string {
+	return strconv.FormatInt(i, 10)
+}
 
-// Now returns current time with milliseconds, as used by operation UPDATE_DATE field
-func Now() int {
-	return int(time.Now().UnixNano() / 1000000)
+// Now returns current time with milliseconds, as used by operation filter UPDATE_DATE field
+func Now() int64 {
+	return time.Now().UnixNano() / 1000000
 }

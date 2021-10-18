@@ -174,17 +174,15 @@ func (sdc *serviceDiscoveryClient) RegisterEndpoints(ctx context.Context, servic
 		return err
 	}
 
-	startTime := Now()
-	opCollector := NewOperationCollector(len(service.Endpoints))
+	opCollector := NewOperationCollector()
 
 	for _, endpt := range service.Endpoints {
-		go func(endpt *model.Endpoint) {
-			opId, endptErr := sdc.sdApi.RegisterInstance(ctx, svcId, endpt.Id, endpt.GetCloudMapAttributes())
-			opCollector.Add(endpt.Id, opId, endptErr)
-		}(endpt)
+		opCollector.Add(func() (opId string, err error) {
+			return sdc.sdApi.RegisterInstance(ctx, svcId, endpt.Id, endpt.GetCloudMapAttributes())
+		})
 	}
 
-	err = NewRegisterInstancePoller(sdc.sdApi, svcId, opCollector.Collect(), startTime).Poll(ctx)
+	err = NewRegisterInstancePoller(sdc.sdApi, svcId, opCollector.Collect(), opCollector.GetStartTime()).Poll(ctx)
 
 	// Evict cache entry so next list call reflects changes
 	sdc.evictEndpoints(svcId)
@@ -214,17 +212,15 @@ func (sdc *serviceDiscoveryClient) DeleteEndpoints(ctx context.Context, service 
 		return err
 	}
 
-	startTime := Now()
-	opCollector := NewOperationCollector(len(service.Endpoints))
+	opCollector := NewOperationCollector()
 
 	for _, endpt := range service.Endpoints {
-		go func(endpt *model.Endpoint) {
-			opId, endptErr := sdc.sdApi.DeregisterInstance(ctx, svcId, endpt.Id)
-			opCollector.Add(endpt.Id, opId, endptErr)
-		}(endpt)
+		opCollector.Add(func() (opId string, err error) {
+			return sdc.sdApi.DeregisterInstance(ctx, svcId, endpt.Id)
+		})
 	}
 
-	err = NewDeregisterInstancePoller(sdc.sdApi, svcId, opCollector.Collect(), startTime).Poll(ctx)
+	err = NewDeregisterInstancePoller(sdc.sdApi, svcId, opCollector.Collect(), opCollector.GetStartTime()).Poll(ctx)
 
 	// Evict cache entry so next list call reflects changes
 	sdc.evictEndpoints(svcId)
