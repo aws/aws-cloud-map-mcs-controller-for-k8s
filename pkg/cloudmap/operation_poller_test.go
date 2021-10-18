@@ -160,6 +160,30 @@ func TestOperationPoller_PollOpFailure(t *testing.T) {
 	assert.Equal(t, "operation failure", err.Error())
 }
 
+func TestOperationPoller_PollOpFailureAndMessageFailure(t *testing.T) {
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
+
+	p := NewRegisterInstancePoller(sdApi, svcId, []string{opId1, opId2}, startTime)
+
+	sdApi.EXPECT().
+		ListOperations(gomock.Any(), gomock.Any()).
+		Return(
+			map[string]types.OperationStatus{
+				opId1: types.OperationStatusFail,
+				opId2: types.OperationStatusSuccess,
+			}, nil)
+
+	sdApi.EXPECT().
+		GetOperation(gomock.Any(), opId1).
+		Return(nil, fmt.Errorf("failed to retrieve operation failure reason"))
+
+	err := p.Poll(context.TODO())
+	assert.Equal(t, "operation failure", err.Error())
+}
+
 func TestOperationPoller_PollTimeout(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
