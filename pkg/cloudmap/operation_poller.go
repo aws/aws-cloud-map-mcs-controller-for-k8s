@@ -2,7 +2,7 @@ package cloudmap
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	"github.com/go-logr/logr"
@@ -96,9 +96,9 @@ func (opPoller *operationPoller) Poll(ctx context.Context) (err error) {
 
 		if len(failedOps) != 0 {
 			for _, failedOp := range failedOps {
-				opPoller.log.Info("Operation failed", "failedOp", failedOp, "reason", opPoller.getFailedOpReason(ctx, failedOp))
+				opPoller.log.Info("operation failed", "failedOp", failedOp, "reason", opPoller.getFailedOpReason(ctx, failedOp))
 			}
-			return true, fmt.Errorf("operation failure")
+			return true, errors.New("operation failure")
 		}
 
 		opPoller.log.Info("operations completed successfully")
@@ -106,7 +106,7 @@ func (opPoller *operationPoller) Poll(ctx context.Context) (err error) {
 	})
 
 	if err == wait.ErrWaitTimeout {
-		return fmt.Errorf(operationPollTimoutErrorMessage)
+		return errors.New(operationPollTimoutErrorMessage)
 	}
 
 	return err

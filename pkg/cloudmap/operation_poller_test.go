@@ -2,7 +2,7 @@ package cloudmap
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	testing2 "github.com/go-logr/logr/testing"
@@ -124,7 +124,7 @@ func TestOperationPoller_PollFailure(t *testing.T) {
 
 	p := NewRegisterInstancePoller(sdApi, svcId, []string{opId1, opId2}, startTime)
 
-	pollErr := fmt.Errorf("error polling operations")
+	pollErr := errors.New("error polling operations")
 
 	sdApi.EXPECT().
 		ListOperations(gomock.Any(), gomock.Any()).
@@ -178,7 +178,7 @@ func TestOperationPoller_PollOpFailureAndMessageFailure(t *testing.T) {
 
 	sdApi.EXPECT().
 		GetOperation(gomock.Any(), opId1).
-		Return(nil, fmt.Errorf("failed to retrieve operation failure reason"))
+		Return(nil, errors.New("failed to retrieve operation failure reason"))
 
 	err := p.Poll(context.TODO())
 	assert.Equal(t, "operation failure", err.Error())

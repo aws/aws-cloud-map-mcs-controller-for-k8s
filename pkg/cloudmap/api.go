@@ -2,6 +2,7 @@ package cloudmap
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -242,7 +243,7 @@ func (sdApi *serviceDiscoveryApi) PollCreateNamespace(ctx context.Context, opId 
 	})
 
 	if err == wait.ErrWaitTimeout {
-		err = fmt.Errorf(operationPollTimoutErrorMessage)
+		err = errors.New(operationPollTimoutErrorMessage)
 	}
 
 	return nsId, err
