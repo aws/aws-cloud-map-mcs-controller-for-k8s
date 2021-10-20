@@ -249,12 +249,14 @@ func (sdc *serviceDiscoveryClient) getNamespaceId(ctx context.Context, nsName st
 	}
 
 	for _, ns := range namespaces {
-		sdc.cacheNamespaceId(nsName, nsId)
+		sdc.cacheNamespaceId(ns.Name, ns.Id)
 		if nsName == ns.Name {
 			nsId = ns.Id
 		}
 	}
 
+	// This will cache empty namespace IDs for namespaces not in Cloud Map
+	sdc.cacheNamespaceId(nsName, nsId)
 	return nsId, nil
 }
 
