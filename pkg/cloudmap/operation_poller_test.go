@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	testing2 "github.com/go-logr/logr/testing"
 	"github.com/golang/mock/gomock"
@@ -11,13 +12,6 @@ import (
 	"strconv"
 	"testing"
 	"time"
-)
-
-const (
-	svcId     = "test-svc-id"
-	opId1     = "operation-id-1"
-	opId2     = "operation-id-2"
-	startTime = 1
 )
 
 func TestOperationPoller_HappyCases(t *testing.T) {
@@ -32,13 +26,13 @@ func TestOperationPoller_HappyCases(t *testing.T) {
 	}{
 		{
 			constructor: func() OperationPoller {
-				return NewRegisterInstancePoller(sdApi, svcId, []string{opId1, opId2}, startTime)
+				return NewRegisterInstancePoller(sdApi, test.SvcId, []string{test.OpId1, test.OpId2}, test.OpStart)
 			},
 			expectedOpType: types.OperationTypeRegisterInstance,
 		},
 		{
 			constructor: func() OperationPoller {
-				return NewDeregisterInstancePoller(sdApi, svcId, []string{opId1, opId2}, startTime)
+				return NewDeregisterInstancePoller(sdApi, test.SvcId, []string{test.OpId1, test.OpId2}, test.OpStart)
 			},
 			expectedOpType: types.OperationTypeDeregisterInstance,
 		},
@@ -55,7 +49,7 @@ func TestOperationPoller_HappyCases(t *testing.T) {
 				assert.Contains(t, filters,
 					types.OperationFilter{
 						Name:   types.OperationFilterNameServiceId,
-						Values: []string{svcId},
+						Values: []string{test.SvcId},
 					})
 				assert.Contains(t, filters,
 					types.OperationFilter{
@@ -78,7 +72,7 @@ func TestOperationPoller_HappyCases(t *testing.T) {
 				assert.Equal(t, 2, len(timeFilter.Values))
 
 				filterStart, _ := strconv.Atoi(timeFilter.Values[0])
-				assert.Equal(t, startTime, filterStart)
+				assert.Equal(t, test.OpStart, filterStart)
 
 				firstEnd, _ = strconv.Atoi(timeFilter.Values[1])
 
@@ -94,8 +88,8 @@ func TestOperationPoller_HappyCases(t *testing.T) {
 					"Filter time frame for operations must increase between invocations of ListOperations")
 
 				return map[string]types.OperationStatus{
-					opId1: types.OperationStatusSuccess,
-					opId2: types.OperationStatusSuccess,
+					test.OpId1: types.OperationStatusSuccess,
+					test.OpId2: types.OperationStatusSuccess,
 				}, nil
 			})
 
@@ -111,7 +105,7 @@ func TestOperationPoller_PollEmpty(t *testing.T) {
 
 	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
 
-	p := NewRegisterInstancePoller(sdApi, svcId, []string{}, startTime)
+	p := NewRegisterInstancePoller(sdApi, test.SvcId, []string{}, test.OpStart)
 	err := p.Poll(context.TODO())
 	assert.Nil(t, err)
 }
@@ -122,7 +116,7 @@ func TestOperationPoller_PollFailure(t *testing.T) {
 
 	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
 
-	p := NewRegisterInstancePoller(sdApi, svcId, []string{opId1, opId2}, startTime)
+	p := NewRegisterInstancePoller(sdApi, test.SvcId, []string{test.OpId1, test.OpId2}, test.OpStart)
 
 	pollErr := errors.New("error polling operations")
 
@@ -140,20 +134,20 @@ func TestOperationPoller_PollOpFailure(t *testing.T) {
 
 	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
 
-	p := NewRegisterInstancePoller(sdApi, svcId, []string{opId1, opId2}, startTime)
+	p := NewRegisterInstancePoller(sdApi, test.SvcId, []string{test.OpId1, test.OpId2}, test.OpStart)
 
 	sdApi.EXPECT().
 		ListOperations(gomock.Any(), gomock.Any()).
 		Return(
 			map[string]types.OperationStatus{
-				opId1: types.OperationStatusSuccess,
-				opId2: types.OperationStatusFail,
+				test.OpId1: types.OperationStatusSuccess,
+				test.OpId2: types.OperationStatusFail,
 			}, nil)
 
 	opErr := "operation failure message"
 
 	sdApi.EXPECT().
-		GetOperation(gomock.Any(), opId2).
+		GetOperation(gomock.Any(), test.OpId2).
 		Return(&types.Operation{ErrorMessage: &opErr}, nil)
 
 	err := p.Poll(context.TODO())
@@ -166,18 +160,18 @@ func TestOperationPoller_PollOpFailureAndMessageFailure(t *testing.T) {
 
 	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
 
-	p := NewRegisterInstancePoller(sdApi, svcId, []string{opId1, opId2}, startTime)
+	p := NewRegisterInstancePoller(sdApi, test.SvcId, []string{test.OpId1, test.OpId2}, test.OpStart)
 
 	sdApi.EXPECT().
 		ListOperations(gomock.Any(), gomock.Any()).
 		Return(
 			map[string]types.OperationStatus{
-				opId1: types.OperationStatusFail,
-				opId2: types.OperationStatusSuccess,
+				test.OpId1: types.OperationStatusFail,
+				test.OpId2: types.OperationStatusSuccess,
 			}, nil)
 
 	sdApi.EXPECT().
-		GetOperation(gomock.Any(), opId1).
+		GetOperation(gomock.Any(), test.OpId1).
 		Return(nil, errors.New("failed to retrieve operation failure reason"))
 
 	err := p.Poll(context.TODO())
@@ -194,7 +188,7 @@ func TestOperationPoller_PollTimeout(t *testing.T) {
 		log:     testing2.TestLogger{T: t},
 		sdApi:   sdApi,
 		timeout: 2 * time.Millisecond,
-		opIds:   []string{opId1, opId2},
+		opIds:   []string{test.OpId1, test.OpId2},
 	}
 
 	sdApi.EXPECT().

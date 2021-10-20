@@ -37,9 +37,10 @@ func TestServiceExportReconciler_Reconcile_NewServiceExport(t *testing.T) {
 
 	cloudmapMock := cloudmapmock.NewMockServiceDiscoveryClient(mockController)
 	// expected interactions with the Cloud Map client
-	cloudmapMock.EXPECT().GetService(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
-	cloudmapMock.EXPECT().CreateService(gomock.Any(), gomock.Any()).Return(nil).Times(1)
-	cloudmapMock.EXPECT().RegisterEndpoints(gomock.Any(), gomock.Eq(&expectedService)).Return(nil).Times(1)
+	cloudmapMock.EXPECT().GetService(gomock.Any(), expectedService.Namespace, expectedService.Name).Return(nil, nil)
+	cloudmapMock.EXPECT().CreateService(gomock.Any(), expectedService.Namespace, expectedService.Name).Return(nil).Times(1)
+	cloudmapMock.EXPECT().RegisterEndpoints(gomock.Any(), expectedService.Namespace, expectedService.Name,
+		expectedService.Endpoints).Return(nil).Times(1)
 
 	reconciler := setupServiceExportReconciler(t, cloudmapMock)
 
@@ -82,7 +83,8 @@ func TestServiceExportReconciler_Reconcile_ExistingServiceNewEndpoint(t *testing
 
 	// expected interactions with the Cloud Map client
 	cloudmapMock.EXPECT().GetService(gomock.Any(), gomock.Any(), gomock.Any()).Return(&emptyService, nil)
-	cloudmapMock.EXPECT().RegisterEndpoints(gomock.Any(), gomock.Eq(&expectedService)).Return(nil).Times(1)
+	cloudmapMock.EXPECT().RegisterEndpoints(gomock.Any(), expectedService.Namespace, expectedService.Name,
+		expectedService.Endpoints).Return(nil).Times(1)
 
 	request := ctrl.Request{
 		NamespacedName: types.NamespacedName{
