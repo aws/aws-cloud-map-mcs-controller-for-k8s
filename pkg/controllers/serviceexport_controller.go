@@ -89,11 +89,6 @@ func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, log logr.Log
 		return ctrl.Result{}, err
 	}
 
-	cloudMapService := &model.Service{
-		Namespace: svc.Namespace,
-		Name:      svc.Name,
-	}
-
 	changes := model.Changes{
 		Create: endpoints,
 	}
@@ -105,7 +100,7 @@ func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, log logr.Log
 		return ctrl.Result{}, err
 	}
 	if srv == nil {
-		if err := r.Cloudmap.CreateService(ctx, cloudMapService); err != nil {
+		if err := r.Cloudmap.CreateService(ctx, svc.Namespace, svc.Name); err != nil {
 			log.Error(err, "error when creating new service in Cloud Map", "namespace", svc.Namespace, "name", svc.Name)
 			return ctrl.Result{}, err
 		}
@@ -124,10 +119,9 @@ func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, log logr.Log
 
 	if createRequired || updateRequired {
 		// merge creates and updates (Cloud Map RegisterEndpoints can handle both)
-		cloudMapService.Endpoints = changes.Create
-		cloudMapService.Endpoints = append(cloudMapService.Endpoints, changes.Update...)
+		upserts := append(changes.Create, changes.Update...)
 
-		if err := r.Cloudmap.RegisterEndpoints(ctx, cloudMapService); err != nil {
+		if err := r.Cloudmap.RegisterEndpoints(ctx, svc.Namespace, svc.Name, upserts); err != nil {
 			log.Error(err, "error when registering endpoints to Cloud Map",
 				"namespace", svc.Namespace, "name", svc.Name)
 			return ctrl.Result{}, err
@@ -135,9 +129,7 @@ func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, log logr.Log
 	}
 
 	if deleteRequired {
-		cloudMapService.Endpoints = changes.Delete
-
-		if err := r.Cloudmap.DeleteEndpoints(ctx, cloudMapService); err != nil {
+		if err := r.Cloudmap.DeleteEndpoints(ctx, svc.Namespace, svc.Name, changes.Delete); err != nil {
 			log.Error(err, "error when deleting endpoints from Cloud Map",
 				"namespace", srv.Namespace, "name", srv.Name)
 			return ctrl.Result{}, err
@@ -163,7 +155,7 @@ func (r *ServiceExportReconciler) handleDelete(ctx context.Context, log logr.Log
 			return ctrl.Result{}, err
 		}
 		if srv != nil {
-			if err := r.Cloudmap.DeleteEndpoints(ctx, srv); err != nil {
+			if err := r.Cloudmap.DeleteEndpoints(ctx, srv.Namespace, srv.Name, srv.Endpoints); err != nil {
 				log.Error(err, "error when deleting endpoints from Cloud Map",
 					"namespace", srv.Namespace, "name", srv.Name)
 				return ctrl.Result{}, err

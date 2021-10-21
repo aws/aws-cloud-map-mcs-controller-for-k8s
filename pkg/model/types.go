@@ -10,18 +10,20 @@ import (
 	"strings"
 )
 
-// Resource encapsulates a ID/name pair
+// Resource encapsulates a ID/name pair.
 type Resource struct {
 	Id   string
 	Name string
 }
 
+// Service holds namespace and endpoint state for a named service.
 type Service struct {
 	Namespace string
 	Name      string
 	Endpoints []*Endpoint
 }
 
+// Endpoint holds basic values and attributes for an endpoint.
 type Endpoint struct {
 	Id         string
 	IP         string
@@ -34,7 +36,7 @@ const (
 	PortAttr = "AWS_INSTANCE_PORT"
 )
 
-// NewEndpointFromInstance converts a Cloud Map InstanceSummary to an endpoint
+// NewEndpointFromInstance converts a Cloud Map InstanceSummary to an endpoint.
 func NewEndpointFromInstance(inst *types.InstanceSummary) (*Endpoint, error) {
 	endpoint := Endpoint{
 		Id:         *inst.Id,
@@ -68,7 +70,7 @@ func NewEndpointFromInstance(inst *types.InstanceSummary) (*Endpoint, error) {
 	return &endpoint, nil
 }
 
-// GetCloudMapAttributes extracts endpoint attributes for Cloud Map service instance registration
+// GetCloudMapAttributes extracts endpoint attributes for Cloud Map service instance registration.
 func (e *Endpoint) GetCloudMapAttributes() map[string]string {
 	attrs := make(map[string]string, 0)
 
@@ -84,11 +86,12 @@ func (e *Endpoint) GetCloudMapAttributes() map[string]string {
 	return attrs
 }
 
-// Equals evaluates if two Endpoints are "deeply equal" (including all fields)
+// Equals evaluates if two Endpoints are "deeply equal" (including all fields).
 func (e *Endpoint) Equals(other *Endpoint) bool {
 	return reflect.DeepEqual(e, other)
 }
 
+// String gives a string representation for an endpoint.
 func (e *Endpoint) String() string {
 	bytes, err := json.Marshal(e)
 	if err != nil {
@@ -98,7 +101,7 @@ func (e *Endpoint) String() string {
 	return string(bytes)
 }
 
-// EndpointIdFromIPAddress converts an IP address to human readable identifier
+// EndpointIdFromIPAddress converts an IP address to human readable identifier.
 func EndpointIdFromIPAddress(address string) string {
 	return strings.Replace(address, ".", "_", -1)
 }
