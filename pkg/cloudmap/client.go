@@ -12,12 +12,12 @@ import (
 )
 
 const (
-	defaultNamespaceIdCacheTTL  = 2 * time.Minute
-	defaultNamespaceIdCacheSize = 100
-	defaultServiceIdCacheTTL    = 2 * time.Minute
-	defaultServiceIdCacheSize   = 1024
-	defaultEndpointsCacheTTL    = 5 * time.Second
-	defaultEndpointsCacheSize   = 1024
+	defaultNamespaceCacheTTL  = 2 * time.Minute
+	defaultNamespaceCacheSize = 100
+	defaultServiceIdCacheTTL  = 2 * time.Minute
+	defaultServiceIdCacheSize = 1024
+	defaultEndpointsCacheTTL  = 5 * time.Second
+	defaultEndpointsCacheSize = 1024
 )
 
 // ServiceDiscoveryClient provides the service endpoint management functionality required by the AWS Cloud Map
@@ -40,21 +40,21 @@ type ServiceDiscoveryClient interface {
 }
 
 type serviceDiscoveryClient struct {
-	log              logr.Logger
-	sdApi            ServiceDiscoveryApi
-	namespaceIdCache *cache.LRUExpireCache
-	serviceIdCache   *cache.LRUExpireCache
-	endpointCache    *cache.LRUExpireCache
+	log            logr.Logger
+	sdApi          ServiceDiscoveryApi
+	namespaceCache *cache.LRUExpireCache
+	serviceIdCache *cache.LRUExpireCache
+	endpointCache  *cache.LRUExpireCache
 }
 
 // NewServiceDiscoveryClient creates a new service discovery client for AWS Cloud Map from a given AWS client config.
 func NewServiceDiscoveryClient(cfg *aws.Config) ServiceDiscoveryClient {
 	return &serviceDiscoveryClient{
-		log:              ctrl.Log.WithName("cloudmap"),
-		sdApi:            NewServiceDiscoveryApiFromConfig(cfg),
-		namespaceIdCache: cache.NewLRUExpireCache(defaultNamespaceIdCacheSize),
-		serviceIdCache:   cache.NewLRUExpireCache(defaultServiceIdCacheSize),
-		endpointCache:    cache.NewLRUExpireCache(defaultEndpointsCacheSize),
+		log:            ctrl.Log.WithName("cloudmap"),
+		sdApi:          NewServiceDiscoveryApiFromConfig(cfg),
+		namespaceCache: cache.NewLRUExpireCache(defaultNamespaceCacheSize),
+		serviceIdCache: cache.NewLRUExpireCache(defaultServiceIdCacheSize),
+		endpointCache:  cache.NewLRUExpireCache(defaultEndpointsCacheSize),
 	}
 }
 
@@ -92,21 +92,20 @@ func (sdc *serviceDiscoveryClient) ListServices(ctx context.Context, nsName stri
 func (sdc *serviceDiscoveryClient) CreateService(ctx context.Context, nsName string, svcName string) (err error) {
 	sdc.log.Info("creating a new service", "namespace", nsName, "name", svcName)
 
-	nsId, err := sdc.getNamespaceId(ctx, nsName)
+	namespace, err := sdc.getNamespace(ctx, nsName)
 	if err != nil {
 		return err
 	}
 
-	if nsId == "" {
-		nsId, err = sdc.createNamespace(ctx, nsName)
-	}
-	if err != nil {
-		return err
+	if namespace == nil {
+		// Create HttpNamespace if the namespace is not present in the CloudMap
+		namespace, err = sdc.createNamespace(ctx, nsName)
+		if err != nil {
+			return err
+		}
 	}
 
-	//TODO: Handle non-http namespaces
-	svcId, err := sdc.sdApi.CreateService(ctx, nsId, svcName)
-
+	svcId, err := sdc.sdApi.CreateService(ctx, *namespace, svcName)
 	if err != nil {
 		return err
 	}
@@ -117,7 +116,7 @@ func (sdc *serviceDiscoveryClient) CreateService(ctx context.Context, nsName str
 }
 
 func (sdc *serviceDiscoveryClient) GetService(ctx context.Context, nsName string, svcName string) (svc *model.Service, err error) {
-	sdc.log.Info("fetching a service", "nsName", nsName, "svcName", svcName)
+	sdc.log.Info("fetching a service", "namespace", nsName, "name", svcName)
 
 	svcId, err := sdc.getServiceId(ctx, nsName, svcName)
 
@@ -237,27 +236,42 @@ func (sdc *serviceDiscoveryClient) listEndpoints(ctx context.Context, serviceId 
 }
 
 func (sdc *serviceDiscoveryClient) getNamespaceId(ctx context.Context, nsName string) (nsId string, err error) {
+	namespace, err := sdc.getNamespace(ctx, nsName)
+	if err != nil || namespace == nil {
+		return "", err
+	}
+	return namespace.Id, nil
+}
+
+func (sdc *serviceDiscoveryClient) getNamespace(ctx context.Context, nsName string) (namespace *model.Namespace, err error) {
 	// We are assuming a unique namespace name per account
-	if cachedValue, exists := sdc.namespaceIdCache.Get(nsName); exists {
-		return cachedValue.(string), nil
+	if cachedValue, exists := sdc.namespaceCache.Get(nsName); exists {
+		ns, ok := cachedValue.(model.Namespace)
+		if !ok {
+			return nil, fmt.Errorf("failed to cast the cached value for the namespace %s", nsName)
+		}
+		return &ns, nil
 	}
 
 	namespaces, err := sdc.sdApi.ListNamespaces(ctx)
-
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	for _, ns := range namespaces {
-		sdc.cacheNamespaceId(ns.Name, ns.Id)
+		sdc.cacheNamespace(*ns)
+		// Set the return namespace
 		if nsName == ns.Name {
-			nsId = ns.Id
+			namespace = ns
 		}
 	}
 
-	// This will cache empty namespace IDs for namespaces not in Cloud Map
-	sdc.cacheNamespaceId(nsName, nsId)
-	return nsId, nil
+	if namespace == nil {
+		// This will cache empty namespace IDs for namespaces not in Cloud Map
+		sdc.cacheNamespace(model.Namespace{Name: nsName})
+	}
+
+	return namespace, nil
 }
 
 func (sdc *serviceDiscoveryClient) getServiceId(ctx context.Context, nsName string, svcName string) (svcId string, err error) {
@@ -293,27 +307,31 @@ func (sdc *serviceDiscoveryClient) getServiceId(ctx context.Context, nsName stri
 	return svcId, nil
 }
 
-func (sdc *serviceDiscoveryClient) createNamespace(ctx context.Context, nsName string) (nsId string, err error) {
+func (sdc *serviceDiscoveryClient) createNamespace(ctx context.Context, nsName string) (namespace *model.Namespace, err error) {
 	sdc.log.Info("creating a new namespace", "namespace", nsName)
 	opId, err := sdc.sdApi.CreateHttpNamespace(ctx, nsName)
-
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	nsId, err = sdc.sdApi.PollCreateNamespace(ctx, opId)
-
+	nsId, err := sdc.sdApi.PollCreateNamespace(ctx, opId)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	sdc.cacheNamespaceId(nsName, nsId)
+	// Cache the Namespace, by default we always create namespace of type HTTP
+	namespace = &model.Namespace{
+		Id:   nsId,
+		Name: nsName,
+		Type: "HTTP",
+	}
+	sdc.cacheNamespace(*namespace)
 
-	return nsId, nil
+	return namespace, nil
 }
 
-func (sdc *serviceDiscoveryClient) cacheNamespaceId(nsName string, nsId string) {
-	sdc.namespaceIdCache.Add(nsName, nsId, defaultNamespaceIdCacheTTL)
+func (sdc *serviceDiscoveryClient) cacheNamespace(namespace model.Namespace) {
+	sdc.namespaceCache.Add(namespace.Name, namespace, defaultNamespaceCacheTTL)
 }
 
 func (sdc *serviceDiscoveryClient) cacheServiceId(nsName string, svcName string, svcId string) {

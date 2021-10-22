@@ -16,6 +16,14 @@ type Resource struct {
 	Name string
 }
 
+// Namespace hold namespace attributes
+type Namespace struct {
+	Id   string
+	Name string
+	// Types: HTTP, DNS_PRIVATE
+	Type string
+}
+
 // Service holds namespace and endpoint state for a named service.
 type Service struct {
 	Namespace string

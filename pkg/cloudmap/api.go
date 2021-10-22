@@ -17,7 +17,7 @@ import (
 // internal data structures. It manages all interactions with the AWS SDK.
 type ServiceDiscoveryApi interface {
 	// ListNamespaces returns a list of all namespaces.
-	ListNamespaces(ctx context.Context) (namespaces []*model.Resource, err error)
+	ListNamespaces(ctx context.Context) (namespaces []*model.Namespace, err error)
 
 	// ListServices returns a list of services for a given namespace.
 	ListServices(ctx context.Context, namespaceId string) (services []*model.Resource, err error)
@@ -35,7 +35,7 @@ type ServiceDiscoveryApi interface {
 	CreateHttpNamespace(ctx context.Context, namespaceName string) (operationId string, err error)
 
 	// CreateService creates a named service in AWS Cloud Map under the given namespace.
-	CreateService(ctx context.Context, namespaceId string, serviceName string) (serviceId string, err error)
+	CreateService(ctx context.Context, namespace model.Namespace, serviceName string) (serviceId string, err error)
 
 	// RegisterInstance registers a service instance in AWS Cloud Map.
 	RegisterInstance(ctx context.Context, serviceId string, instanceId string, instanceAttrs map[string]string) (operationId string, err error)
@@ -60,8 +60,8 @@ func NewServiceDiscoveryApiFromConfig(cfg *aws.Config) ServiceDiscoveryApi {
 	}
 }
 
-func (sdApi *serviceDiscoveryApi) ListNamespaces(ctx context.Context) ([]*model.Resource, error) {
-	namespaces := make([]*model.Resource, 0)
+func (sdApi *serviceDiscoveryApi) ListNamespaces(ctx context.Context) ([]*model.Namespace, error) {
+	namespaces := make([]*model.Namespace, 0)
 	pages := sd.NewListNamespacesPaginator(sdApi.awsFacade, &sd.ListNamespacesInput{})
 
 	for pages.HasMorePages() {
@@ -71,9 +71,10 @@ func (sdApi *serviceDiscoveryApi) ListNamespaces(ctx context.Context) ([]*model.
 		}
 
 		for _, ns := range output.Namespaces {
-			namespaces = append(namespaces, &model.Resource{
+			namespaces = append(namespaces, &model.Namespace{
 				Id:   aws.ToString(ns.Id),
 				Name: aws.ToString(ns.Name),
+				Type: string(ns.Type),
 			})
 		}
 	}
@@ -178,10 +179,19 @@ func (sdApi *serviceDiscoveryApi) CreateHttpNamespace(ctx context.Context, nsNam
 	return aws.ToString(output.OperationId), nil
 }
 
-func (sdApi *serviceDiscoveryApi) CreateService(ctx context.Context, nsId string, svcName string) (svcId string, err error) {
-	output, err := sdApi.awsFacade.CreateService(ctx, &sd.CreateServiceInput{
-		NamespaceId: &nsId,
-		Name:        &svcName})
+func (sdApi *serviceDiscoveryApi) CreateService(ctx context.Context, namespace model.Namespace, svcName string) (svcId string, err error) {
+	var output *sd.CreateServiceOutput
+	if namespace.Type == "DNS_PRIVATE" {
+		dnsConfig := sdApi.getDnsConfig()
+		output, err = sdApi.awsFacade.CreateService(ctx, &sd.CreateServiceInput{
+			NamespaceId: &namespace.Id,
+			DnsConfig:   &dnsConfig,
+			Name:        &svcName})
+	} else {
+		output, err = sdApi.awsFacade.CreateService(ctx, &sd.CreateServiceInput{
+			NamespaceId: &namespace.Id,
+			Name:        &svcName})
+	}
 
 	if err != nil {
 		return "", err
@@ -190,6 +200,19 @@ func (sdApi *serviceDiscoveryApi) CreateService(ctx context.Context, nsId string
 	svcId = aws.ToString(output.Service.Id)
 	sdApi.log.Info("service created", "svcId", svcId)
 	return svcId, nil
+}
+
+func (sdApi *serviceDiscoveryApi) getDnsConfig() types.DnsConfig {
+	ttl := int64(defaultServiceIdCacheTTL.Seconds())
+	dnsConfig := types.DnsConfig{
+		DnsRecords: []types.DnsRecord{
+			{
+				TTL:  &ttl,
+				Type: "SRV",
+			},
+		},
+	}
+	return dnsConfig
 }
 
 func (sdApi *serviceDiscoveryApi) RegisterInstance(ctx context.Context, svcId string, instId string, instAttrs map[string]string) (opId string, err error) {
