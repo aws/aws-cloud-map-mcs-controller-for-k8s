@@ -13,6 +13,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
+const (
+	defaultServiceTTLInSeconds int64 = 60
+)
+
 // ServiceDiscoveryApi handles the AWS Cloud Map API request and response processing logic, and converts results to
 // internal data structures. It manages all interactions with the AWS SDK.
 type ServiceDiscoveryApi interface {
@@ -71,11 +75,15 @@ func (sdApi *serviceDiscoveryApi) ListNamespaces(ctx context.Context) ([]*model.
 		}
 
 		for _, ns := range output.Namespaces {
-			namespaces = append(namespaces, &model.Namespace{
-				Id:   aws.ToString(ns.Id),
-				Name: aws.ToString(ns.Name),
-				Type: string(ns.Type),
-			})
+			if namespaceType, ok := model.ConvertNamespaceType(ns.Type); ok {
+				namespaces = append(namespaces, &model.Namespace{
+					Id:   aws.ToString(ns.Id),
+					Name: aws.ToString(ns.Name),
+					Type: *namespaceType,
+				})
+			} else {
+				sdApi.log.Info("skipping the unsupported namespace type", "namespace", aws.ToString(ns.Name), "type", ns.Type)
+			}
 		}
 	}
 
@@ -181,7 +189,7 @@ func (sdApi *serviceDiscoveryApi) CreateHttpNamespace(ctx context.Context, nsNam
 
 func (sdApi *serviceDiscoveryApi) CreateService(ctx context.Context, namespace model.Namespace, svcName string) (svcId string, err error) {
 	var output *sd.CreateServiceOutput
-	if namespace.Type == "DNS_PRIVATE" {
+	if namespace.Type == model.DnsPrivateNamespaceType {
 		dnsConfig := sdApi.getDnsConfig()
 		output, err = sdApi.awsFacade.CreateService(ctx, &sd.CreateServiceInput{
 			NamespaceId: &namespace.Id,
@@ -203,7 +211,7 @@ func (sdApi *serviceDiscoveryApi) CreateService(ctx context.Context, namespace m
 }
 
 func (sdApi *serviceDiscoveryApi) getDnsConfig() types.DnsConfig {
-	ttl := int64(defaultServiceIdCacheTTL.Seconds())
+	ttl := defaultServiceTTLInSeconds
 	dnsConfig := types.DnsConfig{
 		DnsRecords: []types.DnsRecord{
 			{

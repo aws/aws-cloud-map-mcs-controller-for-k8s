@@ -16,12 +16,18 @@ type Resource struct {
 	Name string
 }
 
+const (
+	HttpNamespaceType       NamespaceType = "HTTP"
+	DnsPrivateNamespaceType NamespaceType = "DNS_PRIVATE"
+)
+
+type NamespaceType string
+
 // Namespace hold namespace attributes
 type Namespace struct {
 	Id   string
 	Name string
-	// Types: HTTP, DNS_PRIVATE
-	Type string
+	Type NamespaceType
 }
 
 // Service holds namespace and endpoint state for a named service.
@@ -43,6 +49,14 @@ const (
 	Ipv4Attr = "AWS_INSTANCE_IPV4"
 	PortAttr = "AWS_INSTANCE_PORT"
 )
+
+func (ns Namespace) IsEmpty() bool {
+	return ns == Namespace{}
+}
+
+func GetEmptyNamespace() Namespace {
+	return Namespace{}
+}
 
 // NewEndpointFromInstance converts a Cloud Map InstanceSummary to an endpoint.
 func NewEndpointFromInstance(inst *types.InstanceSummary) (*Endpoint, error) {
@@ -112,4 +126,17 @@ func (e *Endpoint) String() string {
 // EndpointIdFromIPAddress converts an IP address to human readable identifier.
 func EndpointIdFromIPAddress(address string) string {
 	return strings.Replace(address, ".", "_", -1)
+}
+
+func ConvertNamespaceType(nsType types.NamespaceType) (namespaceType *NamespaceType, ok bool) {
+	dnsPrivate := DnsPrivateNamespaceType
+	http := HttpNamespaceType
+	switch nsType {
+	case types.NamespaceTypeDnsPrivate:
+		return &dnsPrivate, true
+	case types.NamespaceTypeHttp:
+		return &http, true
+	default:
+		return nil, false
+	}
 }

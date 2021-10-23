@@ -130,7 +130,7 @@ func TestServiceDiscoveryClient_ListServices_NamespaceNotFound(t *testing.T) {
 
 	cachedNs, found := sdc.namespaceCache.Get(test.NsName)
 	assert.True(t, found)
-	assert.Equal(t, model.Namespace{Name: test.NsName}, cachedNs, "Namespace not found caches struct with empty ID")
+	assert.Equal(t, model.Namespace{}, cachedNs, "Empty Namespace found in the cache")
 }
 
 func TestServiceDiscoveryClient_CreateService_HappyCase(t *testing.T) {
@@ -285,6 +285,43 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 
 func TestServiceDiscoveryClient_DeleteEndpoints(t *testing.T) {
 	// TODO: Add unit tests
+}
+
+func TestServiceDiscoveryClient_getNamespace_HappyCase(t *testing.T) {
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
+
+	sdc := getTestSdClient(t, sdApi)
+	sdc.namespaceCache.Add(test.NsName, *test.GetTestHttpNamespace(), time.Minute)
+
+	namespace, _ := sdc.getNamespace(context.TODO(), test.NsName)
+	assert.Equal(t, test.GetTestHttpNamespace(), namespace, "Namespace found in the cache")
+}
+
+func TestServiceDiscoveryClient_getNamespace_GetEmptyNamespace(t *testing.T) {
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
+
+	sdc := getTestSdClient(t, sdApi)
+	sdc.namespaceCache.Add(test.NsName, model.GetEmptyNamespace(), time.Minute)
+
+	namespace, err := sdc.getNamespace(context.TODO(), test.NsName)
+	assert.Equal(t, model.Namespace{}, *namespace, "Empty namespace found in the cache")
+	assert.Nil(t, err, "No errors with empty namespace")
+}
+
+func TestServiceDiscoveryClient_getCachedNamespace_ErrorCasting(t *testing.T) {
+	sdc := getTestSdClient(t, nil)
+	sdc.namespaceCache.Add(test.NsName, struct{ dummy string }{"dummy"}, time.Minute)
+
+	exists, namespace, err := sdc.getCachedNamespace(test.NsName)
+	assert.True(t, exists, "Cache exists")
+	assert.Nil(t, namespace, "No corresponding cached value found")
+	assert.Equal(t, fmt.Sprintf("failed to cast the cached value for the namespace %s", test.NsName), fmt.Sprint(err), "Got the error for improper casting")
 }
 
 func getTestSdClient(t *testing.T, sdApi ServiceDiscoveryApi) serviceDiscoveryClient {
