@@ -2,6 +2,7 @@ package cloudmap
 
 import (
 	"context"
+	"fmt"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -18,7 +19,7 @@ func TestNewServiceDiscoveryApi(t *testing.T) {
 	assert.NotNil(t, sdc)
 }
 
-func TestListNamespaces_HappyCase(t *testing.T) {
+func TestServiceDiscoveryApi_ListNamespaces_HappyCase(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
@@ -39,7 +40,7 @@ func TestListNamespaces_HappyCase(t *testing.T) {
 	assert.Equal(t, test.GetTestDnsNamespace(), namespaces[0], "")
 }
 
-func TestListNamespaces_SkipPublicDNSNotSupported(t *testing.T) {
+func TestServiceDiscoveryApi_ListNamespaces_SkipPublicDNSNotSupported(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
@@ -57,6 +58,75 @@ func TestListNamespaces_SkipPublicDNSNotSupported(t *testing.T) {
 
 	namespaces, _ := sdApi.ListNamespaces(context.TODO())
 	assert.True(t, len(namespaces) == 0, "Successfully skipped DNS_PUBLIC from the output")
+}
+
+func TestServiceDiscoveryApi_CreateService_CreateForHttpNamespace(t *testing.T) {
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	sdApi := getServiceDiscoveryApi(t, awsFacade)
+
+	nsId, svcId, svcName := test.NsId, test.SvcId, test.SvcName
+	awsFacade.EXPECT().CreateService(context.TODO(), &sd.CreateServiceInput{
+		Name:        &svcName,
+		NamespaceId: &nsId,
+	}).
+		Return(&sd.CreateServiceOutput{
+			Service: &types.Service{
+				Id: &svcId,
+			},
+		}, nil)
+
+	retSvcId, _ := sdApi.CreateService(context.TODO(), *test.GetTestHttpNamespace(), svcName)
+	assert.Equal(t, svcId, retSvcId, "Successfully created service")
+}
+
+func TestServiceDiscoveryApi_CreateService_CreateForDnsNamespace(t *testing.T) {
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	sdApi := getServiceDiscoveryApi(t, awsFacade)
+
+	nsId, svcId, svcName := test.NsId, test.SvcId, test.SvcName
+	awsFacade.EXPECT().CreateService(context.TODO(), &sd.CreateServiceInput{
+		Name:        &svcName,
+		NamespaceId: &nsId,
+		DnsConfig: &types.DnsConfig{
+			DnsRecords: []types.DnsRecord{{
+				TTL:  aws.Int64(60),
+				Type: "SRV",
+			}},
+		},
+	}).
+		Return(&sd.CreateServiceOutput{
+			Service: &types.Service{
+				Id: &svcId,
+			},
+		}, nil)
+
+	retSvcId, _ := sdApi.CreateService(context.TODO(), *test.GetTestDnsNamespace(), svcName)
+	assert.Equal(t, svcId, retSvcId, "Successfully created service")
+}
+
+func TestServiceDiscoveryApi_CreateService_ThrowError(t *testing.T) {
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	sdApi := getServiceDiscoveryApi(t, awsFacade)
+
+	nsId, svcName := test.NsId, test.SvcName
+	awsFacade.EXPECT().CreateService(context.TODO(), &sd.CreateServiceInput{
+		Name:        &svcName,
+		NamespaceId: &nsId,
+	}).
+		Return(nil, fmt.Errorf("dummy error"))
+
+	retSvcId, err := sdApi.CreateService(context.TODO(), *test.GetTestHttpNamespace(), svcName)
+	assert.Empty(t, retSvcId)
+	assert.Equal(t, "dummy error", fmt.Sprint(err), "Got error")
 }
 
 func getServiceDiscoveryApi(t *testing.T, awsFacade *cloudmap.MockAwsFacade) serviceDiscoveryApi {

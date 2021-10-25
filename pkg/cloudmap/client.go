@@ -14,7 +14,6 @@ import (
 const (
 	defaultNamespaceCacheTTL  = 2 * time.Minute
 	defaultNamespaceCacheSize = 100
-	emptyNamespaceCacheTTL    = 2 * time.Minute
 	defaultServiceIdCacheTTL  = 2 * time.Minute
 	defaultServiceIdCacheSize = 1024
 	defaultEndpointsCacheTTL  = 5 * time.Second
@@ -61,7 +60,7 @@ func NewServiceDiscoveryClient(cfg *aws.Config) ServiceDiscoveryClient {
 
 func (sdc *serviceDiscoveryClient) ListServices(ctx context.Context, nsName string) (svcs []*model.Service, err error) {
 	namespace, err := sdc.getNamespace(ctx, nsName)
-	if err != nil || namespace.IsEmpty() {
+	if err != nil || namespace == nil {
 		return svcs, err
 	}
 
@@ -96,7 +95,7 @@ func (sdc *serviceDiscoveryClient) CreateService(ctx context.Context, nsName str
 		return err
 	}
 
-	if namespace.IsEmpty() {
+	if namespace == nil {
 		// Create HttpNamespace if the namespace is not present in the CloudMap
 		namespace, err = sdc.createNamespace(ctx, nsName)
 		if err != nil {
@@ -234,9 +233,11 @@ func (sdc *serviceDiscoveryClient) listEndpoints(ctx context.Context, serviceId 
 
 func (sdc *serviceDiscoveryClient) getNamespace(ctx context.Context, nsName string) (namespace *model.Namespace, err error) {
 	// We are assuming a unique namespace name per account
-	exists, namespace, err := sdc.getCachedNamespace(nsName)
-	if exists {
+	if namespace, exists, err := sdc.getCachedNamespace(nsName); exists {
 		return namespace, err
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	namespaces, err := sdc.sdApi.ListNamespaces(ctx)
@@ -255,7 +256,7 @@ func (sdc *serviceDiscoveryClient) getNamespace(ctx context.Context, nsName stri
 	if namespace == nil {
 		// This will cache empty namespace for namespaces not in Cloud Map
 		// This is so that we can avoid ListNamespaces call
-		namespace = sdc.cacheEmptyNamespace(nsName)
+		sdc.cacheNilNamespace(nsName)
 	}
 
 	return namespace, nil
@@ -269,7 +270,7 @@ func (sdc *serviceDiscoveryClient) getServiceId(ctx context.Context, nsName stri
 	}
 
 	namespace, err := sdc.getNamespace(ctx, nsName)
-	if err != nil || namespace.IsEmpty() {
+	if err != nil || namespace == nil {
 		return "", err
 	}
 
@@ -311,25 +312,26 @@ func (sdc *serviceDiscoveryClient) createNamespace(ctx context.Context, nsName s
 	return namespace, nil
 }
 
-func (sdc *serviceDiscoveryClient) getCachedNamespace(nsName string) (exists bool, namespace *model.Namespace, err error) {
+func (sdc *serviceDiscoveryClient) getCachedNamespace(nsName string) (namespace *model.Namespace, exists bool, err error) {
 	if cachedValue, exists := sdc.namespaceCache.Get(nsName); exists {
+		if cachedValue == nil {
+			return nil, exists, nil
+		}
 		ns, ok := cachedValue.(model.Namespace)
 		if !ok {
-			return exists, nil, fmt.Errorf("failed to cast the cached value for the namespace %s", nsName)
+			return nil, exists, fmt.Errorf("failed to cast the cached value for the namespace %s", nsName)
 		}
-		return exists, &ns, nil
+		return &ns, exists, nil
 	}
-	return exists, nil, nil
+	return nil, exists, nil
 }
 
 func (sdc *serviceDiscoveryClient) cacheNamespace(namespace model.Namespace) {
 	sdc.namespaceCache.Add(namespace.Name, namespace, defaultNamespaceCacheTTL)
 }
 
-func (sdc *serviceDiscoveryClient) cacheEmptyNamespace(nsName string) *model.Namespace {
-	emptyNamespace := model.GetEmptyNamespace()
-	sdc.namespaceCache.Add(nsName, emptyNamespace, emptyNamespaceCacheTTL)
-	return &emptyNamespace
+func (sdc *serviceDiscoveryClient) cacheNilNamespace(nsName string) {
+	sdc.namespaceCache.Add(nsName, nil, defaultNamespaceCacheTTL)
 }
 
 func (sdc *serviceDiscoveryClient) cacheServiceId(nsName string, svcName string, svcId string) {

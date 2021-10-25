@@ -75,14 +75,12 @@ func (sdApi *serviceDiscoveryApi) ListNamespaces(ctx context.Context) ([]*model.
 		}
 
 		for _, ns := range output.Namespaces {
-			if namespaceType, ok := model.ConvertNamespaceType(ns.Type); ok {
+			if namespaceType := model.ConvertNamespaceType(ns.Type); !namespaceType.IsUnsupported() {
 				namespaces = append(namespaces, &model.Namespace{
 					Id:   aws.ToString(ns.Id),
 					Name: aws.ToString(ns.Name),
-					Type: *namespaceType,
+					Type: namespaceType,
 				})
-			} else {
-				sdApi.log.Info("skipping the unsupported namespace type", "namespace", aws.ToString(ns.Name), "type", ns.Type)
 			}
 		}
 	}
@@ -211,11 +209,10 @@ func (sdApi *serviceDiscoveryApi) CreateService(ctx context.Context, namespace m
 }
 
 func (sdApi *serviceDiscoveryApi) getDnsConfig() types.DnsConfig {
-	ttl := defaultServiceTTLInSeconds
 	dnsConfig := types.DnsConfig{
 		DnsRecords: []types.DnsRecord{
 			{
-				TTL:  &ttl,
+				TTL:  aws.Int64(defaultServiceTTLInSeconds),
 				Type: "SRV",
 			},
 		},

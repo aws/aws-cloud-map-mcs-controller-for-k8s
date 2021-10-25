@@ -19,6 +19,8 @@ type Resource struct {
 const (
 	HttpNamespaceType       NamespaceType = "HTTP"
 	DnsPrivateNamespaceType NamespaceType = "DNS_PRIVATE"
+	// UnsupportedNamespaceType Placeholder NamespaceType to denote not supported values
+	UnsupportedNamespaceType NamespaceType = ""
 )
 
 type NamespaceType string
@@ -49,14 +51,6 @@ const (
 	Ipv4Attr = "AWS_INSTANCE_IPV4"
 	PortAttr = "AWS_INSTANCE_PORT"
 )
-
-func (ns Namespace) IsEmpty() bool {
-	return ns == Namespace{}
-}
-
-func GetEmptyNamespace() Namespace {
-	return Namespace{}
-}
 
 // NewEndpointFromInstance converts a Cloud Map InstanceSummary to an endpoint.
 func NewEndpointFromInstance(inst *types.InstanceSummary) (*Endpoint, error) {
@@ -128,15 +122,17 @@ func EndpointIdFromIPAddress(address string) string {
 	return strings.Replace(address, ".", "_", -1)
 }
 
-func ConvertNamespaceType(nsType types.NamespaceType) (namespaceType *NamespaceType, ok bool) {
-	dnsPrivate := DnsPrivateNamespaceType
-	http := HttpNamespaceType
+func ConvertNamespaceType(nsType types.NamespaceType) (namespaceType NamespaceType) {
 	switch nsType {
 	case types.NamespaceTypeDnsPrivate:
-		return &dnsPrivate, true
+		return DnsPrivateNamespaceType
 	case types.NamespaceTypeHttp:
-		return &http, true
+		return HttpNamespaceType
 	default:
-		return nil, false
+		return UnsupportedNamespaceType
 	}
+}
+
+func (namespaceType *NamespaceType) IsUnsupported() bool {
+	return *namespaceType == UnsupportedNamespaceType
 }

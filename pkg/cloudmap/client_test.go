@@ -130,7 +130,7 @@ func TestServiceDiscoveryClient_ListServices_NamespaceNotFound(t *testing.T) {
 
 	cachedNs, found := sdc.namespaceCache.Get(test.NsName)
 	assert.True(t, found)
-	assert.Equal(t, model.Namespace{}, cachedNs, "Empty Namespace found in the cache")
+	assert.Nil(t, cachedNs, "Namespace not found in the cache")
 }
 
 func TestServiceDiscoveryClient_CreateService_HappyCase(t *testing.T) {
@@ -307,10 +307,10 @@ func TestServiceDiscoveryClient_getNamespace_GetEmptyNamespace(t *testing.T) {
 	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
 
 	sdc := getTestSdClient(t, sdApi)
-	sdc.namespaceCache.Add(test.NsName, model.GetEmptyNamespace(), time.Minute)
+	sdc.namespaceCache.Add(test.NsName, nil, time.Minute)
 
 	namespace, err := sdc.getNamespace(context.TODO(), test.NsName)
-	assert.Equal(t, model.Namespace{}, *namespace, "Empty namespace found in the cache")
+	assert.Nil(t, namespace, "Namespace not found in the cache")
 	assert.Nil(t, err, "No errors with empty namespace")
 }
 
@@ -318,7 +318,7 @@ func TestServiceDiscoveryClient_getCachedNamespace_ErrorCasting(t *testing.T) {
 	sdc := getTestSdClient(t, nil)
 	sdc.namespaceCache.Add(test.NsName, struct{ dummy string }{"dummy"}, time.Minute)
 
-	exists, namespace, err := sdc.getCachedNamespace(test.NsName)
+	namespace, exists, err := sdc.getCachedNamespace(test.NsName)
 	assert.True(t, exists, "Cache exists")
 	assert.Nil(t, namespace, "No corresponding cached value found")
 	assert.Equal(t, fmt.Sprintf("failed to cast the cached value for the namespace %s", test.NsName), fmt.Sprint(err), "Got the error for improper casting")
