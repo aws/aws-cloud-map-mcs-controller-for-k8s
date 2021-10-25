@@ -15,6 +15,22 @@ const (
 	OpStart    = 1
 )
 
+func GetTestHttpNamespace() *model.Namespace {
+	return &model.Namespace{
+		Id:   NsId,
+		Name: NsName,
+		Type: model.HttpNamespaceType,
+	}
+}
+
+func GetTestDnsNamespace() *model.Namespace {
+	return &model.Namespace{
+		Id:   NsId,
+		Name: NsName,
+		Type: model.DnsPrivateNamespaceType,
+	}
+}
+
 func GetTestService() *model.Service {
 	endPt := GetTestEndpoint()
 	return &model.Service{
