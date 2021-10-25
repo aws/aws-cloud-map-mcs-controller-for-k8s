@@ -16,6 +16,22 @@ type Resource struct {
 	Name string
 }
 
+const (
+	HttpNamespaceType       NamespaceType = "HTTP"
+	DnsPrivateNamespaceType NamespaceType = "DNS_PRIVATE"
+	// UnsupportedNamespaceType Placeholder NamespaceType to denote not supported values
+	UnsupportedNamespaceType NamespaceType = ""
+)
+
+type NamespaceType string
+
+// Namespace hold namespace attributes
+type Namespace struct {
+	Id   string
+	Name string
+	Type NamespaceType
+}
+
 // Service holds namespace and endpoint state for a named service.
 type Service struct {
 	Namespace string
@@ -104,4 +120,19 @@ func (e *Endpoint) String() string {
 // EndpointIdFromIPAddress converts an IP address to human readable identifier.
 func EndpointIdFromIPAddress(address string) string {
 	return strings.Replace(address, ".", "_", -1)
+}
+
+func ConvertNamespaceType(nsType types.NamespaceType) (namespaceType NamespaceType) {
+	switch nsType {
+	case types.NamespaceTypeDnsPrivate:
+		return DnsPrivateNamespaceType
+	case types.NamespaceTypeHttp:
+		return HttpNamespaceType
+	default:
+		return UnsupportedNamespaceType
+	}
+}
+
+func (namespaceType *NamespaceType) IsUnsupported() bool {
+	return *namespaceType == UnsupportedNamespaceType
 }
