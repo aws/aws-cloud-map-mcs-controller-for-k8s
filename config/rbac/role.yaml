@@ -7,6 +7,31 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+- apiGroups:
+  - discovery.k8s.io
+  resources:
+  - endpointslices
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+- apiGroups:
   - multicluster.x-k8s.io
   resources:
   - serviceexports
@@ -29,30 +54,9 @@ rules:
   - serviceimports
   verbs:
   - create
+  - delete
   - get
   - list
   - patch
   - update
   - watch
-- apiGroups:
-  - ""
-  resources:
-  - namespaces
-  - services
-  - endpoints
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-- apiGroups:
-  - discovery.k8s.io
-  resources:
-  - endpointslices
-  verbs:
-  - list
-  - watch
-  - get
-  - create
-  - update
