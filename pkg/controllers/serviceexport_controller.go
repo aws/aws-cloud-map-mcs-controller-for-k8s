@@ -47,6 +47,8 @@ type ServiceExportReconciler struct {
 	Cloudmap cloudmap.ServiceDiscoveryClient
 }
 
+// +kubebuilder:rbac:groups="",resources=services,verbs=get
+// +kubebuilder:rbac:groups="discovery.k8s.io",resources=endpointslices,verbs=list;watch;create
 // +kubebuilder:rbac:groups=multicluster.x-k8s.io,resources=serviceexports,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=multicluster.x-k8s.io,resources=serviceexports/finalizers,verbs=get;update
 
