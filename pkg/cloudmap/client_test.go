@@ -229,7 +229,7 @@ func TestServiceDiscoveryClient_CreateService_CreatesNamespace_HappyCase(t *test
 		Return([]*model.Namespace{}, nil)
 	sdApi.EXPECT().CreateHttpNamespace(context.TODO(), test.NsName).
 		Return(test.OpId1, nil)
-	sdApi.EXPECT().PollCreateNamespace(context.TODO(), test.OpId1).
+	sdApi.EXPECT().PollNamespaceOperation(context.TODO(), test.OpId1).
 		Return(test.NsId, nil)
 	sdApi.EXPECT().CreateService(context.TODO(), *test.GetTestHttpNamespace(), test.SvcName).
 		Return(test.SvcId, nil)
@@ -251,7 +251,7 @@ func TestServiceDiscoveryClient_CreateService_CreatesNamespace_PollError(t *test
 		Return([]*model.Namespace{}, nil)
 	sdApi.EXPECT().CreateHttpNamespace(context.TODO(), test.NsName).
 		Return(test.OpId1, nil)
-	sdApi.EXPECT().PollCreateNamespace(context.TODO(), test.OpId1).
+	sdApi.EXPECT().PollNamespaceOperation(context.TODO(), test.OpId1).
 		Return("", pollErr)
 
 	sdc := getTestSdClient(t, sdApi)

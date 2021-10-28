@@ -296,10 +296,12 @@ func (sdc *serviceDiscoveryClient) createNamespace(ctx context.Context, nsName s
 		return nil, err
 	}
 
-	nsId, err := sdc.sdApi.PollCreateNamespace(ctx, opId)
+	nsId, err := sdc.sdApi.PollNamespaceOperation(ctx, opId)
 	if err != nil {
 		return nil, err
 	}
+
+	sdc.log.Info("namespace created", "nsId", nsId)
 
 	// Cache the Namespace, by default we always create namespace of type HTTP
 	namespace = &model.Namespace{

@@ -47,8 +47,8 @@ type ServiceDiscoveryApi interface {
 	// DeregisterInstance de-registers a service instance in Cloud Map.
 	DeregisterInstance(ctx context.Context, serviceId string, instanceId string) (operationId string, err error)
 
-	// PollCreateNamespace polls a create namespace operation, and returns the namespace ID.
-	PollCreateNamespace(ctx context.Context, operationId string) (namespaceId string, err error)
+	// PollNamespaceOperation polls a namespace operation, and returns the namespace ID.
+	PollNamespaceOperation(ctx context.Context, operationId string) (namespaceId string, err error)
 }
 
 type serviceDiscoveryApi struct {
@@ -248,7 +248,7 @@ func (sdApi *serviceDiscoveryApi) DeregisterInstance(ctx context.Context, svcId 
 
 }
 
-func (sdApi *serviceDiscoveryApi) PollCreateNamespace(ctx context.Context, opId string) (nsId string, err error) {
+func (sdApi *serviceDiscoveryApi) PollNamespaceOperation(ctx context.Context, opId string) (nsId string, err error) {
 	err = wait.Poll(defaultOperationPollInterval, defaultOperationPollTimeout, func() (done bool, err error) {
 		sdApi.log.Info("polling operation", "opId", opId)
 		op, err := sdApi.GetOperation(ctx, opId)
@@ -263,7 +263,6 @@ func (sdApi *serviceDiscoveryApi) PollCreateNamespace(ctx context.Context, opId 
 
 		if op.Status == types.OperationStatusSuccess {
 			nsId = op.Targets[string(types.OperationTargetTypeNamespace)]
-			sdApi.log.Info("namespace created", "nsId", nsId)
 			return true, nil
 		}
 

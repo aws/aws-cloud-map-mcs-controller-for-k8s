@@ -35,6 +35,12 @@ type AwsFacade interface {
 
 	// DeregisterInstance provides ServiceDiscovery DeregisterInstance wrapper interface.
 	DeregisterInstance(context.Context, *sd.DeregisterInstanceInput, ...func(*sd.Options)) (*sd.DeregisterInstanceOutput, error)
+
+	// DeleteNamespace provides ServiceDiscovery DeleteNamespace wrapper interface.
+	DeleteNamespace(context.Context, *sd.DeleteNamespaceInput, ...func(*sd.Options)) (*sd.DeleteNamespaceOutput, error)
+
+	// DeleteService provides ServiceDiscovery DeleteService wrapper interface.
+	DeleteService(context.Context, *sd.DeleteServiceInput, ...func(*sd.Options)) (*sd.DeleteServiceOutput, error)
 }
 
 type awsFacade struct {
