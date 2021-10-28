@@ -22,7 +22,7 @@ type testJanitor struct {
 }
 
 func TestNewDefaultJanitor(t *testing.T) {
-	assert.NotNil(t, newDefaultJanitor())
+	assert.NotNil(t, NewDefaultJanitor())
 }
 
 func TestCleanupHappyCase(t *testing.T) {
@@ -46,6 +46,17 @@ func TestCleanupHappyCase(t *testing.T) {
 	tj.mockSdk.EXPECT().DeleteNamespace(context.TODO(), &sd.DeleteNamespaceInput{Id: aws.String(test.NsId)}).
 		Return(&sd.DeleteNamespaceOutput{OperationId: aws.String(test.OpId2)}, nil)
 	tj.mockApi.EXPECT().PollNamespaceOperation(context.TODO(), test.OpId2)
+
+	tj.janitor.Cleanup(context.TODO(), test.NsName)
+	assert.False(t, *tj.failed)
+}
+
+func TestCleanupNothingToClean(t *testing.T) {
+	tj := getTestJanitor(t)
+	defer tj.close()
+
+	tj.mockApi.EXPECT().ListNamespaces(context.TODO()).
+		Return([]*model.Namespace{}, nil)
 
 	tj.janitor.Cleanup(context.TODO(), test.NsName)
 	assert.False(t, *tj.failed)
