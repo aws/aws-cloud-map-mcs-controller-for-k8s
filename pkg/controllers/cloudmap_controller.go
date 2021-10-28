@@ -24,7 +24,12 @@ const (
 	// TODO move to configuration
 	syncPeriod = 2 * time.Second
 
+	// DerivedServiceAnnotation annotates a ServiceImport with derived Service name
 	DerivedServiceAnnotation = "multicluster.k8s.aws/derived-service"
+
+	// LabelServiceName is used to indicate the name of multi-cluster service
+	// that an EndpointSlice belongs to.
+	LabelServiceImportName = "multicluster.kubernetes.io/service-name"
 )
 
 // CloudMapReconciler reconciles state of Cloud Map services with local ServiceImport objects
@@ -148,7 +153,7 @@ func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Se
 		return err
 	}
 
-	err = r.updateEndpointSlices(ctx, svc, existingService)
+	err = r.updateEndpointSlices(ctx, svcImport, svc, existingService)
 	if err != nil {
 		return err
 	}
@@ -203,7 +208,7 @@ func (r *CloudMapReconciler) createDerivedService(ctx context.Context, svc *mode
 	return nil
 }
 
-func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, cloudMapService *model.Service, svc *v1.Service) error {
+func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport *v1alpha1.ServiceImport, cloudMapService *model.Service, svc *v1.Service) error {
 	existingSlicesList := v1beta1.EndpointSliceList{}
 	var existingSlices []*v1beta1.EndpointSlice
 	if err := r.Client.List(ctx, &existingSlicesList,
@@ -212,7 +217,7 @@ func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, cloudMapS
 	}
 	if len(existingSlicesList.Items) == 0 {
 		// create new endpoint slice
-		existingSlices = createEndpointSlicesStruct(cloudMapService, svc)
+		existingSlices = createEndpointSlicesStruct(svcImport, cloudMapService, svc)
 		for _, slice := range existingSlices {
 			if err := r.Client.Create(ctx, slice); err != nil {
 				return err
@@ -252,7 +257,7 @@ func createDerivedServiceStruct(svc *model.Service, svcImport *v1alpha1.ServiceI
 	}
 }
 
-func createEndpointSlicesStruct(cloudMapSvc *model.Service, svc *v1.Service) []*v1beta1.EndpointSlice {
+func createEndpointSlicesStruct(svcImport *v1alpha1.ServiceImport, cloudMapSvc *model.Service, svc *v1.Service) []*v1beta1.EndpointSlice {
 	slices := make([]*v1beta1.EndpointSlice, 0)
 
 	t := true
@@ -279,7 +284,10 @@ func createEndpointSlicesStruct(cloudMapSvc *model.Service, svc *v1.Service) []*
 
 	slices = append(slices, &v1beta1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:       map[string]string{v1beta1.LabelServiceName: svc.Name},
+			Labels: map[string]string{
+				v1beta1.LabelServiceName: svc.Name,       // derived Service name
+				LabelServiceImportName:   svcImport.Name, // original ServiceImport name
+			},
 			GenerateName: svc.Name + "-",
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(svc, schema.GroupVersionKind{
 				Version: svc.TypeMeta.APIVersion,
