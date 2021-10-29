@@ -122,9 +122,7 @@ func (sdApi *serviceDiscoveryApi) ListInstances(ctx context.Context, svcId strin
 			return insts, err
 		}
 
-		for _, inst := range output.Instances {
-			insts = append(insts, inst)
-		}
+		insts = append(insts, output.Instances...)
 	}
 
 	return insts, nil
