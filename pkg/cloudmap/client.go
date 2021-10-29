@@ -221,9 +221,18 @@ func (sdc *serviceDiscoveryClient) listEndpoints(ctx context.Context, serviceId 
 		return cachedValue.([]*model.Endpoint), nil
 	}
 
-	endpts, err = sdc.sdApi.ListInstances(ctx, serviceId)
+	insts, err := sdc.sdApi.ListInstances(ctx, serviceId)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, inst := range insts {
+		endpt, endptErr := model.NewEndpointFromInstance(&inst)
+		if endptErr != nil {
+			sdc.log.Info(fmt.Sprintf("skipping instance %s to endpoint conversion: %s", *inst.Id, endptErr.Error()))
+			continue
+		}
+		endpts = append(endpts, endpt)
 	}
 
 	sdc.cacheEndpoints(serviceId, endpts)

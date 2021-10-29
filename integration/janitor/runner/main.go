@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/integration/janitor"
 )
 
 const (
@@ -9,6 +10,6 @@ const (
 )
 
 func main() {
-	j := NewDefaultJanitor()
+	j := janitor.NewDefaultJanitor()
 	j.Cleanup(context.TODO(), e2eNs)
 }

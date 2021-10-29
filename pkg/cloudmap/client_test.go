@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	testing2 "github.com/go-logr/logr/testing"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -31,7 +32,15 @@ func TestServiceDiscoveryClient_ListServices_HappyCase(t *testing.T) {
 	sdApi.EXPECT().ListServices(context.TODO(), test.NsId).
 		Return([]*model.Resource{{Name: test.SvcName, Id: test.SvcId}}, nil)
 	sdApi.EXPECT().ListInstances(context.TODO(), test.SvcId).
-		Return([]*model.Endpoint{test.GetTestEndpoint()}, nil)
+		Return([]types.InstanceSummary{
+			{
+				Id: aws.String(test.EndptId1),
+				Attributes: map[string]string{
+					model.Ipv4Attr: test.EndptIp1,
+					model.PortAttr: test.EndptPortStr1,
+				},
+			},
+		}, nil)
 
 	sdc := getTestSdClient(t, sdApi)
 	svcs, err := sdc.ListServices(context.TODO(), test.NsName)
@@ -107,7 +116,7 @@ func TestServiceDiscoveryClient_ListServices_InstanceError(t *testing.T) {
 	sdApi.EXPECT().ListServices(context.TODO(), test.NsId).
 		Return([]*model.Resource{{Name: test.SvcName, Id: test.SvcId}}, nil)
 	sdApi.EXPECT().ListInstances(context.TODO(), test.SvcId).
-		Return([]*model.Endpoint{}, endptErr)
+		Return([]types.InstanceSummary{}, endptErr)
 
 	sdc := getTestSdClient(t, sdApi)
 	svcs, err := sdc.ListServices(context.TODO(), test.NsName)

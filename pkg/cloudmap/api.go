@@ -27,7 +27,7 @@ type ServiceDiscoveryApi interface {
 	ListServices(ctx context.Context, namespaceId string) (services []*model.Resource, err error)
 
 	// ListInstances returns a list of service instances registered to a given service.
-	ListInstances(ctx context.Context, serviceId string) ([]*model.Endpoint, error)
+	ListInstances(ctx context.Context, serviceId string) ([]types.InstanceSummary, error)
 
 	// ListOperations returns a map of operations to their status matching a list of filters.
 	ListOperations(ctx context.Context, opFilters []types.OperationFilter) (operationStatusMap map[string]types.OperationStatus, err error)
@@ -64,8 +64,7 @@ func NewServiceDiscoveryApiFromConfig(cfg *aws.Config) ServiceDiscoveryApi {
 	}
 }
 
-func (sdApi *serviceDiscoveryApi) ListNamespaces(ctx context.Context) ([]*model.Namespace, error) {
-	namespaces := make([]*model.Namespace, 0)
+func (sdApi *serviceDiscoveryApi) ListNamespaces(ctx context.Context) (namespaces []*model.Namespace, err error) {
 	pages := sd.NewListNamespacesPaginator(sdApi.awsFacade, &sd.ListNamespacesInput{})
 
 	for pages.HasMorePages() {
@@ -88,8 +87,7 @@ func (sdApi *serviceDiscoveryApi) ListNamespaces(ctx context.Context) ([]*model.
 	return namespaces, nil
 }
 
-func (sdApi *serviceDiscoveryApi) ListServices(ctx context.Context, nsId string) ([]*model.Resource, error) {
-	svcs := make([]*model.Resource, 0)
+func (sdApi *serviceDiscoveryApi) ListServices(ctx context.Context, nsId string) (svcs []*model.Resource, err error) {
 
 	filter := types.ServiceFilter{
 		Name:   types.ServiceFilterNameNamespaceId,
@@ -115,30 +113,21 @@ func (sdApi *serviceDiscoveryApi) ListServices(ctx context.Context, nsId string)
 	return svcs, nil
 }
 
-func (sdApi *serviceDiscoveryApi) ListInstances(ctx context.Context, svcId string) ([]*model.Endpoint, error) {
-	endpts := make([]*model.Endpoint, 0)
-
+func (sdApi *serviceDiscoveryApi) ListInstances(ctx context.Context, svcId string) (insts []types.InstanceSummary, err error) {
 	pages := sd.NewListInstancesPaginator(sdApi.awsFacade, &sd.ListInstancesInput{ServiceId: &svcId})
 
 	for pages.HasMorePages() {
 		output, err := pages.NextPage(ctx)
 		if err != nil {
-			return endpts, err
+			return insts, err
 		}
 
 		for _, inst := range output.Instances {
-			endpt, endptErr := model.NewEndpointFromInstance(&inst)
-
-			if endptErr != nil {
-				sdApi.log.Info(fmt.Sprintf("skipping instance %s to endpoint conversion: %s", *inst.Id, endptErr.Error()))
-				continue
-			}
-
-			endpts = append(endpts, endpt)
+			insts = append(insts, inst)
 		}
 	}
 
-	return endpts, nil
+	return insts, nil
 }
 
 func (sdApi *serviceDiscoveryApi) ListOperations(ctx context.Context, opFilters []types.OperationFilter) (opStatusMap map[string]types.OperationStatus, err error) {
