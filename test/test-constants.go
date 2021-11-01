@@ -1,6 +1,8 @@
 package test
 
-import "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
+import (
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
+)
 
 const (
 	NsName        = "ns-name"
@@ -8,6 +10,7 @@ const (
 	SvcName       = "svc-name"
 	SvcId         = "svc-id"
 	EndptId1      = "endpoint-id-1"
+	EndptId2      = "endpoint-id-2"
 	EndptIp1      = "192.168.0.1"
 	EndptPort1    = 2
 	EndptPortStr1 = "2"

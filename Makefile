@@ -97,6 +97,8 @@ generate-mocks: mockgen
 	$(MOCKGEN) --source pkg/cloudmap/operation_collector.go --destination $(MOCKS_DESTINATION)/pkg/cloudmap/operation_collector_mock.go --package cloudmap
 	$(MOCKGEN) --source pkg/cloudmap/api.go --destination $(MOCKS_DESTINATION)/pkg/cloudmap/api_mock.go --package cloudmap
 	$(MOCKGEN) --source pkg/cloudmap/aws_facade.go --destination $(MOCKS_DESTINATION)/pkg/cloudmap/aws_facade_mock.go --package cloudmap
+	$(MOCKGEN) --source integration/janitor/api.go --destination $(MOCKS_DESTINATION)/integration/janitor/api_mock.go --package janitor
+	$(MOCKGEN) --source integration/janitor/aws_facade.go --destination $(MOCKS_DESTINATION)/integration/janitor/aws_facade_mock.go --package janitor
 
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
