@@ -93,18 +93,17 @@ func TestServiceDiscoveryApi_ListInstances_HappyCase(t *testing.T) {
 
 	awsFacade.EXPECT().ListInstances(context.TODO(), gomock.Any()).
 		Return(&sd.ListInstancesOutput{
-			Instances: []types.InstanceSummary{{
-				Id: aws.String(test.EndptId1),
-				Attributes: map[string]string{
-					model.Ipv4Attr: test.EndptIp1,
-					model.PortAttr: test.EndptPortStr1,
-				}}},
+			Instances: []types.InstanceSummary{
+				{Id: aws.String(test.EndptId1)},
+				{Id: aws.String(test.EndptId2)},
+			},
 		}, nil)
 
 	insts, err := sdApi.ListInstances(context.TODO(), test.SvcId)
 	assert.Nil(t, err, "No error for happy case")
-	assert.True(t, len(insts) == 1)
-	assert.Equal(t, insts[0], test.GetTestEndpoint())
+	assert.True(t, len(insts) == 2)
+	assert.Equal(t, test.EndptId1, *insts[0].Id)
+	assert.Equal(t, test.EndptId2, *insts[1].Id)
 }
 
 func TestServiceDiscoveryApi_ListOperations_HappyCase(t *testing.T) {
@@ -241,8 +240,8 @@ func TestServiceDiscoveryApi_PollCreateNamespace_HappyCase(t *testing.T) {
 	// TODO: Add unit tests
 }
 
-func getServiceDiscoveryApi(t *testing.T, awsFacade *cloudmap.MockAwsFacade) serviceDiscoveryApi {
-	return serviceDiscoveryApi{
+func getServiceDiscoveryApi(t *testing.T, awsFacade *cloudmap.MockAwsFacade) ServiceDiscoveryApi {
+	return &serviceDiscoveryApi{
 		log:       testingLogger.TestLogger{T: t},
 		awsFacade: awsFacade,
 	}

@@ -27,7 +27,7 @@ type ServiceDiscoveryApi interface {
 	ListServices(ctx context.Context, namespaceId string) (services []*model.Resource, err error)
 
 	// ListInstances returns a list of service instances registered to a given service.
-	ListInstances(ctx context.Context, serviceId string) ([]*model.Endpoint, error)
+	ListInstances(ctx context.Context, serviceId string) ([]types.InstanceSummary, error)
 
 	// ListOperations returns a map of operations to their status matching a list of filters.
 	ListOperations(ctx context.Context, opFilters []types.OperationFilter) (operationStatusMap map[string]types.OperationStatus, err error)
@@ -47,8 +47,8 @@ type ServiceDiscoveryApi interface {
 	// DeregisterInstance de-registers a service instance in Cloud Map.
 	DeregisterInstance(ctx context.Context, serviceId string, instanceId string) (operationId string, err error)
 
-	// PollCreateNamespace polls a create namespace operation, and returns the namespace ID.
-	PollCreateNamespace(ctx context.Context, operationId string) (namespaceId string, err error)
+	// PollNamespaceOperation polls a namespace operation, and returns the namespace ID.
+	PollNamespaceOperation(ctx context.Context, operationId string) (namespaceId string, err error)
 }
 
 type serviceDiscoveryApi struct {
@@ -64,8 +64,7 @@ func NewServiceDiscoveryApiFromConfig(cfg *aws.Config) ServiceDiscoveryApi {
 	}
 }
 
-func (sdApi *serviceDiscoveryApi) ListNamespaces(ctx context.Context) ([]*model.Namespace, error) {
-	namespaces := make([]*model.Namespace, 0)
+func (sdApi *serviceDiscoveryApi) ListNamespaces(ctx context.Context) (namespaces []*model.Namespace, err error) {
 	pages := sd.NewListNamespacesPaginator(sdApi.awsFacade, &sd.ListNamespacesInput{})
 
 	for pages.HasMorePages() {
@@ -88,8 +87,7 @@ func (sdApi *serviceDiscoveryApi) ListNamespaces(ctx context.Context) ([]*model.
 	return namespaces, nil
 }
 
-func (sdApi *serviceDiscoveryApi) ListServices(ctx context.Context, nsId string) ([]*model.Resource, error) {
-	svcs := make([]*model.Resource, 0)
+func (sdApi *serviceDiscoveryApi) ListServices(ctx context.Context, nsId string) (svcs []*model.Resource, err error) {
 
 	filter := types.ServiceFilter{
 		Name:   types.ServiceFilterNameNamespaceId,
@@ -115,30 +113,19 @@ func (sdApi *serviceDiscoveryApi) ListServices(ctx context.Context, nsId string)
 	return svcs, nil
 }
 
-func (sdApi *serviceDiscoveryApi) ListInstances(ctx context.Context, svcId string) ([]*model.Endpoint, error) {
-	endpts := make([]*model.Endpoint, 0)
-
+func (sdApi *serviceDiscoveryApi) ListInstances(ctx context.Context, svcId string) (insts []types.InstanceSummary, err error) {
 	pages := sd.NewListInstancesPaginator(sdApi.awsFacade, &sd.ListInstancesInput{ServiceId: &svcId})
 
 	for pages.HasMorePages() {
 		output, err := pages.NextPage(ctx)
 		if err != nil {
-			return endpts, err
+			return insts, err
 		}
 
-		for _, inst := range output.Instances {
-			endpt, endptErr := model.NewEndpointFromInstance(&inst)
-
-			if endptErr != nil {
-				sdApi.log.Info(fmt.Sprintf("skipping instance %s to endpoint conversion: %s", *inst.Id, endptErr.Error()))
-				continue
-			}
-
-			endpts = append(endpts, endpt)
-		}
+		insts = append(insts, output.Instances...)
 	}
 
-	return endpts, nil
+	return insts, nil
 }
 
 func (sdApi *serviceDiscoveryApi) ListOperations(ctx context.Context, opFilters []types.OperationFilter) (opStatusMap map[string]types.OperationStatus, err error) {
@@ -248,7 +235,7 @@ func (sdApi *serviceDiscoveryApi) DeregisterInstance(ctx context.Context, svcId 
 
 }
 
-func (sdApi *serviceDiscoveryApi) PollCreateNamespace(ctx context.Context, opId string) (nsId string, err error) {
+func (sdApi *serviceDiscoveryApi) PollNamespaceOperation(ctx context.Context, opId string) (nsId string, err error) {
 	err = wait.Poll(defaultOperationPollInterval, defaultOperationPollTimeout, func() (done bool, err error) {
 		sdApi.log.Info("polling operation", "opId", opId)
 		op, err := sdApi.GetOperation(ctx, opId)
@@ -263,7 +250,6 @@ func (sdApi *serviceDiscoveryApi) PollCreateNamespace(ctx context.Context, opId 
 
 		if op.Status == types.OperationStatusSuccess {
 			nsId = op.Targets[string(types.OperationTargetTypeNamespace)]
-			sdApi.log.Info("namespace created", "nsId", nsId)
 			return true, nil
 		}
 
