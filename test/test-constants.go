@@ -39,11 +39,10 @@ func GetTestDnsNamespace() *model.Namespace {
 }
 
 func GetTestService() *model.Service {
-	endPt := GetTestEndpoint()
 	return &model.Service{
 		Namespace: NsName,
 		Name:      SvcName,
-		Endpoints: []*model.Endpoint{endPt},
+		Endpoints: []*model.Endpoint{GetTestEndpoint(), GetTestEndpoint2()},
 	}
 }
 
@@ -52,6 +51,15 @@ func GetTestEndpoint() *model.Endpoint {
 		Id:         EndptId1,
 		IP:         EndptIp1,
 		Port:       EndptPort1,
+		Attributes: make(map[string]string, 0),
+	}
+}
+
+func GetTestEndpoint2() *model.Endpoint {
+	return &model.Endpoint{
+		Id:         EndptId2,
+		IP:         EndptIp2,
+		Port:       EndptPort2,
 		Attributes: make(map[string]string, 0),
 	}
 }
