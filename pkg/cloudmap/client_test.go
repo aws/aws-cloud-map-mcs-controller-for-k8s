@@ -22,7 +22,7 @@ type testSdClient struct {
 }
 
 func TestNewServiceDiscoveryClient(t *testing.T) {
-	sdc := NewServiceDiscoveryClient(&aws.Config{})
+	sdc := NewDefaultServiceDiscoveryClient(&aws.Config{})
 	assert.NotNil(t, sdc)
 }
 

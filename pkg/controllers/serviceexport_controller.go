@@ -36,6 +36,7 @@ import (
 )
 
 const (
+	K8sVersionAttr         = "K8S_CONTROLLER"
 	serviceExportFinalizer = "multicluster.k8s.aws/service-export-finalizer"
 )
 
@@ -195,7 +196,7 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 				for _, IP := range ep.Addresses {
 					attributes := make(map[string]string, 0)
 					if version.GetVersion() != "" {
-						attributes["K8S_CONTROLLER"] = version.PackageName + " " + version.GetVersion()
+						attributes[K8sVersionAttr] = version.PackageName + " " + version.GetVersion()
 					}
 					// TODO extract attributes - pod, node and other useful details if possible
 

@@ -1,0 +1,11 @@
+kind: Service
+apiVersion: v1
+metadata:
+  namespace: aws-cloud-map-mcs-e2e
+  name: e2e-service
+spec:
+  selector:
+    app: coredns
+  ports:
+    - port: 8080
+      targetPort: 80

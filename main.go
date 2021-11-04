@@ -96,7 +96,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	serviceDiscoveryClient := cloudmap.NewServiceDiscoveryClient(&awsCfg)
+	serviceDiscoveryClient := cloudmap.NewDefaultServiceDiscoveryClient(&awsCfg)
 	if err = (&controllers.ServiceExportReconciler{
 		Client:   mgr.GetClient(),
 		Log:      ctrl.Log.WithName("controllers").WithName("ServiceExport"),
