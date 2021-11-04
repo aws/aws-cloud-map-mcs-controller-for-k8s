@@ -157,8 +157,10 @@ func (sdc *serviceDiscoveryClient) RegisterEndpoints(ctx context.Context, nsName
 	opCollector := NewOperationCollector()
 
 	for _, endpt := range endpts {
+		endptId := endpt.Id
+		endptAttrs := endpt.GetCloudMapAttributes()
 		opCollector.Add(func() (opId string, err error) {
-			return sdc.sdApi.RegisterInstance(ctx, svcId, endpt.Id, endpt.GetCloudMapAttributes())
+			return sdc.sdApi.RegisterInstance(ctx, svcId, endptId, endptAttrs)
 		})
 	}
 
@@ -195,8 +197,9 @@ func (sdc *serviceDiscoveryClient) DeleteEndpoints(ctx context.Context, nsName s
 	opCollector := NewOperationCollector()
 
 	for _, endpt := range endpts {
+		endptId := endpt.Id
 		opCollector.Add(func() (opId string, err error) {
-			return sdc.sdApi.DeregisterInstance(ctx, svcId, endpt.Id)
+			return sdc.sdApi.DeregisterInstance(ctx, svcId, endptId)
 		})
 	}
 

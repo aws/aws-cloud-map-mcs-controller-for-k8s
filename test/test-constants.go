@@ -12,8 +12,11 @@ const (
 	EndptId1      = "endpoint-id-1"
 	EndptId2      = "endpoint-id-2"
 	EndptIp1      = "192.168.0.1"
-	EndptPort1    = 2
-	EndptPortStr1 = "2"
+	EndptIp2      = "192.168.0.2"
+	EndptPort1    = 1
+	EndptPortStr1 = "1"
+	EndptPort2    = 2
+	EndptPortStr2 = "2"
 	OpId1         = "operation-id-1"
 	OpId2         = "operation-id-2"
 	OpStart       = 1
