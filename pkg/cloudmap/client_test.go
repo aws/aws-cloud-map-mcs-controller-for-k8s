@@ -288,12 +288,70 @@ func TestServiceDiscoveryClient_GetService(t *testing.T) {
 	// TODO: Add unit tests
 }
 
-func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
+func TestServiceDiscoveryClient_GetService_CachedValues(t *testing.T) {
 	// TODO: Add unit tests
 }
 
+func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
+
+	sdc := getTestSdClient(t, sdApi)
+	sdc.namespaceCache.Add(test.NsName, test.NsId, time.Minute)
+	sdc.serviceIdCache.Add(fmt.Sprintf("%s/%s", test.NsName, test.SvcName), test.SvcId, time.Minute)
+
+	attrs1 := map[string]string{"AWS_INSTANCE_IPV4": test.EndptIp1, "AWS_INSTANCE_PORT": test.EndptPortStr1}
+	attrs2 := map[string]string{"AWS_INSTANCE_IPV4": test.EndptIp2, "AWS_INSTANCE_PORT": test.EndptPortStr2}
+
+	sdApi.EXPECT().RegisterInstance(context.TODO(), test.SvcId, test.EndptId1, attrs1).
+		Return(test.OpId1, nil)
+	sdApi.EXPECT().RegisterInstance(context.TODO(), test.SvcId, test.EndptId2, attrs2).
+		Return(test.OpId2, nil)
+	sdApi.EXPECT().ListOperations(context.TODO(), gomock.Any()).
+		Return(map[string]types.OperationStatus{
+			test.OpId1: types.OperationStatusSuccess,
+			test.OpId2: types.OperationStatusSuccess}, nil)
+
+	err := sdc.RegisterEndpoints(context.TODO(), test.NsName, test.SvcName,
+		[]*model.Endpoint{
+			{
+				Id:   test.EndptId1,
+				IP:   test.EndptIp1,
+				Port: test.EndptPort1,
+			},
+			{
+				Id:   test.EndptId2,
+				IP:   test.EndptIp2,
+				Port: test.EndptPort2,
+			},
+		})
+
+	assert.Nil(t, err)
+}
+
 func TestServiceDiscoveryClient_DeleteEndpoints(t *testing.T) {
-	// TODO: Add unit tests
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
+
+	sdc := getTestSdClient(t, sdApi)
+	sdc.namespaceCache.Add(test.NsName, test.NsId, time.Minute)
+	sdc.serviceIdCache.Add(fmt.Sprintf("%s/%s", test.NsName, test.SvcName), test.SvcId, time.Minute)
+
+	sdApi.EXPECT().DeregisterInstance(context.TODO(), test.SvcId, test.EndptId1).Return(test.OpId1, nil)
+	sdApi.EXPECT().DeregisterInstance(context.TODO(), test.SvcId, test.EndptId2).Return(test.OpId2, nil)
+	sdApi.EXPECT().ListOperations(context.TODO(), gomock.Any()).
+		Return(map[string]types.OperationStatus{
+			test.OpId1: types.OperationStatusSuccess,
+			test.OpId2: types.OperationStatusSuccess}, nil)
+
+	err := sdc.DeleteEndpoints(context.TODO(), test.NsName, test.SvcName,
+		[]*model.Endpoint{{Id: test.EndptId1}, {Id: test.EndptId2}})
+
+	assert.Nil(t, err)
 }
 
 func TestServiceDiscoveryClient_getNamespace_HappyCase(t *testing.T) {
