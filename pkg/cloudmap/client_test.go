@@ -40,6 +40,13 @@ func TestServiceDiscoveryClient_ListServices_HappyCase(t *testing.T) {
 					model.PortAttr: test.EndptPortStr1,
 				},
 			},
+			{
+				Id: aws.String(test.EndptId2),
+				Attributes: map[string]string{
+					model.Ipv4Attr: test.EndptIp2,
+					model.PortAttr: test.EndptPortStr2,
+				},
+			},
 		}, nil)
 
 	sdc := getTestSdClient(t, sdApi)
@@ -52,7 +59,7 @@ func TestServiceDiscoveryClient_ListServices_HappyCase(t *testing.T) {
 	cachedSvc, _ := sdc.serviceIdCache.Get(fmt.Sprintf("%s/%s", test.NsName, test.SvcName))
 	assert.Equal(t, test.SvcId, cachedSvc, "Happy case caches service ID")
 	cachedEndpts, _ := sdc.endpointCache.Get(test.SvcId)
-	assert.Equal(t, []*model.Endpoint{test.GetTestEndpoint()}, cachedEndpts, "Happy case caches endpoints")
+	assert.Equal(t, []*model.Endpoint{test.GetTestEndpoint(), test.GetTestEndpoint2()}, cachedEndpts, "Happy case caches endpoints")
 }
 
 func TestServiceDiscoveryClient_ListServices_HappyCaseCachedResults(t *testing.T) {
@@ -65,7 +72,7 @@ func TestServiceDiscoveryClient_ListServices_HappyCaseCachedResults(t *testing.T
 
 	sdc := getTestSdClient(t, sdApi)
 	sdc.namespaceCache.Add(test.NsName, *test.GetTestHttpNamespace(), time.Minute)
-	sdc.endpointCache.Add(test.SvcId, []*model.Endpoint{test.GetTestEndpoint()}, time.Minute)
+	sdc.endpointCache.Add(test.SvcId, []*model.Endpoint{test.GetTestEndpoint(), test.GetTestEndpoint2()}, time.Minute)
 
 	svcs, err := sdc.ListServices(context.TODO(), test.NsName)
 	assert.Equal(t, []*model.Service{test.GetTestService()}, svcs)
@@ -284,12 +291,51 @@ func TestServiceDiscoveryClient_CreateService_CreatesNamespace_CreateNsError(t *
 	assert.Equal(t, nsErr, err)
 }
 
-func TestServiceDiscoveryClient_GetService(t *testing.T) {
-	// TODO: Add unit tests
+func TestServiceDiscoveryClient_GetService_HappyCase(t *testing.T) {
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
+	sdApi.EXPECT().ListNamespaces(context.TODO()).Return([]*model.Namespace{{Id: test.NsId, Name: test.NsName}}, nil)
+	sdApi.EXPECT().ListServices(context.TODO(), test.NsId).
+		Return([]*model.Resource{{Id: test.SvcId, Name: test.SvcName}}, nil)
+	sdApi.EXPECT().ListInstances(context.TODO(), test.SvcId).
+		Return([]types.InstanceSummary{
+			{
+				Id: aws.String(test.EndptId1),
+				Attributes: map[string]string{
+					model.Ipv4Attr: test.EndptIp1,
+					model.PortAttr: test.EndptPortStr1,
+				},
+			},
+			{
+				Id: aws.String(test.EndptId2),
+				Attributes: map[string]string{
+					model.Ipv4Attr: test.EndptIp2,
+					model.PortAttr: test.EndptPortStr2,
+				},
+			},
+		}, nil)
+	sdc := getTestSdClient(t, sdApi)
+
+	svc, err := sdc.GetService(context.TODO(), test.NsName, test.SvcName)
+	assert.Nil(t, err)
+	assert.Equal(t, test.GetTestService(), svc)
 }
 
 func TestServiceDiscoveryClient_GetService_CachedValues(t *testing.T) {
-	// TODO: Add unit tests
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
+	sdc := getTestSdClient(t, sdApi)
+	sdc.namespaceCache.Add(test.NsName, *test.GetTestHttpNamespace(), time.Minute)
+	sdc.serviceIdCache.Add(fmt.Sprintf("%s/%s", test.NsName, test.SvcName), test.SvcId, time.Minute)
+	sdc.endpointCache.Add(test.SvcId, []*model.Endpoint{test.GetTestEndpoint(), test.GetTestEndpoint2()}, time.Minute)
+
+	svc, err := sdc.GetService(context.TODO(), test.NsName, test.SvcName)
+	assert.Nil(t, err)
+	assert.Equal(t, test.GetTestService(), svc)
 }
 
 func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
@@ -297,10 +343,9 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 	defer mockController.Finish()
 
 	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
-
 	sdc := getTestSdClient(t, sdApi)
-	sdc.namespaceCache.Add(test.NsName, test.NsId, time.Minute)
 	sdc.serviceIdCache.Add(fmt.Sprintf("%s/%s", test.NsName, test.SvcName), test.SvcId, time.Minute)
+	sdc.endpointCache.Add(test.SvcId, model.Endpoint{}, time.Minute)
 
 	attrs1 := map[string]string{"AWS_INSTANCE_IPV4": test.EndptIp1, "AWS_INSTANCE_PORT": test.EndptPortStr1}
 	attrs2 := map[string]string{"AWS_INSTANCE_IPV4": test.EndptIp2, "AWS_INSTANCE_PORT": test.EndptPortStr2}
@@ -329,6 +374,8 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 		})
 
 	assert.Nil(t, err)
+	_, entryCached := sdc.endpointCache.Get(test.SvcId)
+	assert.False(t, entryCached, "Cache entry evicted after register")
 }
 
 func TestServiceDiscoveryClient_DeleteEndpoints(t *testing.T) {
@@ -338,8 +385,8 @@ func TestServiceDiscoveryClient_DeleteEndpoints(t *testing.T) {
 	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
 
 	sdc := getTestSdClient(t, sdApi)
-	sdc.namespaceCache.Add(test.NsName, test.NsId, time.Minute)
 	sdc.serviceIdCache.Add(fmt.Sprintf("%s/%s", test.NsName, test.SvcName), test.SvcId, time.Minute)
+	sdc.endpointCache.Add(test.SvcId, model.Endpoint{}, time.Minute)
 
 	sdApi.EXPECT().DeregisterInstance(context.TODO(), test.SvcId, test.EndptId1).Return(test.OpId1, nil)
 	sdApi.EXPECT().DeregisterInstance(context.TODO(), test.SvcId, test.EndptId2).Return(test.OpId2, nil)
@@ -352,6 +399,8 @@ func TestServiceDiscoveryClient_DeleteEndpoints(t *testing.T) {
 		[]*model.Endpoint{{Id: test.EndptId1}, {Id: test.EndptId2}})
 
 	assert.Nil(t, err)
+	_, entryCached := sdc.endpointCache.Get(test.SvcId)
+	assert.False(t, entryCached, "Cache entry evicted after de-register")
 }
 
 func TestServiceDiscoveryClient_getNamespace_HappyCase(t *testing.T) {

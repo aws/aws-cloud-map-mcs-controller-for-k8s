@@ -2,6 +2,7 @@ package cloudmap
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
@@ -229,15 +230,85 @@ func TestServiceDiscoveryApi_CreateService_ThrowError(t *testing.T) {
 }
 
 func TestServiceDiscoveryApi_RegisterInstance_HappyCase(t *testing.T) {
-	// TODO: Add unit tests
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	attrs := map[string]string{"a": "b"}
+
+	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	awsFacade.EXPECT().RegisterInstance(context.TODO(),
+		&sd.RegisterInstanceInput{
+			ServiceId:  aws.String(test.SvcId),
+			InstanceId: aws.String(test.EndptId1),
+			Attributes: attrs}).
+		Return(&sd.RegisterInstanceOutput{OperationId: aws.String(test.OpId1)}, nil)
+
+	sdApi := getServiceDiscoveryApi(t, awsFacade)
+	opId, err := sdApi.RegisterInstance(context.TODO(), test.SvcId, test.EndptId1, attrs)
+	assert.Nil(t, err)
+	assert.Equal(t, test.OpId1, opId)
+}
+
+func TestServiceDiscoveryApi_RegisterInstance_Error(t *testing.T) {
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	sdkErr := errors.New("fail")
+	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	awsFacade.EXPECT().RegisterInstance(context.TODO(), gomock.Any()).Return(nil, sdkErr)
+
+	sdApi := getServiceDiscoveryApi(t, awsFacade)
+	_, err := sdApi.RegisterInstance(context.TODO(), test.SvcId, test.EndptId1, map[string]string{})
+	assert.Equal(t, sdkErr, err)
 }
 
 func TestServiceDiscoveryApi_DeregisterInstance_HappyCase(t *testing.T) {
-	// TODO: Add unit tests
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	awsFacade.EXPECT().DeregisterInstance(context.TODO(),
+		&sd.DeregisterInstanceInput{
+			ServiceId:  aws.String(test.SvcId),
+			InstanceId: aws.String(test.EndptId1)}).
+		Return(&sd.DeregisterInstanceOutput{OperationId: aws.String(test.OpId1)}, nil)
+
+	sdApi := getServiceDiscoveryApi(t, awsFacade)
+	opId, err := sdApi.DeregisterInstance(context.TODO(), test.SvcId, test.EndptId1)
+	assert.Nil(t, err)
+	assert.Equal(t, test.OpId1, opId)
 }
 
-func TestServiceDiscoveryApi_PollCreateNamespace_HappyCase(t *testing.T) {
-	// TODO: Add unit tests
+func TestServiceDiscoveryApi_DeregisterInstance_Error(t *testing.T) {
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	sdkErr := errors.New("fail")
+	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	awsFacade.EXPECT().DeregisterInstance(context.TODO(), gomock.Any()).Return(nil, sdkErr)
+
+	sdApi := getServiceDiscoveryApi(t, awsFacade)
+	_, err := sdApi.DeregisterInstance(context.TODO(), test.SvcId, test.EndptId1)
+	assert.Equal(t, sdkErr, err)
+}
+
+func TestServiceDiscoveryApi_PollNamespaceOperation_HappyCase(t *testing.T) {
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	awsFacade.EXPECT().GetOperation(context.TODO(), &sd.GetOperationInput{OperationId: aws.String(test.OpId1)}).
+		Return(&sd.GetOperationOutput{Operation: &types.Operation{Status: types.OperationStatusPending}}, nil)
+
+	awsFacade.EXPECT().GetOperation(context.TODO(), &sd.GetOperationInput{OperationId: aws.String(test.OpId1)}).
+		Return(&sd.GetOperationOutput{Operation: &types.Operation{Status: types.OperationStatusSuccess,
+			Targets: map[string]string{string(types.OperationTargetTypeNamespace): test.NsId}}}, nil)
+
+	sdApi := getServiceDiscoveryApi(t, awsFacade)
+
+	nsId, err := sdApi.PollNamespaceOperation(context.TODO(), test.OpId1)
+	assert.Nil(t, err)
+	assert.Equal(t, test.NsId, nsId)
 }
 
 func getServiceDiscoveryApi(t *testing.T, awsFacade *cloudmap.MockAwsFacade) ServiceDiscoveryApi {
