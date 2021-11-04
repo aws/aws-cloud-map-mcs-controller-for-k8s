@@ -257,11 +257,12 @@ func (sdc *serviceDiscoveryClient) getNamespace(ctx context.Context, nsName stri
 		return nil, err
 	}
 
-	for _, ns := range namespaces {
-		sdc.cacheNamespace(*ns)
+	for _, itPtr := range namespaces {
+		ns := *itPtr
+		sdc.cacheNamespace(ns)
 		// Set the return namespace
 		if nsName == ns.Name {
-			namespace = ns
+			namespace = &ns
 		}
 	}
 
