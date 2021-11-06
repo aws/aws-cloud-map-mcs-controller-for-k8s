@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: demo
+  namespace: example
   name: nginx-deployment
   labels:
     app: nginx

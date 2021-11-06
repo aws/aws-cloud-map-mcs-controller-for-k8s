@@ -86,19 +86,22 @@ func main() {
 	}
 
 	// TODO: configure session
+	awsRegion := os.Getenv("AWS_REGION")
+	setupLog.Info("configuring AWS session", "AWS_REGION", awsRegion)
 	awsCfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion(os.Getenv("AWS_REGION")),
+		config.WithRegion(awsRegion),
 	)
 	if err != nil {
-		setupLog.Error(err, "unable to configure AWS session")
+		setupLog.Error(err, "unable to configure AWS session", "AWS_REGION", awsRegion)
 		os.Exit(1)
 	}
 
+	serviceDiscoveryClient := cloudmap.NewServiceDiscoveryClient(&awsCfg)
 	if err = (&controllers.ServiceExportReconciler{
 		Client:   mgr.GetClient(),
 		Log:      ctrl.Log.WithName("controllers").WithName("ServiceExport"),
 		Scheme:   mgr.GetScheme(),
-		Cloudmap: cloudmap.NewServiceDiscoveryClient(&awsCfg),
+		Cloudmap: serviceDiscoveryClient,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServiceExport")
 		os.Exit(1)
@@ -106,7 +109,7 @@ func main() {
 
 	cloudMapReconciler := &controllers.CloudMapReconciler{
 		Client:   mgr.GetClient(),
-		Cloudmap: cloudmap.NewServiceDiscoveryClient(&awsCfg),
+		Cloudmap: serviceDiscoveryClient,
 		Logger:   ctrl.Log.WithName("controllers").WithName("CloudMap"),
 	}
 

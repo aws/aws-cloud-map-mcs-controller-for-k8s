@@ -1,5 +1,24 @@
 # Contributing Guidelines
 
+* [Getting Started](#getting-started)
+    + [Local Setup](#local-setup)
+        - [Prerequisites](#prerequisites)
+        - [Cluster Setup](#cluster-setup)
+        - [Run the controller from outside the cluster](#run-the-controller-from-outside-the-cluster)
+        - [Build and deploy to the cluster](#build-and-deploy-to-the-cluster)
+        - [Run unit tests](#run-unit-tests)
+        - [Cleanup](#cleanup)
+    + [Deploying to a cluster](#deploying-to-a-cluster)
+    + [Build and push docker image to ECR](#build-and-push-docker-image-to-ecr)
+        - [Deployment](#deployment)
+        - [Uninstallation](#uninstallation)
+* [Reporting Bugs/Feature Requests](#reporting-bugsfeature-requests)
+* [Contributing via Pull Requests](#contributing-via-pull-requests)
+* [Finding contributions to work on](#finding-contributions-to-work-on)
+* [Code of Conduct](#code-of-conduct)
+* [Security issue notifications](#security-issue-notifications)
+* [Licensing](#licensing)
+
 Thank you for your interest in contributing to our project. Whether it's a bug report, new feature, correction, or additional
 documentation, we greatly value feedback and contributions from our community.
 
@@ -8,7 +27,7 @@ information to effectively respond to your bug report or contribution.
 
 ## Getting Started
 
-### Build and Run locally
+### Local Setup
 
 #### Prerequisites
 
@@ -16,7 +35,7 @@ In order to build and run locally:
 
 * Make sure to have `kubectl` [installed](https://kubernetes.io/docs/tasks/tools/install-kubectl/), at least version `1.15` or above.
 * Make sure to have `kind` [installed](https://kind.sigs.k8s.io/docs/user/quick-start/#installation).
-* Make sure, you have created a [HttpNamespace](https://docs.aws.amazon.com/cloud-map/latest/api/API_CreateHttpNamespace.html) in AWS Cloud Map. The examples below assumes the namespace name to be `demo`
+* Make sure, you have access to AWS Cloud Map. As per exercise below, AWS Cloud Map namespace `example` of the type [HttpNamespace](https://docs.aws.amazon.com/cloud-map/latest/api/API_CreateHttpNamespace.html) will be automatically created.
 
 Note that this walk-through assumes throughout to operate in the `us-west-2` region.
 
@@ -24,9 +43,10 @@ Note that this walk-through assumes throughout to operate in the `us-west-2` reg
 export AWS_REGION=us-west-2
 ```
 
-#### Cluster provisioning
+#### Cluster Setup
 
 Spin up a local Kubernetes cluster using `kind`
+
 ```sh
 kind create cluster --name my-cluster
 # Creating cluster "my-cluster" ...
@@ -34,12 +54,23 @@ kind create cluster --name my-cluster
 ```
 
 When completed, set the kubectl context
+
 ```sh
 kind export kubeconfig --name my-cluster
 # Set kubectl context to "kind-my-cluster"
 ```
 
+Create `example` namespace in the cluster
+
+```sh
+kubectl create namespace example
+# namespace/example created
+```
+
+#### Run the controller from outside the cluster
+
 To register the custom CRDs (`ServiceImport`, `ServiceExport`) in the cluster and create installers
+
 ```sh
 make install
 # ...
@@ -48,36 +79,68 @@ make install
 ```
 
 To run the controller, run the following command. The controller runs in an infinite loop so open another terminal to create CRDs.
+
 ```sh
 make run 
 ```
 
-Create `demo` namespace
-```sh
-kubectl create namespace demo
-# namespace/demo created
-```
+Apply deployment, service and serviceexport configs
 
-Apply deployment, service and export configs
 ```sh
-kubectl apply -f samples/demo-deployment.yaml
+kubectl apply -f samples/example-deployment.yaml
 # deployment.apps/nginx-deployment created
-kubectl apply -f samples/demo-service.yaml
-# service/demo-service created
-kubectl apply -f samples/demo-export.yaml
-# serviceexport.multicluster.x-k8s.io/demo-service created
+kubectl apply -f samples/example-service.yaml
+# service/my-service created
+kubectl apply -f samples/example-serviceexport.yaml
+# serviceexport.multicluster.x-k8s.io/my-service created
 ```
 
 Check running controller if it correctly detects newly created resources
+
 ```
-controllers.ServiceExport	updating Cloud Map service	{"serviceexport": "demo/demo-service", "namespace": "demo", "name": "demo-service"}
-cloudmap	                fetching a service	{"namespaceName": "demo", "serviceName": "demo-service"}
-cloudmap	                creating a new service	{"namespace": "demo", "name": "demo-service"}
+controllers.ServiceExport	updating Cloud Map service	{"serviceexport": "example/my-service", "namespace": "example", "name": "my-service"}
+cloudmap	                fetching a service	{"namespaceName": "example", "serviceName": "my-service"}
+cloudmap	                creating a new service	{"namespace": "example", "name": "my-service"}
+```
+
+#### Build and deploy to the cluster
+
+Build a `controller:local`  (`--no-cache` args can be set to update the existing docker image)
+
+```shell
+make docker-build IMG=controller:local ARGS="--no-cache"
+# ...
+# docker build --no-cache -t controller:local .
+# ...
+# 
+```
+
+Load the controller docker image into the kind cluster `my-cluster`
+```shell
+kind load docker-image controller:local --name my-cluster
+# Image: "controller:local" with ID "sha256:xxx" not yet present on node "my-cluster-control-plane", loading...
+```
+
+> ⚠ **The controller still needs credentials to interact to AWS SDK.** We are not supporting this configuration out of box. There are multiple ways to achieve this within the cluster.
+
+Finally, create the controller resources in the cluster.
+```shell
+make deploy IMG=controller:local AWS_REGION=us-west-2
+# customresourcedefinition.apiextensions.k8s.io/serviceexports.multicluster.x-k8s.io configured
+# customresourcedefinition.apiextensions.k8s.io/serviceimports.multicluster.x-k8s.io created
+# ...
+# deployment.apps/cloud-map-mcs-controller-manager created
+```
+
+Stream the controller logs
+```shell
+kubectl logs -f -l control-plane=controller-manager -c manager -n cloud-map-mcs-system
 ```
 
 #### Run unit tests
 
 Use command below to run the unit test
+
 ```sh
 make test
 ```
@@ -85,11 +148,19 @@ make test
 #### Cleanup
 
 Use the command below to clean all the generated files
+
 ```sh
 make clean
 ```
 
+Use the command below to remove the CRDs from the cluster
+
+```sh
+make uninstall
+```
+
 Use the command below to delete the cluster `my-cluster`
+
 ```sh
 kind delete cluster --name my-cluster
 ```
@@ -108,23 +179,17 @@ make docker-build docker-push IMG=<YOUR ACCOUNT ID>.dkr.ecr.<ECR REGION>.amazona
 
 #### Deployment
 
-You must specify AWS access credentials for the operator. You can do so via environment variables, or by creating them.
+You must setup the AWS access credentials. Also, set the AWS_REGION environment variable like `export AWS_REGION=us-west-2` 
 
-Any one of below three options will work:
 ```sh
 # With an IAM user.
 make deploy
-
-# Use an existing access key
-OPERATOR_AWS_ACCESS_KEY_ID=xxx OPERATOR_AWS_SECRET_KEY=yyy make deploy
-
-# Use an AWS profile
-OPERATOR_AWS_PROFILE=default make deploy
 ```
 
 #### Uninstallation
 
-To remove the operator from your cluster, run
+To remove the controller from your cluster, run
+
 ```sh
 make undeploy
 ```
