@@ -1,6 +1,7 @@
 package cloudmap
 
 import (
+	"errors"
 	"fmt"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/go-logr/logr"
@@ -67,7 +68,7 @@ func (sdCache *sdCache) GetNamespace(nsName string) (ns *model.Namespace, found 
 
 	nsEntry, ok := entry.(model.Namespace)
 	if !ok {
-		sdCache.log.Info("failed to retrieve namespace from cache", "nsName", nsName)
+		sdCache.log.Error(errors.New("failed to retrieve namespace from cache"), "", "nsName", nsName)
 		sdCache.cache.Remove(key)
 		return nil, false
 	}
@@ -94,7 +95,7 @@ func (sdCache *sdCache) GetServiceId(nsName string, svcName string) (svcId strin
 
 	svcId, ok := entry.(string)
 	if !ok {
-		sdCache.log.Info("failed to retrieve service ID from cache",
+		sdCache.log.Error(errors.New("failed to retrieve service ID from cache"), "",
 			"nsName", nsName, "svcName", svcName)
 		sdCache.cache.Remove(key)
 		return "", false
@@ -117,7 +118,7 @@ func (sdCache *sdCache) GetEndpoints(svcId string) (endpts []*model.Endpoint, fo
 
 	endpts, ok := entry.([]*model.Endpoint)
 	if !ok {
-		sdCache.log.Info("failed to retrieve endpoints from cache", "svcId", svcId)
+		sdCache.log.Error(errors.New("failed to retrieve endpoints from cache"), "", "svcId", svcId)
 		sdCache.cache.Remove(key)
 		return nil, false
 	}
@@ -136,13 +137,13 @@ func (sdCache *sdCache) EvictEndpoints(svcId string) {
 }
 
 func (sdCache *sdCache) buildNsKey(nsName string) (cacheKey string) {
-	return fmt.Sprintf("%s_%s", nsKeyPrefix, nsName)
+	return fmt.Sprintf("%s:%s", nsKeyPrefix, nsName)
 }
 
 func (sdCache *sdCache) buildSvcKey(nsName string, svcName string) (cacheKey string) {
-	return fmt.Sprintf("%s_%s/%s", svcKeyPrefix, nsName, svcName)
+	return fmt.Sprintf("%s:%s:%s", svcKeyPrefix, nsName, svcName)
 }
 
 func (sdCache *sdCache) buildEndptsKey(svcId string) string {
-	return fmt.Sprintf("%s_%s", endptKeyPrefix, svcId)
+	return fmt.Sprintf("%s:%s", endptKeyPrefix, svcId)
 }
