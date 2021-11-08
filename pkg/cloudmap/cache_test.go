@@ -96,15 +96,6 @@ func TestServiceDiscoveryClientCacheGetEndpoints_NotFound(t *testing.T) {
 
 func TestServiceDiscoveryClientCacheGetEndpoints_Corrupt(t *testing.T) {
 	sdc := NewDefaultServiceDiscoveryClientCache().(*sdCache)
-	sdc.cache.Add(sdc.buildEndptsKey(test.SvcId), test.GetTestService(), time.Minute)
-
-	ns, found := sdc.GetNamespace(test.NsName)
-	assert.False(t, found)
-	assert.Nil(t, ns)
-}
-
-func TestServiceDiscoveryClientCacheEndpoints(t *testing.T) {
-	sdc := NewDefaultServiceDiscoveryClientCache().(*sdCache)
 
 	sdc.cache.Add(sdc.buildEndptsKey(test.SvcId), &model.Resource{}, time.Minute)
 	endpts, found := sdc.GetEndpoints(test.SvcId)
@@ -113,5 +104,11 @@ func TestServiceDiscoveryClientCacheEndpoints(t *testing.T) {
 }
 
 func TestServiceDiscoveryClientEvictEndpoints(t *testing.T) {
+	sdc := NewDefaultServiceDiscoveryClientCache()
+	sdc.CacheEndpoints(test.SvcId, []*model.Endpoint{test.GetTestEndpoint(), test.GetTestEndpoint2()})
+	sdc.EvictEndpoints(test.SvcId)
 
+	endpts, found := sdc.GetEndpoints(test.SvcId)
+	assert.False(t, found)
+	assert.Nil(t, endpts)
 }
