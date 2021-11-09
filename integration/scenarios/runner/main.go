@@ -39,7 +39,7 @@ func testServiceExport(nsName string, svcName string, port string, ips string) {
 }
 
 func getAwsConfig() *aws.Config {
-	awsCfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(os.Getenv("AWS_REGION")))
+	awsCfg, err := config.LoadDefaultConfig(context.TODO())
 
 	if err != nil {
 		fmt.Printf("unable to configure AWS session: %s", err.Error())
