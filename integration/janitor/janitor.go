@@ -22,9 +22,7 @@ type cloudMapJanitor struct {
 
 // NewDefaultJanitor returns a new janitor object.
 func NewDefaultJanitor() CloudMapJanitor {
-	awsCfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion(os.Getenv("AWS_REGION")),
-	)
+	awsCfg, err := config.LoadDefaultConfig(context.TODO())
 
 	if err != nil {
 		fmt.Printf("unable to configure AWS session: %s", err.Error())
