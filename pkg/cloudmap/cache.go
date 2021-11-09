@@ -27,9 +27,9 @@ type ServiceDiscoveryClientCache interface {
 	CacheNilNamespace(namespaceName string)
 	GetServiceId(namespaceName string, serviceName string) (serviceId string, found bool)
 	CacheServiceId(namespaceName string, serviceName string, serviceId string)
-	GetEndpoints(serviceId string) (endpoints []*model.Endpoint, found bool)
-	CacheEndpoints(serviceId string, endpoints []*model.Endpoint)
-	EvictEndpoints(serviceId string)
+	GetEndpoints(namespaceName string, serviceName string) (endpoints []*model.Endpoint, found bool)
+	CacheEndpoints(namespaceName string, serviceName string, endpoints []*model.Endpoint)
+	EvictEndpoints(namespaceName string, serviceName string)
 }
 
 type sdCache struct {
@@ -109,8 +109,8 @@ func (sdCache *sdCache) CacheServiceId(nsName string, svcName string, svcId stri
 	sdCache.cache.Add(key, svcId, sdCache.config.svcTTL)
 }
 
-func (sdCache *sdCache) GetEndpoints(svcId string) (endpts []*model.Endpoint, found bool) {
-	key := sdCache.buildEndptsKey(svcId)
+func (sdCache *sdCache) GetEndpoints(nsName string, svcName string) (endpts []*model.Endpoint, found bool) {
+	key := sdCache.buildEndptsKey(nsName, svcName)
 	entry, exists := sdCache.cache.Get(key)
 	if !exists {
 		return nil, false
@@ -118,7 +118,8 @@ func (sdCache *sdCache) GetEndpoints(svcId string) (endpts []*model.Endpoint, fo
 
 	endpts, ok := entry.([]*model.Endpoint)
 	if !ok {
-		sdCache.log.Error(errors.New("failed to retrieve endpoints from cache"), "", "svcId", svcId)
+		sdCache.log.Error(errors.New("failed to retrieve endpoints from cache"), "",
+			"ns", "nsName", "svc", svcName)
 		sdCache.cache.Remove(key)
 		return nil, false
 	}
@@ -126,13 +127,13 @@ func (sdCache *sdCache) GetEndpoints(svcId string) (endpts []*model.Endpoint, fo
 	return endpts, true
 }
 
-func (sdCache *sdCache) CacheEndpoints(svcId string, endpts []*model.Endpoint) {
-	key := sdCache.buildEndptsKey(svcId)
+func (sdCache *sdCache) CacheEndpoints(nsName string, svcName string, endpts []*model.Endpoint) {
+	key := sdCache.buildEndptsKey(nsName, svcName)
 	sdCache.cache.Add(key, endpts, sdCache.config.endptTTL)
 }
 
-func (sdCache *sdCache) EvictEndpoints(svcId string) {
-	key := sdCache.buildEndptsKey(svcId)
+func (sdCache *sdCache) EvictEndpoints(nsName string, svcName string) {
+	key := sdCache.buildEndptsKey(nsName, svcName)
 	sdCache.cache.Remove(key)
 }
 
@@ -144,6 +145,6 @@ func (sdCache *sdCache) buildSvcKey(nsName string, svcName string) (cacheKey str
 	return fmt.Sprintf("%s:%s:%s", svcKeyPrefix, nsName, svcName)
 }
 
-func (sdCache *sdCache) buildEndptsKey(svcId string) string {
-	return fmt.Sprintf("%s:%s", endptKeyPrefix, svcId)
+func (sdCache *sdCache) buildEndptsKey(nsName string, svcName string) string {
+	return fmt.Sprintf("%s:%s:%s", endptKeyPrefix, nsName, svcName)
 }

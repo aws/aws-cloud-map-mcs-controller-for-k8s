@@ -58,7 +58,7 @@ func (sdc *serviceDiscoveryClient) ListServices(ctx context.Context, nsName stri
 	for _, svcSum := range svcSums {
 		sdc.cache.CacheServiceId(nsName, svcSum.Name, svcSum.Id)
 
-		endpts, endptsErr := sdc.listEndpoints(ctx, svcSum.Id)
+		endpts, endptsErr := sdc.listEndpoints(ctx, nsName, svcSum.Name)
 		if endptsErr != nil {
 			return svcs, endptsErr
 		}
@@ -101,6 +101,15 @@ func (sdc *serviceDiscoveryClient) CreateService(ctx context.Context, nsName str
 
 func (sdc *serviceDiscoveryClient) GetService(ctx context.Context, nsName string, svcName string) (svc *model.Service, err error) {
 	sdc.log.Info("fetching a service", "namespace", nsName, "name", svcName)
+	endpts, cacheHit := sdc.cache.GetEndpoints(nsName, svcName)
+
+	if cacheHit {
+		return &model.Service{
+			Namespace: nsName,
+			Name:      svcName,
+			Endpoints: endpts,
+		}, nil
+	}
 
 	svcId, err := sdc.getServiceId(ctx, nsName, svcName)
 
@@ -112,19 +121,17 @@ func (sdc *serviceDiscoveryClient) GetService(ctx context.Context, nsName string
 		return nil, nil
 	}
 
-	endpts, err := sdc.listEndpoints(ctx, svcId)
+	endpts, err = sdc.listEndpoints(ctx, nsName, svcName)
 
 	if err != nil {
 		return nil, err
 	}
 
-	svc = &model.Service{
+	return &model.Service{
 		Namespace: nsName,
 		Name:      svcName,
 		Endpoints: endpts,
-	}
-
-	return svc, nil
+	}, nil
 }
 
 func (sdc *serviceDiscoveryClient) RegisterEndpoints(ctx context.Context, nsName string, svcName string, endpts []*model.Endpoint) (err error) {
@@ -153,7 +160,7 @@ func (sdc *serviceDiscoveryClient) RegisterEndpoints(ctx context.Context, nsName
 	err = NewRegisterInstancePoller(sdc.sdApi, svcId, opCollector.Collect(), opCollector.GetStartTime()).Poll(ctx)
 
 	// Evict cache entry so next list call reflects changes
-	sdc.cache.EvictEndpoints(svcId)
+	sdc.cache.EvictEndpoints(nsName, svcName)
 
 	if err != nil {
 		return err
@@ -192,7 +199,7 @@ func (sdc *serviceDiscoveryClient) DeleteEndpoints(ctx context.Context, nsName s
 	err = NewDeregisterInstancePoller(sdc.sdApi, svcId, opCollector.Collect(), opCollector.GetStartTime()).Poll(ctx)
 
 	// Evict cache entry so next list call reflects changes
-	sdc.cache.EvictEndpoints(svcId)
+	sdc.cache.EvictEndpoints(nsName, svcName)
 	if err != nil {
 		return err
 	}
@@ -204,12 +211,12 @@ func (sdc *serviceDiscoveryClient) DeleteEndpoints(ctx context.Context, nsName s
 	return nil
 }
 
-func (sdc *serviceDiscoveryClient) listEndpoints(ctx context.Context, serviceId string) (endpts []*model.Endpoint, err error) {
-	if endpts, found := sdc.cache.GetEndpoints(serviceId); found {
+func (sdc *serviceDiscoveryClient) listEndpoints(ctx context.Context, nsName string, svcName string) (endpts []*model.Endpoint, err error) {
+	if endpts, found := sdc.cache.GetEndpoints(nsName, svcName); found {
 		return endpts, nil
 	}
 
-	insts, err := sdc.sdApi.ListInstances(ctx, serviceId)
+	insts, err := sdc.sdApi.DiscoverInstances(ctx, nsName, svcName)
 	if err != nil {
 		return nil, err
 	}
@@ -217,13 +224,13 @@ func (sdc *serviceDiscoveryClient) listEndpoints(ctx context.Context, serviceId 
 	for _, inst := range insts {
 		endpt, endptErr := model.NewEndpointFromInstance(&inst)
 		if endptErr != nil {
-			sdc.log.Info(fmt.Sprintf("skipping instance %s to endpoint conversion: %s", *inst.Id, endptErr.Error()))
+			sdc.log.Info(fmt.Sprintf("skipping instance %s to endpoint conversion: %s", *inst.InstanceId, endptErr.Error()))
 			continue
 		}
 		endpts = append(endpts, endpt)
 	}
 
-	sdc.cache.CacheEndpoints(serviceId, endpts)
+	sdc.cache.CacheEndpoints(nsName, svcName, endpts)
 
 	return endpts, nil
 }

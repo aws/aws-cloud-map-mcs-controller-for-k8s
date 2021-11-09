@@ -85,26 +85,32 @@ func TestServiceDiscoveryApi_ListServices_HappyCase(t *testing.T) {
 	assert.Equal(t, svcs[0], &model.Resource{Id: test.SvcId, Name: test.SvcName})
 }
 
-func TestServiceDiscoveryApi_ListInstances_HappyCase(t *testing.T) {
+func TestServiceDiscoveryApi_DiscoverInstances_HappyCase(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
 	awsFacade := cloudmap.NewMockAwsFacade(mockController)
 	sdApi := getServiceDiscoveryApi(t, awsFacade)
 
-	awsFacade.EXPECT().ListInstances(context.TODO(), gomock.Any()).
-		Return(&sd.ListInstancesOutput{
-			Instances: []types.InstanceSummary{
-				{Id: aws.String(test.EndptId1)},
-				{Id: aws.String(test.EndptId2)},
+	awsFacade.EXPECT().DiscoverInstances(context.TODO(),
+		&sd.DiscoverInstancesInput{
+			NamespaceName: aws.String(test.NsName),
+			ServiceName:   aws.String(test.SvcName),
+			HealthStatus:  types.HealthStatusFilterAll,
+			MaxResults:    aws.Int32(1000),
+		}).
+		Return(&sd.DiscoverInstancesOutput{
+			Instances: []types.HttpInstanceSummary{
+				{InstanceId: aws.String(test.EndptId1)},
+				{InstanceId: aws.String(test.EndptId2)},
 			},
 		}, nil)
 
-	insts, err := sdApi.ListInstances(context.TODO(), test.SvcId)
+	insts, err := sdApi.DiscoverInstances(context.TODO(), test.NsName, test.SvcName)
 	assert.Nil(t, err, "No error for happy case")
 	assert.True(t, len(insts) == 2)
-	assert.Equal(t, test.EndptId1, *insts[0].Id)
-	assert.Equal(t, test.EndptId2, *insts[1].Id)
+	assert.Equal(t, test.EndptId1, *insts[0].InstanceId)
+	assert.Equal(t, test.EndptId2, *insts[1].InstanceId)
 }
 
 func TestServiceDiscoveryApi_ListOperations_HappyCase(t *testing.T) {

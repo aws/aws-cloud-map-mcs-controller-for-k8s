@@ -15,9 +15,6 @@ type AwsFacade interface {
 	// ListServices provides ServiceDiscovery ListServices wrapper interface for paginator.
 	ListServices(context.Context, *sd.ListServicesInput, ...func(options *sd.Options)) (*sd.ListServicesOutput, error)
 
-	// ListInstances provides ServiceDiscovery ListInstances wrapper interface for paginator.
-	ListInstances(context.Context, *sd.ListInstancesInput, ...func(*sd.Options)) (*sd.ListInstancesOutput, error)
-
 	// ListOperations provides ServiceDiscovery ListOperations wrapper interface for paginator.
 	ListOperations(context.Context, *sd.ListOperationsInput, ...func(*sd.Options)) (*sd.ListOperationsOutput, error)
 
@@ -35,6 +32,9 @@ type AwsFacade interface {
 
 	// DeregisterInstance provides ServiceDiscovery DeregisterInstance wrapper interface.
 	DeregisterInstance(context.Context, *sd.DeregisterInstanceInput, ...func(*sd.Options)) (*sd.DeregisterInstanceOutput, error)
+
+	// DiscoverInstances provides ServiceDiscovery DiscoverInstances wrapper interface.
+	DiscoverInstances(context.Context, *sd.DiscoverInstancesInput, ...func(*sd.Options)) (*sd.DiscoverInstancesOutput, error)
 }
 
 type awsFacade struct {
