@@ -52,17 +52,18 @@ const (
 	PortAttr = "AWS_INSTANCE_PORT"
 )
 
-// NewEndpointFromInstance converts a Cloud Map InstanceSummary to an endpoint.
-func NewEndpointFromInstance(inst *types.InstanceSummary) (*Endpoint, error) {
+// NewEndpointFromInstance converts a Cloud Map HttpInstanceSummary to an endpoint.
+func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (*Endpoint, error) {
 	endpoint := Endpoint{
-		Id:         *inst.Id,
+		Id:         *inst.InstanceId,
 		Attributes: make(map[string]string, 0),
 	}
 
 	if ipv4, hasIp := inst.Attributes[Ipv4Attr]; hasIp {
 		endpoint.IP = ipv4
 	} else {
-		return nil, errors.New(fmt.Sprintf("cannot convert service instance %s to endpoint without IP address", *inst.Id))
+		return nil, errors.New(fmt.Sprintf("cannot convert service instance %s to endpoint without IP address",
+			*inst.InstanceId))
 	}
 
 	if portStr, hasPort := inst.Attributes[PortAttr]; hasPort {
@@ -74,7 +75,8 @@ func NewEndpointFromInstance(inst *types.InstanceSummary) (*Endpoint, error) {
 
 		endpoint.Port = int32(port)
 	} else {
-		return nil, errors.New(fmt.Sprintf("cannot convert service instance %s to endpoint without port", *inst.Id))
+		return nil, errors.New(fmt.Sprintf("cannot convert service instance %s to endpoint without port",
+			*inst.InstanceId))
 	}
 
 	for key, val := range inst.Attributes {

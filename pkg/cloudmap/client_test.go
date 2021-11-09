@@ -39,25 +39,25 @@ func TestServiceDiscoveryClient_ListServices_HappyCase(t *testing.T) {
 		Return([]*model.Resource{{Name: test.SvcName, Id: test.SvcId}}, nil)
 	tc.mockCache.EXPECT().CacheServiceId(test.NsName, test.SvcName, test.SvcId)
 
-	tc.mockCache.EXPECT().GetEndpoints(test.SvcId).Return(nil, false)
-	tc.mockApi.EXPECT().ListInstances(context.TODO(), test.SvcId).
-		Return([]types.InstanceSummary{
+	tc.mockCache.EXPECT().GetEndpoints(test.NsName, test.SvcName).Return(nil, false)
+	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.NsName, test.SvcName).
+		Return([]types.HttpInstanceSummary{
 			{
-				Id: aws.String(test.EndptId1),
+				InstanceId: aws.String(test.EndptId1),
 				Attributes: map[string]string{
 					model.Ipv4Attr: test.EndptIp1,
 					model.PortAttr: test.EndptPortStr1,
 				},
 			},
 			{
-				Id: aws.String(test.EndptId2),
+				InstanceId: aws.String(test.EndptId2),
 				Attributes: map[string]string{
 					model.Ipv4Attr: test.EndptIp2,
 					model.PortAttr: test.EndptPortStr2,
 				},
 			},
 		}, nil)
-	tc.mockCache.EXPECT().CacheEndpoints(test.SvcId,
+	tc.mockCache.EXPECT().CacheEndpoints(test.NsName, test.SvcName,
 		[]*model.Endpoint{test.GetTestEndpoint(), test.GetTestEndpoint2()})
 
 	svcs, err := tc.client.ListServices(context.TODO(), test.NsName)
@@ -75,7 +75,7 @@ func TestServiceDiscoveryClient_ListServices_HappyCaseCachedResults(t *testing.T
 		Return([]*model.Resource{{Name: test.SvcName, Id: test.SvcId}}, nil)
 	tc.mockCache.EXPECT().CacheServiceId(test.NsName, test.SvcName, test.SvcId)
 
-	tc.mockCache.EXPECT().GetEndpoints(test.SvcId).
+	tc.mockCache.EXPECT().GetEndpoints(test.NsName, test.SvcName).
 		Return([]*model.Endpoint{test.GetTestEndpoint(), test.GetTestEndpoint2()}, true)
 
 	svcs, err := tc.client.ListServices(context.TODO(), test.NsName)
@@ -123,9 +123,9 @@ func TestServiceDiscoveryClient_ListServices_InstanceError(t *testing.T) {
 	tc.mockCache.EXPECT().CacheServiceId(test.NsName, test.SvcName, test.SvcId)
 
 	endptErr := errors.New("error listing endpoints")
-	tc.mockCache.EXPECT().GetEndpoints(test.SvcId).Return(nil, false)
-	tc.mockApi.EXPECT().ListInstances(context.TODO(), test.SvcId).
-		Return([]types.InstanceSummary{}, endptErr)
+	tc.mockCache.EXPECT().GetEndpoints(test.NsName, test.SvcName).Return(nil, false)
+	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.NsName, test.SvcName).
+		Return([]types.HttpInstanceSummary{}, endptErr)
 
 	svcs, err := tc.client.ListServices(context.TODO(), test.NsName)
 	assert.Equal(t, endptErr, err)
@@ -264,6 +264,8 @@ func TestServiceDiscoveryClient_GetService_HappyCase(t *testing.T) {
 	tc := getTestSdClient(t)
 	defer tc.close()
 
+	tc.mockCache.EXPECT().GetEndpoints(test.NsName, test.SvcName).Return([]*model.Endpoint{}, false)
+
 	tc.mockCache.EXPECT().GetServiceId(test.NsName, test.SvcName)
 
 	tc.mockCache.EXPECT().GetNamespace(test.NsName).Return(nil, false)
@@ -275,25 +277,25 @@ func TestServiceDiscoveryClient_GetService_HappyCase(t *testing.T) {
 		Return([]*model.Resource{{Id: test.SvcId, Name: test.SvcName}}, nil)
 	tc.mockCache.EXPECT().CacheServiceId(test.NsName, test.SvcName, test.SvcId)
 
-	tc.mockCache.EXPECT().GetEndpoints(test.SvcId).Return([]*model.Endpoint{}, false)
-	tc.mockApi.EXPECT().ListInstances(context.TODO(), test.SvcId).
-		Return([]types.InstanceSummary{
+	tc.mockCache.EXPECT().GetEndpoints(test.NsName, test.SvcName).Return([]*model.Endpoint{}, false)
+	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.NsName, test.SvcName).
+		Return([]types.HttpInstanceSummary{
 			{
-				Id: aws.String(test.EndptId1),
+				InstanceId: aws.String(test.EndptId1),
 				Attributes: map[string]string{
 					model.Ipv4Attr: test.EndptIp1,
 					model.PortAttr: test.EndptPortStr1,
 				},
 			},
 			{
-				Id: aws.String(test.EndptId2),
+				InstanceId: aws.String(test.EndptId2),
 				Attributes: map[string]string{
 					model.Ipv4Attr: test.EndptIp2,
 					model.PortAttr: test.EndptPortStr2,
 				},
 			},
 		}, nil)
-	tc.mockCache.EXPECT().CacheEndpoints(test.SvcId,
+	tc.mockCache.EXPECT().CacheEndpoints(test.NsName, test.SvcName,
 		[]*model.Endpoint{test.GetTestEndpoint(), test.GetTestEndpoint2()})
 
 	svc, err := tc.client.GetService(context.TODO(), test.NsName, test.SvcName)
@@ -305,8 +307,7 @@ func TestServiceDiscoveryClient_GetService_CachedValues(t *testing.T) {
 	tc := getTestSdClient(t)
 	defer tc.close()
 
-	tc.mockCache.EXPECT().GetServiceId(test.NsName, test.SvcName).Return(test.SvcId, true)
-	tc.mockCache.EXPECT().GetEndpoints(test.SvcId).
+	tc.mockCache.EXPECT().GetEndpoints(test.NsName, test.SvcName).
 		Return([]*model.Endpoint{test.GetTestEndpoint(), test.GetTestEndpoint2()}, true)
 
 	svc, err := tc.client.GetService(context.TODO(), test.NsName, test.SvcName)
@@ -332,7 +333,7 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 			test.OpId1: types.OperationStatusSuccess,
 			test.OpId2: types.OperationStatusSuccess}, nil)
 
-	tc.mockCache.EXPECT().EvictEndpoints(test.SvcId)
+	tc.mockCache.EXPECT().EvictEndpoints(test.NsName, test.SvcName)
 
 	err := tc.client.RegisterEndpoints(context.TODO(), test.NsName, test.SvcName,
 		[]*model.Endpoint{
@@ -364,7 +365,7 @@ func TestServiceDiscoveryClient_DeleteEndpoints(t *testing.T) {
 			test.OpId1: types.OperationStatusSuccess,
 			test.OpId2: types.OperationStatusSuccess}, nil)
 
-	tc.mockCache.EXPECT().EvictEndpoints(test.SvcId)
+	tc.mockCache.EXPECT().EvictEndpoints(test.NsName, test.SvcName)
 
 	err := tc.client.DeleteEndpoints(context.TODO(), test.NsName, test.SvcName,
 		[]*model.Endpoint{{Id: test.EndptId1}, {Id: test.EndptId2}})
