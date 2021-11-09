@@ -34,12 +34,21 @@ type serviceDiscoveryClient struct {
 	cache ServiceDiscoveryClientCache
 }
 
-// NewServiceDiscoveryClient creates a new service discovery client for AWS Cloud Map from a given AWS client config.
-func NewServiceDiscoveryClient(cfg *aws.Config) ServiceDiscoveryClient {
+// NewDefaultServiceDiscoveryClient creates a new service discovery client for AWS Cloud Map with default resource cache
+// from a given AWS client config.
+func NewDefaultServiceDiscoveryClient(cfg *aws.Config) ServiceDiscoveryClient {
 	return &serviceDiscoveryClient{
 		log:   ctrl.Log.WithName("cloudmap"),
 		sdApi: NewServiceDiscoveryApiFromConfig(cfg),
 		cache: NewDefaultServiceDiscoveryClientCache(),
+	}
+}
+
+func NewServiceDiscoveryClientWithCustomCache(cfg *aws.Config, cacheConfig *SdCacheConfig) ServiceDiscoveryClient {
+	return &serviceDiscoveryClient{
+		log:   ctrl.Log.WithName("cloudmap"),
+		sdApi: NewServiceDiscoveryApiFromConfig(cfg),
+		cache: NewServiceDiscoveryClientCache(cacheConfig),
 	}
 }
 

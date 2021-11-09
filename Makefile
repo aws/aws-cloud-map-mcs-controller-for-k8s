@@ -60,6 +60,16 @@ test: manifests generate generate-mocks fmt vet ## Run tests.
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.7.2/hack/setup-envtest.sh
 	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test ./... -coverprofile cover.out -covermode=atomic
 
+integration-setup:  ## Setup the integration test using kind clusters
+	@./integration/scripts/setup-kind.sh
+
+integration-run: ## Run the integration test controller
+	@./integration/scripts/run-tests.sh
+
+integration-cleanup:  ## Cleanup integration test resources in Cloud Map and local kind cluster
+	@./integration/scripts/cleanup-cloudmap.sh
+	@./integration/scripts/cleanup-kind.sh
+
 ##@ Build
 
 build: manifests generate generate-mocks fmt vet ## Build manager binary.

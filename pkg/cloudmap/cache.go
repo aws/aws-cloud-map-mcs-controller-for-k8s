@@ -35,24 +35,30 @@ type ServiceDiscoveryClientCache interface {
 type sdCache struct {
 	log    logr.Logger
 	cache  *cache.LRUExpireCache
-	config sdCacheConfig
+	config *SdCacheConfig
 }
 
-type sdCacheConfig struct {
-	nsTTL    time.Duration
-	svcTTL   time.Duration
-	endptTTL time.Duration
+type SdCacheConfig struct {
+	NsTTL    time.Duration
+	SvcTTL   time.Duration
+	EndptTTL time.Duration
+}
+
+func NewServiceDiscoveryClientCache(cacheConfig *SdCacheConfig) ServiceDiscoveryClientCache {
+	return &sdCache{
+		log:    ctrl.Log.WithName("cloudmap"),
+		cache:  cache.NewLRUExpireCache(defaultCacheSize),
+		config: cacheConfig,
+	}
 }
 
 func NewDefaultServiceDiscoveryClientCache() ServiceDiscoveryClientCache {
-	return &sdCache{
-		log:   ctrl.Log.WithName("cloudmap"),
-		cache: cache.NewLRUExpireCache(defaultCacheSize),
-		config: sdCacheConfig{
-			nsTTL:    defaultNsTTL,
-			svcTTL:   defaultSvcTTL,
-			endptTTL: defaultEndptTTL,
-		}}
+	return NewServiceDiscoveryClientCache(
+		&SdCacheConfig{
+			NsTTL:    defaultNsTTL,
+			SvcTTL:   defaultSvcTTL,
+			EndptTTL: defaultEndptTTL,
+		})
 }
 
 func (sdCache *sdCache) GetNamespace(nsName string) (ns *model.Namespace, found bool) {
@@ -78,12 +84,12 @@ func (sdCache *sdCache) GetNamespace(nsName string) (ns *model.Namespace, found 
 
 func (sdCache *sdCache) CacheNamespace(namespace *model.Namespace) {
 	key := sdCache.buildNsKey(namespace.Name)
-	sdCache.cache.Add(key, *namespace, sdCache.config.nsTTL)
+	sdCache.cache.Add(key, *namespace, sdCache.config.NsTTL)
 }
 
 func (sdCache *sdCache) CacheNilNamespace(nsName string) {
 	key := sdCache.buildNsKey(nsName)
-	sdCache.cache.Add(key, nil, sdCache.config.nsTTL)
+	sdCache.cache.Add(key, nil, sdCache.config.NsTTL)
 }
 
 func (sdCache *sdCache) GetServiceId(nsName string, svcName string) (svcId string, found bool) {
@@ -106,7 +112,7 @@ func (sdCache *sdCache) GetServiceId(nsName string, svcName string) (svcId strin
 
 func (sdCache *sdCache) CacheServiceId(nsName string, svcName string, svcId string) {
 	key := sdCache.buildSvcKey(nsName, svcName)
-	sdCache.cache.Add(key, svcId, sdCache.config.svcTTL)
+	sdCache.cache.Add(key, svcId, sdCache.config.SvcTTL)
 }
 
 func (sdCache *sdCache) GetEndpoints(nsName string, svcName string) (endpts []*model.Endpoint, found bool) {
@@ -129,7 +135,7 @@ func (sdCache *sdCache) GetEndpoints(nsName string, svcName string) (endpts []*m
 
 func (sdCache *sdCache) CacheEndpoints(nsName string, svcName string, endpts []*model.Endpoint) {
 	key := sdCache.buildEndptsKey(nsName, svcName)
-	sdCache.cache.Add(key, endpts, sdCache.config.endptTTL)
+	sdCache.cache.Add(key, endpts, sdCache.config.EndptTTL)
 }
 
 func (sdCache *sdCache) EvictEndpoints(nsName string, svcName string) {

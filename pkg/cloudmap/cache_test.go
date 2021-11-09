@@ -8,12 +8,24 @@ import (
 	"time"
 )
 
+func TestNewServiceDiscoveryClientCache(t *testing.T) {
+	sdc := NewServiceDiscoveryClientCache(&SdCacheConfig{
+		NsTTL:    3 * time.Second,
+		SvcTTL:   3 * time.Second,
+		EndptTTL: 3 * time.Second,
+	}).(*sdCache)
+
+	assert.Equal(t, 3*time.Second, sdc.config.NsTTL)
+	assert.Equal(t, 3*time.Second, sdc.config.SvcTTL)
+	assert.Equal(t, 3*time.Second, sdc.config.EndptTTL)
+}
+
 func TestNewDefaultServiceDiscoveryClientCache(t *testing.T) {
 	sdc := NewDefaultServiceDiscoveryClientCache().(*sdCache)
 
-	assert.Equal(t, defaultNsTTL, sdc.config.nsTTL)
-	assert.Equal(t, defaultSvcTTL, sdc.config.svcTTL)
-	assert.Equal(t, defaultEndptTTL, sdc.config.endptTTL)
+	assert.Equal(t, defaultNsTTL, sdc.config.NsTTL)
+	assert.Equal(t, defaultSvcTTL, sdc.config.SvcTTL)
+	assert.Equal(t, defaultEndptTTL, sdc.config.EndptTTL)
 }
 
 func TestServiceDiscoveryClientCacheGetNamespace_Found(t *testing.T) {

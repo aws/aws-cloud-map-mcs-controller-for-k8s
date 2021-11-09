@@ -27,7 +27,7 @@ const (
 	// DerivedServiceAnnotation annotates a ServiceImport with derived Service name
 	DerivedServiceAnnotation = "multicluster.k8s.aws/derived-service"
 
-	// LabelServiceImportName indicates the name of multi-cluster service that an EndpointSlice belongs to.
+	// LabelServiceImportName indicates the name of the multi-cluster service that an EndpointSlice belongs to.
 	LabelServiceImportName = "multicluster.kubernetes.io/service-name"
 )
 
