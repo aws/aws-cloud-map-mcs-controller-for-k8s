@@ -26,8 +26,8 @@ type ServiceDiscoveryApi interface {
 	// ListServices returns a list of services for a given namespace.
 	ListServices(ctx context.Context, namespaceId string) (services []*model.Resource, err error)
 
-	// ListInstances returns a list of service instances registered to a given service.
-	ListInstances(ctx context.Context, serviceId string) ([]types.InstanceSummary, error)
+	// DiscoverInstances returns a list of service instances registered to a given service.
+	DiscoverInstances(ctx context.Context, nsName string, svcName string) (insts []types.HttpInstanceSummary, err error)
 
 	// ListOperations returns a map of operations to their status matching a list of filters.
 	ListOperations(ctx context.Context, opFilters []types.OperationFilter) (operationStatusMap map[string]types.OperationStatus, err error)
@@ -113,19 +113,19 @@ func (sdApi *serviceDiscoveryApi) ListServices(ctx context.Context, nsId string)
 	return svcs, nil
 }
 
-func (sdApi *serviceDiscoveryApi) ListInstances(ctx context.Context, svcId string) (insts []types.InstanceSummary, err error) {
-	pages := sd.NewListInstancesPaginator(sdApi.awsFacade, &sd.ListInstancesInput{ServiceId: &svcId})
+func (sdApi *serviceDiscoveryApi) DiscoverInstances(ctx context.Context, nsName string, svcName string) (insts []types.HttpInstanceSummary, err error) {
+	out, err := sdApi.awsFacade.DiscoverInstances(ctx, &sd.DiscoverInstancesInput{
+		NamespaceName: aws.String(nsName),
+		ServiceName:   aws.String(svcName),
+		HealthStatus:  types.HealthStatusFilterAll,
+		MaxResults:    aws.Int32(1000),
+	})
 
-	for pages.HasMorePages() {
-		output, err := pages.NextPage(ctx)
-		if err != nil {
-			return insts, err
-		}
-
-		insts = append(insts, output.Instances...)
+	if err != nil {
+		return insts, err
 	}
 
-	return insts, nil
+	return out.Instances, nil
 }
 
 func (sdApi *serviceDiscoveryApi) ListOperations(ctx context.Context, opFilters []types.OperationFilter) (opStatusMap map[string]types.OperationStatus, err error) {

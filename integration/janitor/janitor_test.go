@@ -31,8 +31,8 @@ func TestCleanupHappyCase(t *testing.T) {
 		Return([]*model.Namespace{{Id: test.NsId, Name: test.NsName}}, nil)
 	tj.mockApi.EXPECT().ListServices(context.TODO(), test.NsId).
 		Return([]*model.Resource{{Id: test.SvcId, Name: test.SvcName}}, nil)
-	tj.mockApi.EXPECT().ListInstances(context.TODO(), test.SvcId).
-		Return([]types.InstanceSummary{{Id: aws.String(test.EndptId1)}}, nil)
+	tj.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.NsName, test.SvcName).
+		Return([]types.HttpInstanceSummary{{InstanceId: aws.String(test.EndptId1)}}, nil)
 
 	tj.mockApi.EXPECT().DeregisterInstance(context.TODO(), test.SvcId, test.EndptId1).
 		Return(test.OpId1, nil)

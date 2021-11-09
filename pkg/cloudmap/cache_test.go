@@ -79,9 +79,9 @@ func TestServiceDiscoveryClientCacheGetServiceId_Corrupt(t *testing.T) {
 
 func TestServiceDiscoveryClientCacheGetEndpoints_Found(t *testing.T) {
 	sdc := NewDefaultServiceDiscoveryClientCache()
-	sdc.CacheEndpoints(test.SvcId, []*model.Endpoint{test.GetTestEndpoint(), test.GetTestEndpoint2()})
+	sdc.CacheEndpoints(test.NsName, test.SvcName, []*model.Endpoint{test.GetTestEndpoint(), test.GetTestEndpoint2()})
 
-	endpts, found := sdc.GetEndpoints(test.SvcId)
+	endpts, found := sdc.GetEndpoints(test.NsName, test.SvcName)
 	assert.True(t, found)
 	assert.Equal(t, []*model.Endpoint{test.GetTestEndpoint(), test.GetTestEndpoint2()}, endpts)
 }
@@ -89,7 +89,7 @@ func TestServiceDiscoveryClientCacheGetEndpoints_Found(t *testing.T) {
 func TestServiceDiscoveryClientCacheGetEndpoints_NotFound(t *testing.T) {
 	sdc := NewDefaultServiceDiscoveryClientCache()
 
-	endpts, found := sdc.GetEndpoints(test.SvcId)
+	endpts, found := sdc.GetEndpoints(test.NsName, test.SvcName)
 	assert.False(t, found)
 	assert.Nil(t, endpts)
 }
@@ -97,18 +97,18 @@ func TestServiceDiscoveryClientCacheGetEndpoints_NotFound(t *testing.T) {
 func TestServiceDiscoveryClientCacheGetEndpoints_Corrupt(t *testing.T) {
 	sdc := NewDefaultServiceDiscoveryClientCache().(*sdCache)
 
-	sdc.cache.Add(sdc.buildEndptsKey(test.SvcId), &model.Resource{}, time.Minute)
-	endpts, found := sdc.GetEndpoints(test.SvcId)
+	sdc.cache.Add(sdc.buildEndptsKey(test.NsName, test.SvcName), &model.Resource{}, time.Minute)
+	endpts, found := sdc.GetEndpoints(test.NsName, test.SvcName)
 	assert.False(t, found)
 	assert.Nil(t, endpts)
 }
 
 func TestServiceDiscoveryClientEvictEndpoints(t *testing.T) {
 	sdc := NewDefaultServiceDiscoveryClientCache()
-	sdc.CacheEndpoints(test.SvcId, []*model.Endpoint{test.GetTestEndpoint(), test.GetTestEndpoint2()})
-	sdc.EvictEndpoints(test.SvcId)
+	sdc.CacheEndpoints(test.NsName, test.SvcName, []*model.Endpoint{test.GetTestEndpoint(), test.GetTestEndpoint2()})
+	sdc.EvictEndpoints(test.NsName, test.SvcName)
 
-	endpts, found := sdc.GetEndpoints(test.SvcId)
+	endpts, found := sdc.GetEndpoints(test.NsName, test.SvcName)
 	assert.False(t, found)
 	assert.Nil(t, endpts)
 }

@@ -64,7 +64,7 @@ func (j *cloudMapJanitor) Cleanup(ctx context.Context, nsName string) {
 
 	for _, svc := range svcs {
 		fmt.Printf("found service to clean: %s\n", svc.Id)
-		j.deregisterInstances(ctx, svc.Id)
+		j.deregisterInstances(ctx, nsName, svc.Name, svc.Id)
 
 		delSvcErr := j.sdApi.DeleteService(ctx, svc.Id)
 		j.checkOrFail(delSvcErr, "service deleted", "could not cleanup service")
@@ -78,15 +78,15 @@ func (j *cloudMapJanitor) Cleanup(ctx context.Context, nsName string) {
 	j.checkOrFail(err, "clean up successful", "could not cleanup namespace")
 }
 
-func (j *cloudMapJanitor) deregisterInstances(ctx context.Context, svcId string) {
-	insts, err := j.sdApi.ListInstances(ctx, svcId)
+func (j *cloudMapJanitor) deregisterInstances(ctx context.Context, nsName string, svcName string, svcId string) {
+	insts, err := j.sdApi.DiscoverInstances(ctx, nsName, svcName)
 	j.checkOrFail(err,
 		fmt.Sprintf("service has %d instances to clean", len(insts)),
 		"could not list instances to cleanup")
 
 	opColl := cloudmap.NewOperationCollector()
 	for _, inst := range insts {
-		instId := aws.ToString(inst.Id)
+		instId := aws.ToString(inst.InstanceId)
 		fmt.Printf("found instance to clean: %s\n", instId)
 		opColl.Add(func() (opId string, err error) {
 			return j.sdApi.DeregisterInstance(ctx, svcId, instId)

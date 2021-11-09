@@ -12,14 +12,14 @@ var ip = "192.168.0.1"
 func TestNewEndpointFromInstance(t *testing.T) {
 	tests := []struct {
 		name    string
-		inst    *types.InstanceSummary
+		inst    *types.HttpInstanceSummary
 		want    *Endpoint
 		wantErr bool
 	}{
 		{
 			name: "happy case",
-			inst: &types.InstanceSummary{
-				Id: &instId,
+			inst: &types.HttpInstanceSummary{
+				InstanceId: &instId,
 				Attributes: map[string]string{
 					Ipv4Attr:      ip,
 					PortAttr:      "65535",
@@ -37,8 +37,8 @@ func TestNewEndpointFromInstance(t *testing.T) {
 		},
 		{
 			name: "invalid port",
-			inst: &types.InstanceSummary{
-				Id: &instId,
+			inst: &types.HttpInstanceSummary{
+				InstanceId: &instId,
 				Attributes: map[string]string{
 					Ipv4Attr:      ip,
 					PortAttr:      "99999",
@@ -49,8 +49,8 @@ func TestNewEndpointFromInstance(t *testing.T) {
 		},
 		{
 			name: "missing IP",
-			inst: &types.InstanceSummary{
-				Id: &instId,
+			inst: &types.HttpInstanceSummary{
+				InstanceId: &instId,
 				Attributes: map[string]string{
 					PortAttr:      "80",
 					"custom-attr": "custom-val",
@@ -60,8 +60,8 @@ func TestNewEndpointFromInstance(t *testing.T) {
 		},
 		{
 			name: "missing port",
-			inst: &types.InstanceSummary{
-				Id: &instId,
+			inst: &types.HttpInstanceSummary{
+				InstanceId: &instId,
 				Attributes: map[string]string{
 					Ipv4Attr:      ip,
 					"custom-attr": "custom-val",
