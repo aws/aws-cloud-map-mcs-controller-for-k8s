@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-KIND_BIN='kind'
+KIND_BIN='./bin/kind'
 KUBECTL_BIN='./testbin/bin/kubectl'
 LOGS='./integration/testlog'
 CONFIGS='./integration/configs'

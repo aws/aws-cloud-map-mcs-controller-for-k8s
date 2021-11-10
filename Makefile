@@ -55,18 +55,21 @@ vet: ## Run go vet against code.
 	go vet ./...
 
 ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
-test: manifests generate generate-mocks fmt vet ## Run tests.
+test: manifests generate generate-mocks fmt vet test-setup ## Run tests.
+	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; setup_envtest_env $(ENVTEST_ASSETS_DIR); go test ./... -coverprofile cover.out -covermode=atomic
+
+test-setup: # setup test environment
 	mkdir -p ${ENVTEST_ASSETS_DIR}
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.7.2/hack/setup-envtest.sh
-	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test ./... -coverprofile cover.out -covermode=atomic
+	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR)
 
-integration-setup:  ## Setup the integration test using kind clusters
+integration-setup: build kind test-setup ## Setup the integration test using kind clusters
 	@./integration/scripts/setup-kind.sh
 
 integration-run: ## Run the integration test controller
 	@./integration/scripts/run-tests.sh
 
-integration-cleanup:  ## Cleanup integration test resources in Cloud Map and local kind cluster
+integration-cleanup: kind  ## Cleanup integration test resources in Cloud Map and local kind cluster
 	@./integration/scripts/cleanup-cloudmap.sh
 	@./integration/scripts/cleanup-kind.sh
 
@@ -126,6 +129,9 @@ MOCKGEN = $(shell pwd)/bin/mockgen
 mockgen: ## Download mockgen
 	$(call go-get-tool,$(MOCKGEN),github.com/golang/mock/mockgen@v1.6.0)
 
+KIND = $(shell pwd)/bin/kind
+kind: ## Download kind
+	$(call go-get-tool,$(KIND),sigs.k8s.io/kind@v0.11.1)
 
 # go-get-tool will 'go get' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
