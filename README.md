@@ -4,6 +4,7 @@
 [![CodeQL](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/actions/workflows/codeql-analysis.yml/badge.svg?branch=main)](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/actions/workflows/codeql-analysis.yml)
 [![Build status](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/actions/workflows/build.yml)
 [![Deploy status](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/actions/workflows/deploy.yml)
+[![Integration status](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/actions/workflows/integration-test.yml/badge.svg?branch=main)](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/actions/workflows/integration-test.yml)
 [![codecov](https://codecov.io/gh/aws/aws-cloud-map-mcs-controller-for-k8s/branch/main/graph/badge.svg)](https://codecov.io/gh/aws/aws-cloud-map-mcs-controller-for-k8s)
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg?color=success)](http://www.apache.org/licenses/LICENSE-2.0)
@@ -60,7 +61,7 @@ kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-control
 
 ### Import services
 
-In your other cluster, the controller will automatically sync services registered in AWS CloudMap by applying the appropriate `ServiceImport`. To list them all, run
+In your other cluster, the controller will automatically sync services registered in AWS Cloud Map by applying the appropriate `ServiceImport`. To list them all, run
 ```sh
 kubectl get ServiceImport -A
 ```
@@ -91,6 +92,12 @@ We also maintain a `latest` tag, which is updated to stay in line with the `main
 To install from `latest` tag run
 ```sh
 kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_latest"
+```
+
+## Integration testing
+The end-to-end integration test suite can be run locally to validate controller core functionality. This will provision a local Kind cluster and build and run the AWS Cloud Map MCS Controller for K8s. The test will verify service endpoints sync with AWS Cloud Map. If successful, the suite will then de-provision the local test cluster and delete AWS Cloud Map namespace `aws-cloud-map-mcs-e2e` along with test service and service instance resources.
+```sh
+make integration-suite
 ```
 
 ## Contributing

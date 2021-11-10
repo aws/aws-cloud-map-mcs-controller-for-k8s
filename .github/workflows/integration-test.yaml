@@ -1,24 +1,22 @@
-name: integration-test
+name: integration
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
-
 jobs:
   integration-test:
-    name: Run Integration- Test
+    name: Run Integration Test
     runs-on: ubuntu-latest
     environment: Integration Test
+    permissions:
+      id-token: write
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@master
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-west-2
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-session-name: IntegrationTestSession
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Set up Go
