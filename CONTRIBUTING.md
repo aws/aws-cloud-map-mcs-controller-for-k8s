@@ -25,6 +25,13 @@ documentation, we greatly value feedback and contributions from our community.
 Please read through this document before submitting any issues or pull requests to ensure we have all the necessary
 information to effectively respond to your bug report or contribution.
 
+## Architecture Overview
+
+![Architecture diagram](docs/architecture-overview.png?raw=true)
+
+* `pkg/controllers/serviceexport_controller` is watching changes on K8s `ServiceExport` resources (and corresponding services/endpoints). As soon as any change in configuration is detected, it registers all exported service endpoints to corresponding (same namespace/service names) AWS Cloud Map structures (namespace, service, instances).
+* `pkg/controllers/cloudmap_controller` is periodically polling for changes in corresponding AWS Cloud Map namespaces (based on namespace "sameness" - a K8s namespace with the same name as a Cloud Map namespace). When new service or endpoints are discovered they are automatically created locally as a `ServiceImport`. 
+
 ## Getting Started
 
 ### Local Setup
