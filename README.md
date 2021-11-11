@@ -52,7 +52,7 @@ metadata:
 
 *See the `samples` directory for a set of example yaml files to set up a service and export it. To apply the sample files run*
 ```sh
-kubectl create namespace demo
+kubectl create namespace example
 kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/example-deployment.yaml
 kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/example-service.yaml
 kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/example-serviceexport.yaml
