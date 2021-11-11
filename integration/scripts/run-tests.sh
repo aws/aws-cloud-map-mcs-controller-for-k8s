@@ -13,7 +13,6 @@ $KUBECTL_BIN apply -f "$CONFIGS/e2e-export.yaml"
 endpts=$(./integration/scripts/poll-endpoints.sh "$EXPECTED_ENDPOINT_COUNT")
 
 mkdir -p "$LOGS"
-make
 ./bin/manager &> "$LOGS/ctl.log" &
 CTL_PID=$!
 

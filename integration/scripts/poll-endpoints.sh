@@ -21,7 +21,7 @@ do
     continue
   fi
 
-  endpts=$(echo "$addresses" | tr -s " " "$addresses" | cut -f 3 -d " ")
+  endpts=$(echo "$addresses" | tr -s " " | cut -f 3 -d " ")
 
   endpt_count=$(echo "$endpts" | tr ',' '\n' | wc -l | xargs)
 done
