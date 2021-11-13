@@ -14,14 +14,22 @@ fi
 endpts=$1
 echo "checking service imports..."
 
-imports=$($KUBECTL_BIN get endpointslices -o json --namespace $NAMESPACE | \
-  jq '.items[] | select(.metadata.ownerReferences[].name | startswith("imported")) | .endpoints[].addresses[0]')
-import_count=$(echo "$imports" | wc -l | xargs)
+import_count=0
+poll_count=0
+while ((import_count < EXPECTED_ENDPOINT_COUNT))
+do
+  if ((poll_count++ > 30)) ; then
+    echo "timed out polling for import endpoints"
+    exit 1
+  fi
 
-if ((import_count != EXPECTED_ENDPOINT_COUNT)) ; then
-  echo "expected $EXPECTED_ENDPOINT_COUNT imports but found $import_count"
-  exit 1
-fi
+  imports=$($KUBECTL_BIN get endpointslices -o json --namespace $NAMESPACE | \
+    jq '.items[] | select(.metadata.ownerReferences[].name | startswith("imported")) | .endpoints[].addresses[0]')
+  echo "import endpoint list from kubectl:"
+  echo "$imports"
+
+  import_count=$(echo "$imports" | wc -l | xargs)
+done
 
 echo "$imports" | tr -d '"' | while read -r import; do
   echo "checking import: $import"
