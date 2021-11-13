@@ -15,16 +15,15 @@ do
   fi
 
   sleep 2s
-  if ! addresses=$($KUBECTL_BIN describe endpoints --namespace "$NAMESPACE" | grep " Addresses: ")
+  if ! addresses=$($KUBECTL_BIN get endpointslices -o json --namespace "$NAMESPACE" | \
+    jq '.items[] | select(.metadata.ownerReferences[].name=="e2e-service") | .endpoints[].addresses[0]' 2> /dev/null)
   then
     # no endpoints ready
     continue
   fi
 
-  endpts=$(echo "$addresses" | tr -s " " | cut -f 3 -d " ")
-
-  endpt_count=$(echo "$endpts" | tr ',' '\n' | wc -l | xargs)
+  endpt_count=$(echo "$addresses" | wc -l | xargs)
 done
 
-echo "$endpts"
+echo "$addresses" | tr -d '"' | paste -sd "," -
 exit 0
