@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/api/discovery/v1beta1"
+	discovery "k8s.io/api/discovery/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -80,15 +80,20 @@ func (r *CloudMapReconciler) Reconcile(ctx context.Context) error {
 }
 
 func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceName string) error {
-	r.Logger.Info("syncing namespace", "namespace", namespaceName)
-
 	desiredServices, err := r.Cloudmap.ListServices(ctx, namespaceName)
 	if err != nil {
 		return err
 	}
+	// Reconcile applicable for namespaces which have corresponding Cloudmap's namespace and services
+	if len(desiredServices) == 0 {
+		return nil
+	}
+
+	r.Logger.Info("syncing namespace", "namespace", namespaceName)
 
 	serviceImports := v1alpha1.ServiceImportList{}
 	if err := r.Client.List(ctx, &serviceImports, client.InNamespace(namespaceName)); err != nil {
+		r.Logger.Error(err, "failed to reconcile namespace", "namespace", namespaceName)
 		return nil
 	}
 
@@ -111,7 +116,9 @@ func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceNa
 
 	// delete remaining imports that have not been matched
 	for _, i := range existingImportsMap {
-		r.Client.Delete(ctx, &i)
+		if err := r.Client.Delete(ctx, &i); err != nil {
+			r.Logger.Error(err, "error deleting ServiceImport", "namespace", i.Namespace, "name", i.Name)
+		}
 		r.Logger.Info("delete ServiceImport", "namespace", i.Namespace, "name", i.Name)
 	}
 
@@ -121,38 +128,39 @@ func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceNa
 func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Service) error {
 	r.Logger.Info("syncing service", "namespace", svc.Namespace, "service", svc.Name)
 
-	// create ServiceImport if doesn't exist
-	svcImport, err := r.getExistingServiceImport(ctx, svc.Namespace, svc.Name)
+	// create ServiceImport if it doesn't exist
+	svcImport, err := r.getServiceImport(ctx, svc.Namespace, svc.Name)
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return err
 		}
 
-		if err2 := r.createServiceImport(ctx, svc.Namespace, svc.Name); err2 != nil {
+		var err2 error
+		svcImport, err2 = r.createAndGetServiceImport(ctx, svc.Namespace, svc.Name)
+		if err2 != nil {
 			return err2
 		}
-		return nil
 	}
 
 	// create derived Service if it doesn't exist
-	existingService, err := r.getExistingDerivedService(ctx, svc.Namespace, svcImport.Annotations[DerivedServiceAnnotation])
+	derivedService, err := r.getDerivedService(ctx, svc.Namespace, svcImport.Annotations[DerivedServiceAnnotation])
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return err
 		}
-
-		if err2 := r.createDerivedService(ctx, svc, svcImport); err2 != nil {
+		var err2 error
+		derivedService, err2 = r.createAndGetDerivedService(ctx, svc, svcImport)
+		if err2 != nil {
 			return err2
 		}
-		return nil
 	}
 
 	// update ServiceImport to match IP and port of previously created service
-	if err = r.updateServiceImport(ctx, svcImport, existingService); err != nil {
+	if err = r.updateServiceImport(ctx, svcImport, derivedService); err != nil {
 		return err
 	}
 
-	err = r.updateEndpointSlices(ctx, svcImport, svc, existingService)
+	err = r.updateEndpointSlices(ctx, svcImport, svc, derivedService)
 	if err != nil {
 		return err
 	}
@@ -160,14 +168,13 @@ func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Se
 	return nil
 }
 
-func (r *CloudMapReconciler) getExistingServiceImport(ctx context.Context, namespace string, name string) (*v1alpha1.ServiceImport, error) {
+func (r *CloudMapReconciler) getServiceImport(ctx context.Context, namespace string, name string) (*v1alpha1.ServiceImport, error) {
 	existingServiceImport := &v1alpha1.ServiceImport{}
 	err := r.Client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, existingServiceImport)
-
 	return existingServiceImport, err
 }
 
-func (r *CloudMapReconciler) createServiceImport(ctx context.Context, namespace string, name string) error {
+func (r *CloudMapReconciler) createAndGetServiceImport(ctx context.Context, namespace string, name string) (*v1alpha1.ServiceImport, error) {
 	imp := &v1alpha1.ServiceImport{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:   namespace,
@@ -182,36 +189,34 @@ func (r *CloudMapReconciler) createServiceImport(ctx context.Context, namespace 
 	}
 
 	if err := r.Client.Create(ctx, imp); err != nil {
-		return err
+		return nil, err
 	}
 	r.Logger.Info("created ServiceImport", "namespace", imp.Namespace, "name", imp.Name)
 
-	return nil
+	return r.getServiceImport(ctx, namespace, name)
 }
 
-func (r *CloudMapReconciler) getExistingDerivedService(ctx context.Context, namespace string, name string) (*v1.Service, error) {
+func (r *CloudMapReconciler) getDerivedService(ctx context.Context, namespace string, name string) (*v1.Service, error) {
 	existingService := &v1.Service{}
 	err := r.Client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, existingService)
-
 	return existingService, err
 }
 
-func (r *CloudMapReconciler) createDerivedService(ctx context.Context, svc *model.Service, svcImport *v1alpha1.ServiceImport) error {
+func (r *CloudMapReconciler) createAndGetDerivedService(ctx context.Context, svc *model.Service, svcImport *v1alpha1.ServiceImport) (*v1.Service, error) {
 	toCreate := createDerivedServiceStruct(svc, svcImport)
 	if err := r.Client.Create(ctx, toCreate); err != nil {
-		return err
+		return nil, err
 	}
-	r.Logger.Info("created derived Service",
-		"namespace", toCreate.Namespace, "name", toCreate.Name)
+	r.Logger.Info("created derived Service", "namespace", toCreate.Namespace, "name", toCreate.Name)
 
-	return nil
+	return r.getDerivedService(ctx, svc.Namespace, svcImport.Annotations[DerivedServiceAnnotation])
 }
 
 func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport *v1alpha1.ServiceImport, cloudMapService *model.Service, svc *v1.Service) error {
-	existingSlicesList := v1beta1.EndpointSliceList{}
-	var existingSlices []*v1beta1.EndpointSlice
+	existingSlicesList := discovery.EndpointSliceList{}
+	var existingSlices []*discovery.EndpointSlice
 	if err := r.Client.List(ctx, &existingSlicesList,
-		client.InNamespace(svc.Namespace), client.MatchingLabels{v1beta1.LabelServiceName: svc.Name}); err != nil {
+		client.InNamespace(svc.Namespace), client.MatchingLabels{discovery.LabelServiceName: svc.Name}); err != nil {
 		return err
 	}
 	if len(existingSlicesList.Items) == 0 {
@@ -256,16 +261,16 @@ func createDerivedServiceStruct(svc *model.Service, svcImport *v1alpha1.ServiceI
 	}
 }
 
-func createEndpointSlicesStruct(svcImport *v1alpha1.ServiceImport, cloudMapSvc *model.Service, svc *v1.Service) []*v1beta1.EndpointSlice {
-	slices := make([]*v1beta1.EndpointSlice, 0)
+func createEndpointSlicesStruct(svcImport *v1alpha1.ServiceImport, cloudMapSvc *model.Service, svc *v1.Service) []*discovery.EndpointSlice {
+	slices := make([]*discovery.EndpointSlice, 0)
 
 	t := true
 
-	endpoints := make([]v1beta1.Endpoint, 0)
+	endpoints := make([]discovery.Endpoint, 0)
 	for _, ep := range cloudMapSvc.Endpoints {
-		endpoints = append(endpoints, v1beta1.Endpoint{
+		endpoints = append(endpoints, discovery.Endpoint{
 			Addresses: []string{ep.IP},
-			Conditions: v1beta1.EndpointConditions{
+			Conditions: discovery.EndpointConditions{
 				Ready: &t,
 			},
 			TargetRef: &v1.ObjectReference{
@@ -281,11 +286,11 @@ func createEndpointSlicesStruct(svcImport *v1alpha1.ServiceImport, cloudMapSvc *
 	// TODO split slices in case there are more than 1000 endpoints
 	// see https://github.com/kubernetes/enhancements/blob/master/keps/sig-network/0752-endpointslices/README.md
 
-	slices = append(slices, &v1beta1.EndpointSlice{
+	slices = append(slices, &discovery.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				v1beta1.LabelServiceName: svc.Name,       // derived Service name
-				LabelServiceImportName:   svcImport.Name, // original ServiceImport name
+				discovery.LabelServiceName: svc.Name,       // derived Service name
+				LabelServiceImportName:     svcImport.Name, // original ServiceImport name
 			},
 			GenerateName: svc.Name + "-",
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(svc, schema.GroupVersionKind{
@@ -294,7 +299,7 @@ func createEndpointSlicesStruct(svcImport *v1alpha1.ServiceImport, cloudMapSvc *
 			})},
 			Namespace: svc.Namespace,
 		},
-		AddressType: v1beta1.AddressTypeIPv4,
+		AddressType: discovery.AddressTypeIPv4,
 		Endpoints:   endpoints,
 		Ports:       extractEndpointPorts(cloudMapSvc),
 	})
@@ -303,49 +308,30 @@ func createEndpointSlicesStruct(svcImport *v1alpha1.ServiceImport, cloudMapSvc *
 }
 
 func extractServicePorts(svc *model.Service) []v1.ServicePort {
-	ports := extractPorts(svc)
+	uniquePorts := make(map[int32]model.Port)
+	for _, ep := range svc.Endpoints {
+		uniquePorts[ep.ServicePort.Port] = ep.ServicePort
+	}
 
-	servicePorts := make([]v1.ServicePort, 0, len(ports))
-	for _, p := range ports {
-		servicePorts = append(servicePorts, v1.ServicePort{
-			Protocol: v1.ProtocolTCP,
-			Port:     p,
-		})
+	servicePorts := make([]v1.ServicePort, 0, len(uniquePorts))
+	for _, servicePort := range uniquePorts {
+		servicePorts = append(servicePorts, PortToServicePort(servicePort))
 	}
 
 	return servicePorts
 }
 
-func extractEndpointPorts(svc *model.Service) []v1beta1.EndpointPort {
-	ports := extractPorts(svc)
-
-	protocol := v1.ProtocolTCP
-
-	endpointPorts := make([]v1beta1.EndpointPort, 0, len(ports))
-	for _, p := range ports {
-		endpointPorts = append(endpointPorts, v1beta1.EndpointPort{
-			Protocol: &protocol,
-			Port:     &p,
-		})
-	}
-
-	return endpointPorts
-}
-
-func extractPorts(svc *model.Service) []int32 {
-	ports := make([]int32, 0)
-
-	portMap := make(map[int32]bool, 0)
-
+func extractEndpointPorts(svc *model.Service) []discovery.EndpointPort {
+	uniquePorts := make(map[int32]model.Port)
 	for _, ep := range svc.Endpoints {
-		portMap[ep.Port] = true
+		uniquePorts[ep.EndpointPort.Port] = ep.EndpointPort
 	}
 
-	for p, _ := range portMap {
-		ports = append(ports, p)
+	endpointPorts := make([]discovery.EndpointPort, 0, len(uniquePorts))
+	for _, endpointPort := range uniquePorts {
+		endpointPorts = append(endpointPorts, PortToEndpointPort(endpointPort))
 	}
-
-	return ports
+	return endpointPorts
 }
 
 func (r *CloudMapReconciler) updateServiceImport(ctx context.Context, svcImport *v1alpha1.ServiceImport, svc *v1.Service) error {

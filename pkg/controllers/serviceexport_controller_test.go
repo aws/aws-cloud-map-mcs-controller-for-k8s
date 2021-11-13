@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/api/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	testing2 "github.com/go-logr/logr/testing"
 	"github.com/golang/mock/gomock"
 	"gotest.tools/assert"
@@ -14,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -28,9 +30,19 @@ func TestServiceExportReconciler_Reconcile_NewServiceExport(t *testing.T) {
 		Namespace: "my-namespace",
 		Name:      "exported-service",
 		Endpoints: []*model.Endpoint{{
-			Id:         "1_1_1_1",
-			IP:         "1.1.1.1",
-			Port:       80,
+			Id: "1.1.1.1:80",
+			IP: "1.1.1.1",
+			EndpointPort: model.Port{
+				Name:     "http",
+				Port:     80,
+				Protocol: "TCP",
+			},
+			ServicePort: model.Port{
+				Name:       "http",
+				Port:       8080,
+				TargetPort: "80",
+				Protocol:   "TCP",
+			},
 			Attributes: map[string]string{},
 		}},
 	}
@@ -72,9 +84,19 @@ func TestServiceExportReconciler_Reconcile_ExistingServiceNewEndpoint(t *testing
 		Namespace: "my-namespace",
 		Name:      "exported-service",
 		Endpoints: []*model.Endpoint{{
-			Id:         "1_1_1_1",
-			IP:         "1.1.1.1",
-			Port:       80,
+			Id: "1.1.1.1:80",
+			IP: "1.1.1.1",
+			EndpointPort: model.Port{
+				Name:     "http",
+				Port:     80,
+				Protocol: "TCP",
+			},
+			ServicePort: model.Port{
+				Name:       "http",
+				Port:       8080,
+				TargetPort: "80",
+				Protocol:   "TCP",
+			},
 			Attributes: map[string]string{},
 		}},
 	}
@@ -125,14 +147,25 @@ func setupK8sClient() client.Client {
 
 	// Service object
 	service := &v1.Service{
+		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "exported-service",
 			Namespace: "my-namespace",
 		},
+		Spec: v1.ServiceSpec{
+			Ports: []v1.ServicePort{{
+				Name:       "http",
+				Protocol:   "TCP",
+				Port:       8080,
+				TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: 80},
+			}},
+		},
+		Status: v1.ServiceStatus{},
 	}
 
 	// EndpointSlice object
 	port := int32(80)
+	protocol := v1.ProtocolTCP
 	endpointSlice := &discovery.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "my-namespace",
@@ -143,7 +176,11 @@ func setupK8sClient() client.Client {
 		Endpoints: []discovery.Endpoint{{
 			Addresses: []string{"1.1.1.1"},
 		}},
-		Ports: []discovery.EndpointPort{{Port: &port}},
+		Ports: []discovery.EndpointPort{{
+			Name:     aws.String("http"),
+			Protocol: &protocol,
+			Port:     &port,
+		}},
 	}
 	endpointSliceList := &discovery.EndpointSliceList{
 		Items: []discovery.EndpointSlice{*endpointSlice},

@@ -45,20 +45,32 @@ func TestServiceDiscoveryClient_ListServices_HappyCase(t *testing.T) {
 			{
 				InstanceId: aws.String(test.EndptId1),
 				Attributes: map[string]string{
-					model.Ipv4Attr: test.EndptIp1,
-					model.PortAttr: test.EndptPortStr1,
+					model.EndpointIpv4Attr:      test.EndptIp1,
+					model.EndpointPortAttr:      test.PortStr1,
+					model.EndpointPortNameAttr:  test.PortName1,
+					model.EndpointProtocolAttr:  test.Protocol1,
+					model.ServicePortNameAttr:   test.PortName1,
+					model.ServicePortAttr:       test.ServicePortStr1,
+					model.ServiceProtocolAttr:   test.Protocol1,
+					model.ServiceTargetPortAttr: test.PortStr1,
 				},
 			},
 			{
 				InstanceId: aws.String(test.EndptId2),
 				Attributes: map[string]string{
-					model.Ipv4Attr: test.EndptIp2,
-					model.PortAttr: test.EndptPortStr2,
+					model.EndpointIpv4Attr:      test.EndptIp2,
+					model.EndpointPortAttr:      test.PortStr2,
+					model.EndpointPortNameAttr:  test.PortName2,
+					model.EndpointProtocolAttr:  test.Protocol2,
+					model.ServicePortNameAttr:   test.PortName2,
+					model.ServicePortAttr:       test.ServicePortStr2,
+					model.ServiceProtocolAttr:   test.Protocol2,
+					model.ServiceTargetPortAttr: test.PortStr2,
 				},
 			},
 		}, nil)
 	tc.mockCache.EXPECT().CacheEndpoints(test.NsName, test.SvcName,
-		[]*model.Endpoint{test.GetTestEndpoint(), test.GetTestEndpoint2()})
+		[]*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()})
 
 	svcs, err := tc.client.ListServices(context.TODO(), test.NsName)
 	assert.Equal(t, []*model.Service{test.GetTestService()}, svcs)
@@ -76,7 +88,7 @@ func TestServiceDiscoveryClient_ListServices_HappyCaseCachedResults(t *testing.T
 	tc.mockCache.EXPECT().CacheServiceId(test.NsName, test.SvcName, test.SvcId)
 
 	tc.mockCache.EXPECT().GetEndpoints(test.NsName, test.SvcName).
-		Return([]*model.Endpoint{test.GetTestEndpoint(), test.GetTestEndpoint2()}, true)
+		Return([]*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()}, true)
 
 	svcs, err := tc.client.ListServices(context.TODO(), test.NsName)
 	assert.Equal(t, []*model.Service{test.GetTestService()}, svcs)
@@ -283,20 +295,32 @@ func TestServiceDiscoveryClient_GetService_HappyCase(t *testing.T) {
 			{
 				InstanceId: aws.String(test.EndptId1),
 				Attributes: map[string]string{
-					model.Ipv4Attr: test.EndptIp1,
-					model.PortAttr: test.EndptPortStr1,
+					model.EndpointIpv4Attr:      test.EndptIp1,
+					model.EndpointPortAttr:      test.PortStr1,
+					model.EndpointPortNameAttr:  test.PortName1,
+					model.EndpointProtocolAttr:  test.Protocol1,
+					model.ServicePortNameAttr:   test.PortName1,
+					model.ServicePortAttr:       test.ServicePortStr1,
+					model.ServiceProtocolAttr:   test.Protocol1,
+					model.ServiceTargetPortAttr: test.PortStr1,
 				},
 			},
 			{
 				InstanceId: aws.String(test.EndptId2),
 				Attributes: map[string]string{
-					model.Ipv4Attr: test.EndptIp2,
-					model.PortAttr: test.EndptPortStr2,
+					model.EndpointIpv4Attr:      test.EndptIp2,
+					model.EndpointPortAttr:      test.PortStr2,
+					model.EndpointPortNameAttr:  test.PortName2,
+					model.EndpointProtocolAttr:  test.Protocol2,
+					model.ServicePortNameAttr:   test.PortName2,
+					model.ServicePortAttr:       test.ServicePortStr2,
+					model.ServiceProtocolAttr:   test.Protocol2,
+					model.ServiceTargetPortAttr: test.PortStr2,
 				},
 			},
 		}, nil)
 	tc.mockCache.EXPECT().CacheEndpoints(test.NsName, test.SvcName,
-		[]*model.Endpoint{test.GetTestEndpoint(), test.GetTestEndpoint2()})
+		[]*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()})
 
 	svc, err := tc.client.GetService(context.TODO(), test.NsName, test.SvcName)
 	assert.Nil(t, err)
@@ -308,7 +332,7 @@ func TestServiceDiscoveryClient_GetService_CachedValues(t *testing.T) {
 	defer tc.close()
 
 	tc.mockCache.EXPECT().GetEndpoints(test.NsName, test.SvcName).
-		Return([]*model.Endpoint{test.GetTestEndpoint(), test.GetTestEndpoint2()}, true)
+		Return([]*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()}, true)
 
 	svc, err := tc.client.GetService(context.TODO(), test.NsName, test.SvcName)
 	assert.Nil(t, err)
@@ -321,8 +345,26 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 
 	tc.mockCache.EXPECT().GetServiceId(test.NsName, test.SvcName).Return(test.SvcId, true)
 
-	attrs1 := map[string]string{"AWS_INSTANCE_IPV4": test.EndptIp1, "AWS_INSTANCE_PORT": test.EndptPortStr1}
-	attrs2 := map[string]string{"AWS_INSTANCE_IPV4": test.EndptIp2, "AWS_INSTANCE_PORT": test.EndptPortStr2}
+	attrs1 := map[string]string{
+		model.EndpointIpv4Attr:      test.EndptIp1,
+		model.EndpointPortAttr:      test.PortStr1,
+		model.EndpointPortNameAttr:  test.PortName1,
+		model.EndpointProtocolAttr:  test.Protocol1,
+		model.ServicePortNameAttr:   test.PortName1,
+		model.ServicePortAttr:       test.ServicePortStr1,
+		model.ServiceProtocolAttr:   test.Protocol1,
+		model.ServiceTargetPortAttr: test.PortStr1,
+	}
+	attrs2 := map[string]string{
+		model.EndpointIpv4Attr:      test.EndptIp2,
+		model.EndpointPortAttr:      test.PortStr2,
+		model.EndpointPortNameAttr:  test.PortName2,
+		model.EndpointProtocolAttr:  test.Protocol2,
+		model.ServicePortNameAttr:   test.PortName2,
+		model.ServicePortAttr:       test.ServicePortStr2,
+		model.ServiceProtocolAttr:   test.Protocol2,
+		model.ServiceTargetPortAttr: test.PortStr2,
+	}
 
 	tc.mockApi.EXPECT().RegisterInstance(context.TODO(), test.SvcId, test.EndptId1, attrs1).
 		Return(test.OpId1, nil)
@@ -336,18 +378,7 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 	tc.mockCache.EXPECT().EvictEndpoints(test.NsName, test.SvcName)
 
 	err := tc.client.RegisterEndpoints(context.TODO(), test.NsName, test.SvcName,
-		[]*model.Endpoint{
-			{
-				Id:   test.EndptId1,
-				IP:   test.EndptIp1,
-				Port: test.EndptPort1,
-			},
-			{
-				Id:   test.EndptId2,
-				IP:   test.EndptIp2,
-				Port: test.EndptPort2,
-			},
-		})
+		[]*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()})
 
 	assert.Nil(t, err)
 }

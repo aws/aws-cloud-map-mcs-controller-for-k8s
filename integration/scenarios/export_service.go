@@ -40,10 +40,18 @@ func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, po
 
 	for _, ip := range strings.Split(ips, ",") {
 		endpts = append(endpts, &model.Endpoint{
-			Id:         model.EndpointIdFromIPAddress(ip),
-			IP:         ip,
-			Port:       int32(port),
-			Attributes: make(map[string]string, 0),
+			Id: model.EndpointIdFromIPAddress(ip, int32(port)),
+			IP: ip,
+			ServicePort: model.Port{
+				Port:       int32(port),
+				TargetPort: portStr,
+				Protocol:   "TCP",
+			},
+			EndpointPort: model.Port{
+				Port:     int32(port),
+				Protocol: "TCP",
+			},
+			Attributes: make(map[string]string),
 		})
 	}
 

@@ -21,15 +21,31 @@ func TestNewEndpointFromInstance(t *testing.T) {
 			inst: &types.HttpInstanceSummary{
 				InstanceId: &instId,
 				Attributes: map[string]string{
-					Ipv4Attr:      ip,
-					PortAttr:      "65535",
-					"custom-attr": "custom-val",
+					EndpointIpv4Attr:      ip,
+					EndpointPortAttr:      "80",
+					EndpointProtocolAttr:  "TCP",
+					EndpointPortNameAttr:  "http",
+					ServicePortNameAttr:   "http",
+					ServiceProtocolAttr:   "TCP",
+					ServicePortAttr:       "65535",
+					ServiceTargetPortAttr: "80",
+					"custom-attr":         "custom-val",
 				},
 			},
 			want: &Endpoint{
-				Id:   instId,
-				IP:   ip,
-				Port: 65535,
+				Id: instId,
+				IP: ip,
+				EndpointPort: Port{
+					Name:     "http",
+					Port:     80,
+					Protocol: "TCP",
+				},
+				ServicePort: Port{
+					Name:       "http",
+					Port:       65535,
+					TargetPort: "80",
+					Protocol:   "TCP",
+				},
 				Attributes: map[string]string{
 					"custom-attr": "custom-val",
 				},
@@ -40,9 +56,15 @@ func TestNewEndpointFromInstance(t *testing.T) {
 			inst: &types.HttpInstanceSummary{
 				InstanceId: &instId,
 				Attributes: map[string]string{
-					Ipv4Attr:      ip,
-					PortAttr:      "99999",
-					"custom-attr": "custom-val",
+					EndpointIpv4Attr:      ip,
+					EndpointPortAttr:      "80",
+					EndpointProtocolAttr:  "TCP",
+					EndpointPortNameAttr:  "http",
+					ServicePortNameAttr:   "http",
+					ServiceProtocolAttr:   "TCP",
+					ServicePortAttr:       "99999",
+					ServiceTargetPortAttr: "80",
+					"custom-attr":         "custom-val",
 				},
 			},
 			wantErr: true,
@@ -52,8 +74,8 @@ func TestNewEndpointFromInstance(t *testing.T) {
 			inst: &types.HttpInstanceSummary{
 				InstanceId: &instId,
 				Attributes: map[string]string{
-					PortAttr:      "80",
-					"custom-attr": "custom-val",
+					EndpointPortAttr: "80",
+					"custom-attr":    "custom-val",
 				},
 			},
 			wantErr: true,
@@ -63,8 +85,8 @@ func TestNewEndpointFromInstance(t *testing.T) {
 			inst: &types.HttpInstanceSummary{
 				InstanceId: &instId,
 				Attributes: map[string]string{
-					Ipv4Attr:      ip,
-					"custom-attr": "custom-val",
+					EndpointIpv4Attr: ip,
+					"custom-attr":    "custom-val",
 				},
 			},
 			wantErr: true,
@@ -86,10 +108,11 @@ func TestNewEndpointFromInstance(t *testing.T) {
 
 func TestEndpoint_GetAttributes(t *testing.T) {
 	type fields struct {
-		Id         string
-		IP         string
-		Port       int32
-		Attributes map[string]string
+		Id           string
+		IP           string
+		EndpointPort Port
+		ServicePort  Port
+		Attributes   map[string]string
 	}
 	tests := []struct {
 		name   string
@@ -99,26 +122,43 @@ func TestEndpoint_GetAttributes(t *testing.T) {
 		{
 			name: "happy case",
 			fields: fields{
-				IP:   ip,
-				Port: 30,
+				IP: ip,
+				EndpointPort: Port{
+					Name:     "http",
+					Port:     80,
+					Protocol: "TCP",
+				},
+				ServicePort: Port{
+					Name:       "http",
+					Port:       30,
+					TargetPort: "80",
+					Protocol:   "TCP",
+				},
 				Attributes: map[string]string{
 					"custom-attr": "custom-val",
 				},
 			},
 			want: map[string]string{
-				Ipv4Attr:      ip,
-				PortAttr:      "30",
-				"custom-attr": "custom-val",
+				EndpointIpv4Attr:      ip,
+				EndpointPortAttr:      "80",
+				EndpointProtocolAttr:  "TCP",
+				EndpointPortNameAttr:  "http",
+				ServicePortNameAttr:   "http",
+				ServiceProtocolAttr:   "TCP",
+				ServicePortAttr:       "30",
+				ServiceTargetPortAttr: "80",
+				"custom-attr":         "custom-val",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := &Endpoint{
-				Id:         tt.fields.Id,
-				IP:         tt.fields.IP,
-				Port:       tt.fields.Port,
-				Attributes: tt.fields.Attributes,
+				Id:           tt.fields.Id,
+				IP:           tt.fields.IP,
+				EndpointPort: tt.fields.EndpointPort,
+				ServicePort:  tt.fields.ServicePort,
+				Attributes:   tt.fields.Attributes,
 			}
 			if got := e.GetCloudMapAttributes(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetAttributes() = %v, want %v", got, tt.want)
@@ -131,17 +171,19 @@ func TestEndpointIdFromIPAddress(t *testing.T) {
 	tests := []struct {
 		name    string
 		address string
+		port    int32
 		want    string
 	}{
 		{
 			name:    "happy case",
 			address: "192.168.0.1",
-			want:    "192_168_0_1",
+			port:    80,
+			want:    "192.168.0.1:80",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := EndpointIdFromIPAddress(tt.address); got != tt.want {
+			if got := EndpointIdFromIPAddress(tt.address, tt.port); got != tt.want {
 				t.Errorf("EndpointIdFromIPAddress() = %v, want %v", got, tt.want)
 			}
 		})
@@ -150,18 +192,34 @@ func TestEndpointIdFromIPAddress(t *testing.T) {
 
 func TestEndpoint_Equals(t *testing.T) {
 	firstEndpoint := Endpoint{
-		Id:   instId,
-		IP:   ip,
-		Port: 80,
+		Id: instId,
+		IP: ip,
+		ServicePort: Port{
+			Port: 80,
+		},
 		Attributes: map[string]string{
 			"custom-key": "custom-val",
 		},
 	}
 
 	secondEndpoint := Endpoint{
-		Id:   instId,
-		IP:   ip,
-		Port: 80,
+		Id: instId,
+		IP: ip,
+		ServicePort: Port{
+			Port: 80,
+			Name: "",
+		},
+		Attributes: map[string]string{
+			"custom-key": "custom-val",
+		},
+	}
+
+	thirdEndpoint := Endpoint{
+		Id: instId,
+		IP: ip,
+		ServicePort: Port{
+			Port: 80,
+		},
 		Attributes: map[string]string{
 			"custom-key": "different-val",
 		},
@@ -176,13 +234,13 @@ func TestEndpoint_Equals(t *testing.T) {
 		{
 			name: "identical",
 			x:    firstEndpoint,
-			y:    firstEndpoint,
+			y:    secondEndpoint,
 			want: true,
 		},
 		{
 			name: "different",
 			x:    firstEndpoint,
-			y:    secondEndpoint,
+			y:    thirdEndpoint,
 			want: false,
 		},
 	}
