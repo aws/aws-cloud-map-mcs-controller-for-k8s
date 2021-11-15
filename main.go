@@ -19,10 +19,11 @@ package main
 import (
 	"context"
 	"flag"
+	"os"
+
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/version"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -84,17 +85,16 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
+	setupLog.Info("configuring AWS session")
+	// GO sdk will look for region in order 1) AWS_REGION env var, 2) ~/.aws/config file, 3) EC2 IMDS
+	awsCfg, err := config.LoadDefaultConfig(context.TODO(), config.WithEC2IMDSRegion())
 
-	// TODO: configure session
-	awsRegion := os.Getenv("AWS_REGION")
-	setupLog.Info("configuring AWS session", "AWS_REGION", awsRegion)
-	awsCfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion(awsRegion),
-	)
-	if err != nil {
-		setupLog.Error(err, "unable to configure AWS session", "AWS_REGION", awsRegion)
+	if err != nil || awsCfg.Region == "" {
+		setupLog.Error(err, "unable to configure AWS session", "AWS_REGION", awsCfg.Region)
 		os.Exit(1)
 	}
+
+	setupLog.Info("Running with AWS region", "AWS_REGION", awsCfg.Region)
 
 	serviceDiscoveryClient := cloudmap.NewDefaultServiceDiscoveryClient(&awsCfg)
 	if err = (&controllers.ServiceExportReconciler{
