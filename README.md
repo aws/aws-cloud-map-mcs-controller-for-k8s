@@ -15,6 +15,10 @@
 ## Introduction
 AWS Cloud Map multi-cluster service discovery for Kubernetes (K8s) is a controller that implements existing multi-cluster services API that allows services to communicate across multiple clusters. The implementation relies on [AWS Cloud Map](https://aws.amazon.com/cloud-map/) for enabling cross-cluster service discovery.
 
+See the demo from AWS Container Day x KubeCon!
+
+[![Watch the video](https://img.youtube.com/vi/3f0Tv7IiQQw/0.jpg)](https://youtu.be/3f0Tv7IiQQw?t=24458)
+
 ## Usage
 > ⚠ **There must exist network connectivity (i.e. VPC peering, security group rules, ACLs, etc.) between clusters**: Undefined behavior may occur if controller is set up without network connectivity between clusters.
 
