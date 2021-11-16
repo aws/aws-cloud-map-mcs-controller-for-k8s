@@ -6,6 +6,8 @@ import (
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/api/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	testing2 "github.com/go-logr/logr/testing"
 	"github.com/golang/mock/gomock"
 	"gotest.tools/assert"
@@ -14,6 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -27,12 +30,7 @@ func TestServiceExportReconciler_Reconcile_NewServiceExport(t *testing.T) {
 	expectedService := model.Service{
 		Namespace: "my-namespace",
 		Name:      "exported-service",
-		Endpoints: []*model.Endpoint{{
-			Id:         "1_1_1_1",
-			IP:         "1.1.1.1",
-			Port:       80,
-			Attributes: map[string]string{},
-		}},
+		Endpoints: []*model.Endpoint{test.GetTestEndpoint1()},
 	}
 
 	cloudmapMock := cloudmapmock.NewMockServiceDiscoveryClient(mockController)
@@ -71,12 +69,7 @@ func TestServiceExportReconciler_Reconcile_ExistingServiceNewEndpoint(t *testing
 	expectedService := model.Service{
 		Namespace: "my-namespace",
 		Name:      "exported-service",
-		Endpoints: []*model.Endpoint{{
-			Id:         "1_1_1_1",
-			IP:         "1.1.1.1",
-			Port:       80,
-			Attributes: map[string]string{},
-		}},
+		Endpoints: []*model.Endpoint{test.GetTestEndpoint1()},
 	}
 
 	cloudmapMock := cloudmapmock.NewMockServiceDiscoveryClient(mockController)
@@ -125,14 +118,25 @@ func setupK8sClient() client.Client {
 
 	// Service object
 	service := &v1.Service{
+		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "exported-service",
 			Namespace: "my-namespace",
 		},
+		Spec: v1.ServiceSpec{
+			Ports: []v1.ServicePort{{
+				Name:       "http",
+				Protocol:   test.Protocol1,
+				Port:       test.ServicePort1,
+				TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: test.Port1},
+			}},
+		},
+		Status: v1.ServiceStatus{},
 	}
 
 	// EndpointSlice object
-	port := int32(80)
+	port := int32(test.Port1)
+	protocol := v1.ProtocolTCP
 	endpointSlice := &discovery.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "my-namespace",
@@ -141,9 +145,13 @@ func setupK8sClient() client.Client {
 		},
 		AddressType: discovery.AddressTypeIPv4,
 		Endpoints: []discovery.Endpoint{{
-			Addresses: []string{"1.1.1.1"},
+			Addresses: []string{test.EndptIp1},
 		}},
-		Ports: []discovery.EndpointPort{{Port: &port}},
+		Ports: []discovery.EndpointPort{{
+			Name:     aws.String("http"),
+			Protocol: &protocol,
+			Port:     &port,
+		}},
 	}
 	endpointSliceList := &discovery.EndpointSliceList{
 		Items: []discovery.EndpointSlice{*endpointSlice},

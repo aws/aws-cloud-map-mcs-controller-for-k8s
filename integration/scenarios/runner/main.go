@@ -10,23 +10,24 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 5 {
-		fmt.Println("Expected namespace, service, endpoint port, and endpoint IP list arguments")
+	if len(os.Args) != 6 {
+		fmt.Println("Expected namespace, service, endpoint port, service port and endpoint IP list arguments")
 		os.Exit(1)
 	}
 
 	nsName := os.Args[1]
 	svcName := os.Args[2]
 	port := os.Args[3]
-	ips := os.Args[4]
+	servicePort := os.Args[4]
+	ips := os.Args[5]
 
-	testServiceExport(nsName, svcName, port, ips)
+	testServiceExport(nsName, svcName, port, servicePort, ips)
 }
 
-func testServiceExport(nsName string, svcName string, port string, ips string) {
+func testServiceExport(nsName string, svcName string, port string, servicePort string, ips string) {
 	fmt.Printf("Testing service export integration for namespace %s and service %s\n", nsName, svcName)
 
-	export, err := scenarios.NewExportServiceScenario(getAwsConfig(), nsName, svcName, port, ips)
+	export, err := scenarios.NewExportServiceScenario(getAwsConfig(), nsName, svcName, port, servicePort, ips)
 	if err != nil {
 		fmt.Printf("Failed to setup service export integration test scenario: %s", err.Error())
 		os.Exit(1)
