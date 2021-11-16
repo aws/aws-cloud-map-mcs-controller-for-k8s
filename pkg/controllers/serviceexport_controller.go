@@ -186,25 +186,31 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 		return nil, err
 	}
 
+	servicePortMap := make(map[string]model.Port)
+	for _, svcPort := range svc.Spec.Ports {
+		servicePortMap[svcPort.Name] = ServicePortToPort(svcPort)
+	}
+
 	for _, slice := range endpointSlices.Items {
 		if slice.AddressType != discovery.AddressTypeIPv4 {
 			return nil, fmt.Errorf("unsupported address type %s for service %s", slice.AddressType, svc.Name)
 		}
-
-		for _, port := range slice.Ports {
-			for _, ep := range slice.Endpoints {
-				for _, IP := range ep.Addresses {
-					attributes := make(map[string]string, 0)
+		for _, endpointPort := range slice.Ports {
+			for _, endpoint := range slice.Endpoints {
+				for _, IP := range endpoint.Addresses {
+					attributes := make(map[string]string)
 					if version.GetVersion() != "" {
 						attributes[K8sVersionAttr] = version.PackageName + " " + version.GetVersion()
 					}
 					// TODO extract attributes - pod, node and other useful details if possible
 
+					port := EndpointPortToPort(endpointPort)
 					result = append(result, &model.Endpoint{
-						Id:         model.EndpointIdFromIPAddress(IP),
-						IP:         IP,
-						Port:       *port.Port,
-						Attributes: attributes,
+						Id:           model.EndpointIdFromIPAddressAndPort(IP, port),
+						IP:           IP,
+						EndpointPort: port,
+						ServicePort:  servicePortMap[*endpointPort.Name],
+						Attributes:   attributes,
 					})
 				}
 			}

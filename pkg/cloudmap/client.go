@@ -233,7 +233,7 @@ func (sdc *serviceDiscoveryClient) listEndpoints(ctx context.Context, nsName str
 	for _, inst := range insts {
 		endpt, endptErr := model.NewEndpointFromInstance(&inst)
 		if endptErr != nil {
-			sdc.log.Info(fmt.Sprintf("skipping instance %s to endpoint conversion: %s", *inst.InstanceId, endptErr.Error()))
+			sdc.log.Error(endptErr, "skipping instance to endpoint conversion", "instanceId", *inst.InstanceId)
 			continue
 		}
 		endpts = append(endpts, endpt)
