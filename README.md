@@ -26,7 +26,7 @@ See the demo from AWS Container Day x KubeCon!
 
 First, install the controller with latest release on at least 2 AWS EKS clusters. Nodes must have sufficient IAM permissions to perform CloudMap operations.
 
-> **_NOTE:_** AWS region environment variable should be set like `export AWS_REGION=us-west-2`
+> **_NOTE:_** AWS region environment variable can be _optionaly_ set like `export AWS_REGION=us-west-2` Otherwise controller will infer region in the order `AWS_REGION` environment variable, ~/.aws/config file, then EC2 metadata (for EKS environment)
 
 ```sh
 kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_release"
@@ -74,7 +74,7 @@ kubectl get ServiceImport -A
 
 AWS Cloud Map MCS Controller for K8s adheres to the [SemVer](https://semver.org/) specification. Each release updates the major version tag (eg. `vX`), a major/minor version tag (eg. `vX.Y`) and a major/minor/patch version tag (eg. `vX.Y.Z`). To see a full list of all releases, refer to our [Github releases page](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/releases).
 
-> **_NOTE:_** AWS region environment variable should be set like `export AWS_REGION=us-west-2`
+> **_NOTE:_** AWS region environment variable can be _optionally_ set like `export AWS_REGION=us-west-2` Otherwise controller will infer region in the order `AWS_REGION` environment variable, ~/.aws/config file, then EC2 metadata (for EKS environment)
 
 To install from a release run
 ```sh
