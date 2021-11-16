@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/api/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	testing2 "github.com/go-logr/logr/testing"
 	"github.com/golang/mock/gomock"
@@ -29,22 +30,7 @@ func TestServiceExportReconciler_Reconcile_NewServiceExport(t *testing.T) {
 	expectedService := model.Service{
 		Namespace: "my-namespace",
 		Name:      "exported-service",
-		Endpoints: []*model.Endpoint{{
-			Id: "1.1.1.1:80",
-			IP: "1.1.1.1",
-			EndpointPort: model.Port{
-				Name:     "http",
-				Port:     80,
-				Protocol: "TCP",
-			},
-			ServicePort: model.Port{
-				Name:       "http",
-				Port:       8080,
-				TargetPort: "80",
-				Protocol:   "TCP",
-			},
-			Attributes: map[string]string{},
-		}},
+		Endpoints: []*model.Endpoint{test.GetTestEndpoint1()},
 	}
 
 	cloudmapMock := cloudmapmock.NewMockServiceDiscoveryClient(mockController)
@@ -83,22 +69,7 @@ func TestServiceExportReconciler_Reconcile_ExistingServiceNewEndpoint(t *testing
 	expectedService := model.Service{
 		Namespace: "my-namespace",
 		Name:      "exported-service",
-		Endpoints: []*model.Endpoint{{
-			Id: "1.1.1.1:80",
-			IP: "1.1.1.1",
-			EndpointPort: model.Port{
-				Name:     "http",
-				Port:     80,
-				Protocol: "TCP",
-			},
-			ServicePort: model.Port{
-				Name:       "http",
-				Port:       8080,
-				TargetPort: "80",
-				Protocol:   "TCP",
-			},
-			Attributes: map[string]string{},
-		}},
+		Endpoints: []*model.Endpoint{test.GetTestEndpoint1()},
 	}
 
 	cloudmapMock := cloudmapmock.NewMockServiceDiscoveryClient(mockController)
@@ -155,16 +126,16 @@ func setupK8sClient() client.Client {
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{{
 				Name:       "http",
-				Protocol:   "TCP",
-				Port:       8080,
-				TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: 80},
+				Protocol:   test.Protocol1,
+				Port:       test.ServicePort1,
+				TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: test.Port1},
 			}},
 		},
 		Status: v1.ServiceStatus{},
 	}
 
 	// EndpointSlice object
-	port := int32(80)
+	port := int32(test.Port1)
 	protocol := v1.ProtocolTCP
 	endpointSlice := &discovery.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
@@ -174,7 +145,7 @@ func setupK8sClient() client.Client {
 		},
 		AddressType: discovery.AddressTypeIPv4,
 		Endpoints: []discovery.Endpoint{{
-			Addresses: []string{"1.1.1.1"},
+			Addresses: []string{test.EndptIp1},
 		}},
 		Ports: []discovery.EndpointPort{{
 			Name:     aws.String("http"),

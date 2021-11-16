@@ -70,6 +70,8 @@ func (r *CloudMapReconciler) Reconcile(ctx context.Context) error {
 		return err
 	}
 
+	//TODO: Fetch list of namespaces from Cloudmap and only reconcile the intersection
+
 	for _, ns := range namespaces.Items {
 		if err := r.reconcileNamespace(ctx, ns.Name); err != nil {
 			return err
@@ -80,16 +82,12 @@ func (r *CloudMapReconciler) Reconcile(ctx context.Context) error {
 }
 
 func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceName string) error {
+	r.Logger.Info("syncing namespace", "namespace", namespaceName)
+
 	desiredServices, err := r.Cloudmap.ListServices(ctx, namespaceName)
 	if err != nil {
 		return err
 	}
-	// Reconcile applicable for namespaces which have corresponding Cloudmap's namespace and services
-	if len(desiredServices) == 0 {
-		return nil
-	}
-
-	r.Logger.Info("syncing namespace", "namespace", namespaceName)
 
 	serviceImports := v1alpha1.ServiceImportList{}
 	if err := r.Client.List(ctx, &serviceImports, client.InNamespace(namespaceName)); err != nil {
@@ -118,6 +116,7 @@ func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceNa
 	for _, i := range existingImportsMap {
 		if err := r.Client.Delete(ctx, &i); err != nil {
 			r.Logger.Error(err, "error deleting ServiceImport", "namespace", i.Namespace, "name", i.Name)
+			continue
 		}
 		r.Logger.Info("delete ServiceImport", "namespace", i.Namespace, "name", i.Name)
 	}
@@ -128,30 +127,27 @@ func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceNa
 func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Service) error {
 	r.Logger.Info("syncing service", "namespace", svc.Namespace, "service", svc.Name)
 
-	// create ServiceImport if it doesn't exist
 	svcImport, err := r.getServiceImport(ctx, svc.Namespace, svc.Name)
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return err
 		}
 
-		var err2 error
-		svcImport, err2 = r.createAndGetServiceImport(ctx, svc.Namespace, svc.Name)
-		if err2 != nil {
-			return err2
+		// create ServiceImport if it doesn't exist
+		if svcImport, err = r.createAndGetServiceImport(ctx, svc.Namespace, svc.Name); err != nil {
+			return err
 		}
 	}
 
-	// create derived Service if it doesn't exist
 	derivedService, err := r.getDerivedService(ctx, svc.Namespace, svcImport.Annotations[DerivedServiceAnnotation])
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return err
 		}
-		var err2 error
-		derivedService, err2 = r.createAndGetDerivedService(ctx, svc, svcImport)
-		if err2 != nil {
-			return err2
+
+		// create derived Service if it doesn't exist
+		if derivedService, err = r.createAndGetDerivedService(ctx, svc, svcImport); err != nil {
+			return err
 		}
 	}
 
@@ -308,9 +304,9 @@ func createEndpointSlicesStruct(svcImport *v1alpha1.ServiceImport, cloudMapSvc *
 }
 
 func extractServicePorts(svc *model.Service) []v1.ServicePort {
-	uniquePorts := make(map[int32]model.Port)
+	uniquePorts := make(map[string]model.Port)
 	for _, ep := range svc.Endpoints {
-		uniquePorts[ep.ServicePort.Port] = ep.ServicePort
+		uniquePorts[ep.ServicePort.GetID()] = ep.ServicePort
 	}
 
 	servicePorts := make([]v1.ServicePort, 0, len(uniquePorts))
@@ -322,9 +318,9 @@ func extractServicePorts(svc *model.Service) []v1.ServicePort {
 }
 
 func extractEndpointPorts(svc *model.Service) []discovery.EndpointPort {
-	uniquePorts := make(map[int32]model.Port)
+	uniquePorts := make(map[string]model.Port)
 	for _, ep := range svc.Endpoints {
-		uniquePorts[ep.EndpointPort.Port] = ep.EndpointPort
+		uniquePorts[ep.EndpointPort.GetID()] = ep.EndpointPort
 	}
 
 	endpointPorts := make([]discovery.EndpointPort, 0, len(uniquePorts))

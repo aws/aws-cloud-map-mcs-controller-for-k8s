@@ -45,11 +45,11 @@ func PortToEndpointPort(port model.Port) discovery.EndpointPort {
 func protocolToString(protocol v1.Protocol) string {
 	switch protocol {
 	case v1.ProtocolTCP:
-		return "TCP"
+		return model.TCPProtocol
 	case v1.ProtocolUDP:
-		return "UDP"
+		return model.UDPProtocol
 	case v1.ProtocolSCTP:
-		return "SCTP"
+		return model.SCTPProtocol
 	default:
 		return ""
 	}
@@ -57,11 +57,11 @@ func protocolToString(protocol v1.Protocol) string {
 
 func stringToProtocol(protocol string) v1.Protocol {
 	switch protocol {
-	case "TCP":
+	case model.TCPProtocol:
 		return v1.ProtocolTCP
-	case "UDP":
+	case model.UDPProtocol:
 		return v1.ProtocolUDP
-	case "SCTP":
+	case model.SCTPProtocol:
 		return v1.ProtocolSCTP
 	default:
 		return ""

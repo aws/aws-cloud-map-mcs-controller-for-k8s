@@ -167,24 +167,28 @@ func TestEndpoint_GetAttributes(t *testing.T) {
 	}
 }
 
-func TestEndpointIdFromIPAddress(t *testing.T) {
+func TestEndpointIdFromIPAddressAndPort(t *testing.T) {
 	tests := []struct {
 		name    string
 		address string
-		port    int32
+		port    Port
 		want    string
 	}{
 		{
 			name:    "happy case",
 			address: "192.168.0.1",
-			port:    80,
-			want:    "192.168.0.1:80",
+			port: Port{
+				Name:     "http",
+				Port:     80,
+				Protocol: "TCP",
+			},
+			want: "TCP:192.168.0.1:80",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := EndpointIdFromIPAddress(tt.address, tt.port); got != tt.want {
-				t.Errorf("EndpointIdFromIPAddress() = %v, want %v", got, tt.want)
+			if got := EndpointIdFromIPAddressAndPort(tt.address, tt.port); got != tt.want {
+				t.Errorf("EndpointIdFromIPAddressAndPort() = %v, want %v", got, tt.want)
 			}
 		})
 	}

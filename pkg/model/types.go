@@ -64,6 +64,9 @@ const (
 	ServicePortAttr       = "SERVICE_PORT"
 	ServiceTargetPortAttr = "SERVICE_TARGET_PORT"
 	ServiceProtocolAttr   = "SERVICE_PROTOCOL"
+	TCPProtocol           = "TCP"
+	UDPProtocol           = "UDP"
+	SCTPProtocol          = "SCTP"
 )
 
 // NewEndpointFromInstance converts a Cloud Map HttpInstanceSummary to an endpoint.
@@ -183,9 +186,9 @@ func (e *Endpoint) String() string {
 	return string(bytes)
 }
 
-// EndpointIdFromIPAddress converts an IP address to human-readable identifier.
-func EndpointIdFromIPAddress(address string, port int32) string {
-	return fmt.Sprintf("%s:%d", address, port)
+// EndpointIdFromIPAddressAndPort converts an IP address to human-readable identifier.
+func EndpointIdFromIPAddressAndPort(address string, port Port) string {
+	return fmt.Sprintf("%s:%s:%d", port.Protocol, address, port.Port)
 }
 
 func ConvertNamespaceType(nsType types.NamespaceType) (namespaceType NamespaceType) {
@@ -201,4 +204,8 @@ func ConvertNamespaceType(nsType types.NamespaceType) (namespaceType NamespaceTy
 
 func (namespaceType *NamespaceType) IsUnsupported() bool {
 	return *namespaceType == UnsupportedNamespaceType
+}
+
+func (port *Port) GetID() string {
+	return fmt.Sprintf("%s:%d", port.Protocol, port.Port)
 }

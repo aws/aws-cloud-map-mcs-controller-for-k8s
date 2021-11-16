@@ -9,8 +9,8 @@ const (
 	NsId            = "ns-id"
 	SvcName         = "svc-name"
 	SvcId           = "svc-id"
-	EndptId1        = "endpoint-id-1"
-	EndptId2        = "endpoint-id-2"
+	EndptId1        = "TCP:192.168.0.1:1"
+	EndptId2        = "TCP:192.168.0.2:2"
 	EndptIp1        = "192.168.0.1"
 	EndptIp2        = "192.168.0.2"
 	Port1           = 1
@@ -54,6 +54,14 @@ func GetTestService() *model.Service {
 	}
 }
 
+func GetTestServiceWithEndpoint1() *model.Service {
+	return &model.Service{
+		Namespace: NsName,
+		Name:      SvcName,
+		Endpoints: []*model.Endpoint{GetTestEndpoint1()},
+	}
+}
+
 func GetTestEndpoint1() *model.Endpoint {
 	return &model.Endpoint{
 		Id: EndptId1,
@@ -69,7 +77,7 @@ func GetTestEndpoint1() *model.Endpoint {
 			TargetPort: PortStr1,
 			Protocol:   Protocol1,
 		},
-		Attributes: make(map[string]string, 0),
+		Attributes: make(map[string]string),
 	}
 }
 
@@ -88,6 +96,6 @@ func GetTestEndpoint2() *model.Endpoint {
 			TargetPort: PortStr2,
 			Protocol:   Protocol2,
 		},
-		Attributes: make(map[string]string, 0),
+		Attributes: make(map[string]string),
 	}
 }
