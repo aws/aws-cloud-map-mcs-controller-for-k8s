@@ -122,8 +122,7 @@ func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, log logr.Log
 
 	if createRequired || updateRequired {
 		// merge creates and updates (Cloud Map RegisterEndpoints can handle both)
-		upserts := changes.Create
-		upserts = append(changes.Create, changes.Update...)
+		upserts := append(changes.Create, changes.Update...)
 
 		if err := r.Cloudmap.RegisterEndpoints(ctx, svc.Namespace, svc.Name, upserts); err != nil {
 			log.Error(err, "error when registering endpoints to Cloud Map",
