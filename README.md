@@ -104,6 +104,10 @@ The end-to-end integration test suite can be run locally to validate controller 
 make integration-suite
 ```
 
+## Slack community
+We have an open Slack community where users may get support with integration, discuss controller functionality and provide input on our feature roadmap. https://awsappmesh.slack.com/#k8s-mcs-controller
+Join the channel with this [invite](https://join.slack.com/t/awsappmesh/shared_invite/zt-dwgbt85c-Sj_md92__quV8YADKfsQSA).
+
 ## Contributing
 `aws-cloud-map-mcs-controller-for-k8s` is an open source project. See [CONTRIBUTING](https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/blob/main/CONTRIBUTING.md) for details.
 
