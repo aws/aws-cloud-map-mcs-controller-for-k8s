@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 // Resource encapsulates a ID/name pair.
@@ -188,7 +189,7 @@ func (e *Endpoint) String() string {
 
 // EndpointIdFromIPAddressAndPort converts an IP address to human-readable identifier.
 func EndpointIdFromIPAddressAndPort(address string, port Port) string {
-	return fmt.Sprintf("%s:%s:%d", port.Protocol, address, port.Port)
+	return fmt.Sprintf("%s://%s:%d", strings.ToLower(port.Protocol), address, port.Port)
 }
 
 func ConvertNamespaceType(nsType types.NamespaceType) (namespaceType NamespaceType) {

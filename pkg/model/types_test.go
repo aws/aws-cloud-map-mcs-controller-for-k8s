@@ -182,7 +182,7 @@ func TestEndpointIdFromIPAddressAndPort(t *testing.T) {
 				Port:     80,
 				Protocol: "TCP",
 			},
-			want: "TCP:192.168.0.1:80",
+			want: "tcp://192.168.0.1:80",
 		},
 	}
 	for _, tt := range tests {
