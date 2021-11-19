@@ -54,11 +54,11 @@ func GetTestService() *model.Service {
 	}
 }
 
-func GetTestServiceWithEndpoint1() *model.Service {
+func GetTestServiceWithEndpoint(endpoints []*model.Endpoint) *model.Service {
 	return &model.Service{
 		Namespace: NsName,
 		Name:      SvcName,
-		Endpoints: []*model.Endpoint{GetTestEndpoint1()},
+		Endpoints: endpoints,
 	}
 }
 

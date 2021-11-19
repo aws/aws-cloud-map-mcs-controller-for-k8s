@@ -6,17 +6,18 @@ set -e
 
 source ./integration/scripts/common.sh
 
-if [ "$#" -ne 1 ]; then
-    echo "test script expects endpoint IP list as single argument"
+if [ "$#" -ne 2 ]; then
+    echo "test script expects \"expected number of endpoints\" and endpoints IP list as arguments"
     exit 1
 fi
 
-endpts=$1
+expected_endpoint_count=$1
+endpoints=$2
 echo "checking service imports..."
 
 import_count=0
 poll_count=0
-while ((import_count < EXPECTED_ENDPOINT_COUNT))
+while ((import_count < expected_endpoint_count))
 do
   if ((poll_count++ > 30)) ; then
     echo "timed out polling for import endpoints"
@@ -33,7 +34,7 @@ done
 
 echo "$imports" | tr -d '"' | while read -r import; do
   echo "checking import: $import"
-  if ! echo "$endpts" | grep -q "$import" ; then
+  if ! echo "$endpoints" | grep -q "$import" ; then
     echo "exported endpoint not found: $import"
     exit 1
   fi

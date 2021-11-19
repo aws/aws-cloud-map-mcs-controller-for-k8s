@@ -21,8 +21,33 @@ go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $ENDPT_PORT $SERVICE_PORT "
 exit_code=$?
 
 if [ "$exit_code" -eq 0 ] ; then
-  ./integration/scripts/test-import.sh "$endpts"
+  ./integration/scripts/test-import.sh "$EXPECTED_ENDPOINT_COUNT" "$endpts"
   exit_code=$?
+fi
+
+echo "sleeping..."
+sleep 2s
+
+deployment=$($KUBECTL_BIN get deployment --namespace "$NAMESPACE" -o json | jq -r '.items[0].metadata.name')
+
+echo "scaling the deployment $deployment to $UPDATED_ENDPOINT_COUNT"
+$KUBECTL_BIN scale deployment/"$deployment" --replicas="$UPDATED_ENDPOINT_COUNT" --namespace "$NAMESPACE"
+exit_code=$?
+
+if [ "$exit_code" -eq 0 ] ; then
+  if ! updated_endpoints=$(./integration/scripts/poll-endpoints.sh "$UPDATED_ENDPOINT_COUNT") ; then
+    exit $?
+  fi
+
+  go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $ENDPT_PORT $SERVICE_PORT "$updated_endpoints"
+  exit_code=$?
+
+  # TODO: The reconciliation during the import is not implemented yet, uncomment below once done
+  #
+  #if [ "$exit_code" -eq 0 ] ; then
+  #  ./integration/scripts/test-import.sh "$UPDATED_ENDPOINT_COUNT" "$updated_endpoints"
+  #  exit_code=$?
+  #fi
 fi
 
 echo "killing controller PID:$CTL_PID"
