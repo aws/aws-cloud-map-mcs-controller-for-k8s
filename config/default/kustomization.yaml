@@ -12,7 +12,7 @@ namePrefix: cloud-map-mcs-
 #commonLabels:
 #  someName: someValue
 
-resources:
+bases:
 - ../crd
 - ../rbac
 - ../manager
