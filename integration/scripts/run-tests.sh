@@ -42,12 +42,10 @@ if [ "$exit_code" -eq 0 ] ; then
   go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $ENDPT_PORT $SERVICE_PORT "$updated_endpoints"
   exit_code=$?
 
-  # TODO: The reconciliation during the import is not implemented yet, uncomment below once done
-  #
-  #if [ "$exit_code" -eq 0 ] ; then
-  #  ./integration/scripts/test-import.sh "$UPDATED_ENDPOINT_COUNT" "$updated_endpoints"
-  #  exit_code=$?
-  #fi
+  if [ "$exit_code" -eq 0 ] ; then
+    ./integration/scripts/test-import.sh "$UPDATED_ENDPOINT_COUNT" "$updated_endpoints"
+    exit_code=$?
+  fi
 fi
 
 echo "killing controller PID:$CTL_PID"

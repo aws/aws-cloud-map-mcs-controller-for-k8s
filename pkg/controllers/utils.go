@@ -5,6 +5,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	discovery "k8s.io/api/discovery/v1beta1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"reflect"
 )
 
 func ServicePortToPort(svcPort v1.ServicePort) model.Port {
@@ -66,4 +67,24 @@ func stringToProtocol(protocol string) v1.Protocol {
 	default:
 		return ""
 	}
+}
+
+func EndpointPortsAreEqualIgnoreOrder(a, b []discovery.EndpointPort) (equal bool) {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for _, aPort := range a {
+		match := false
+		for _, bPort := range b {
+			if reflect.DeepEqual(aPort, bPort) {
+				match = true
+				break
+			}
+		}
+		if !match {
+			return false
+		}
+	}
+	return true
 }
