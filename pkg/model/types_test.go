@@ -176,13 +176,13 @@ func TestEndpointIdFromIPAddressAndPort(t *testing.T) {
 	}{
 		{
 			name:    "happy case",
-			address: "192.168.0.1",
+			address: ip,
 			port: Port{
 				Name:     "http",
 				Port:     80,
 				Protocol: "TCP",
 			},
-			want: "tcp://192.168.0.1:80",
+			want: "tcp-192_168_0_1-80",
 		},
 	}
 	for _, tt := range tests {

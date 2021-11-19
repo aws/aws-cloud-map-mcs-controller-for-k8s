@@ -189,7 +189,9 @@ func (e *Endpoint) String() string {
 
 // EndpointIdFromIPAddressAndPort converts an IP address to human-readable identifier.
 func EndpointIdFromIPAddressAndPort(address string, port Port) string {
-	return fmt.Sprintf("%s://%s:%d", strings.ToLower(port.Protocol), address, port.Port)
+	address = strings.Replace(address, ".", "_", -1)
+	address = strings.Replace(address, ":", "_", -1)
+	return fmt.Sprintf("%s-%s-%d", strings.ToLower(port.Protocol), address, port.Port)
 }
 
 func ConvertNamespaceType(nsType types.NamespaceType) (namespaceType NamespaceType) {
