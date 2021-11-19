@@ -309,17 +309,6 @@ func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport
 	return nil
 }
 
-func findEndpointInSliceByIp(endpointSlices []discovery.EndpointSlice, ip string) *discovery.Endpoint {
-	for _, slice := range endpointSlices {
-		for _, ep := range slice.Endpoints {
-			if ep.Addresses[0] == ip {
-				return &ep
-			}
-		}
-	}
-	return nil
-}
-
 // DerivedName computes the "placeholder" name for the imported service
 func DerivedName(namespace string, name string) string {
 	hash := sha256.New()
