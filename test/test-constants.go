@@ -9,8 +9,8 @@ const (
 	NsId            = "ns-id"
 	SvcName         = "svc-name"
 	SvcId           = "svc-id"
-	EndptId1        = "tcp://192.168.0.1:1"
-	EndptId2        = "tcp://192.168.0.2:2"
+	EndptId1        = "tcp-192_168_0_1-1"
+	EndptId2        = "tcp-192_168_0_2-2"
 	EndptIp1        = "192.168.0.1"
 	EndptIp2        = "192.168.0.2"
 	Port1           = 1
