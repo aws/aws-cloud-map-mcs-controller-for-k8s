@@ -46,11 +46,11 @@ func (p *Plan) CalculateChanges() Changes {
 	return changes
 }
 
-func (c *Changes) IsUpdated() bool {
+func (c *Changes) HasUpdates() bool {
 	return len(c.Create) > 0 || len(c.Update) > 0
 }
 
-func (c *Changes) IsDeleted() bool {
+func (c *Changes) HasDeletes() bool {
 	return len(c.Delete) > 0
 }
 

@@ -65,11 +65,11 @@ func (r *ServiceExportReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	r.Log.Info("reconciling service export", "Namespace", req.Namespace, "Name", req.NamespacedName)
+	r.Log.Info("reconciling ServiceExport", "Namespace", req.Namespace, "Name", req.NamespacedName)
 
 	serviceExport := v1alpha1.ServiceExport{}
 	if err := r.Client.Get(ctx, req.NamespacedName, &serviceExport); err != nil {
-		r.Log.Error(err, "error with fetching ServiceExport",
+		r.Log.Error(err, "error fetching ServiceExport",
 			"Namespace", serviceExport.Namespace, "Name", serviceExport.Name)
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -86,7 +86,7 @@ func (r *ServiceExportReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			// Mark ServiceExport to be deleted, if the corresponding Service is not found
 			isServiceExportMarkedForDelete = true
 		} else {
-			r.Log.Error(err, "error with fetching service",
+			r.Log.Error(err, "error fetching service",
 				"Namespace", serviceExport.Namespace, "Name", serviceExport.Name)
 			return ctrl.Result{}, err
 		}
@@ -106,7 +106,7 @@ func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, serviceExpor
 	if !controllerutil.ContainsFinalizer(serviceExport, ServiceExportFinalizer) {
 		controllerutil.AddFinalizer(serviceExport, ServiceExportFinalizer)
 		if err := r.Update(ctx, serviceExport); err != nil {
-			r.Log.Error(err, "error with adding finalizer",
+			r.Log.Error(err, "error adding finalizer",
 				"Namespace", serviceExport.Namespace, "Name", serviceExport.Name)
 			return ctrl.Result{}, err
 		}
@@ -115,14 +115,14 @@ func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, serviceExpor
 	r.Log.Info("updating Cloud Map service", "namespace", service.Namespace, "name", service.Name)
 	cmService, err := r.createOrGetCloudMapService(ctx, service)
 	if err != nil {
-		r.Log.Error(err, "error with fetching service from Cloud Map",
+		r.Log.Error(err, "error fetching service from Cloud Map",
 			"namespace", service.Namespace, "name", service.Name)
 		return ctrl.Result{}, err
 	}
 
 	endpoints, err := r.extractEndpoints(ctx, service)
 	if err != nil {
-		r.Log.Error(err, "error with extracting endpoints",
+		r.Log.Error(err, "error extracting endpoints",
 			"Namespace", serviceExport.Namespace, "Name", serviceExport.Name)
 		return ctrl.Result{}, err
 	}
@@ -134,28 +134,28 @@ func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, serviceExpor
 	}
 	changes := plan.CalculateChanges()
 
-	if changes.IsUpdated() {
+	if changes.HasUpdates() {
 		// merge creates and updates (Cloud Map RegisterEndpoints can handle both)
 		upserts := changes.Create
 		upserts = append(upserts, changes.Update...)
 
 		if err := r.CloudMap.RegisterEndpoints(ctx, service.Namespace, service.Name, upserts); err != nil {
-			r.Log.Error(err, "error with registering endpoints to Cloud Map",
+			r.Log.Error(err, "error registering endpoints to Cloud Map",
 				"namespace", service.Namespace, "name", service.Name)
 			return ctrl.Result{}, err
 		}
 	}
 
-	if changes.IsDeleted() {
+	if changes.HasDeletes() {
 		if err := r.CloudMap.DeleteEndpoints(ctx, service.Namespace, service.Name, changes.Delete); err != nil {
-			r.Log.Error(err, "error when deleting endpoints from Cloud Map",
+			r.Log.Error(err, "error deleting endpoints from Cloud Map",
 				"namespace", cmService.Namespace, "name", cmService.Name)
 			return ctrl.Result{}, err
 		}
 	}
 
 	if changes.IsNone() {
-		r.Log.Info("no changes to export", "namespace", service.Namespace, "name", service.Name)
+		r.Log.Info("no changes to export to Cloud Map", "namespace", service.Namespace, "name", service.Name)
 	}
 
 	return ctrl.Result{}, nil
@@ -169,7 +169,7 @@ func (r *ServiceExportReconciler) createOrGetCloudMapService(ctx context.Context
 
 	if cmService == nil {
 		if err := r.CloudMap.CreateService(ctx, service.Namespace, service.Name); err != nil {
-			r.Log.Error(err, "error with creating a new service in Cloud Map",
+			r.Log.Error(err, "error creating a new service in Cloud Map",
 				"namespace", service.Namespace, "name", service.Name)
 			return nil, err
 		}
@@ -188,13 +188,13 @@ func (r *ServiceExportReconciler) handleDelete(ctx context.Context, serviceExpor
 
 		cmService, err := r.CloudMap.GetService(ctx, serviceExport.Namespace, serviceExport.Name)
 		if err != nil {
-			r.Log.Error(err, "error while fetching service from Cloud Map API",
+			r.Log.Error(err, "error fetching service from Cloud Map",
 				"namespace", serviceExport.Namespace, "name", serviceExport.Name)
 			return ctrl.Result{}, err
 		}
 		if cmService != nil {
 			if err := r.CloudMap.DeleteEndpoints(ctx, cmService.Namespace, cmService.Name, cmService.Endpoints); err != nil {
-				r.Log.Error(err, "error while deleting endpoints from Cloud Map",
+				r.Log.Error(err, "error deleting endpoints from Cloud Map",
 					"namespace", cmService.Namespace, "name", cmService.Name)
 				return ctrl.Result{}, err
 			}
