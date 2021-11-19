@@ -101,7 +101,7 @@ func main() {
 		Client:   mgr.GetClient(),
 		Log:      ctrl.Log.WithName("controllers").WithName("ServiceExport"),
 		Scheme:   mgr.GetScheme(),
-		Cloudmap: serviceDiscoveryClient,
+		CloudMap: serviceDiscoveryClient,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServiceExport")
 		os.Exit(1)

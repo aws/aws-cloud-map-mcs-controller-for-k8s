@@ -24,8 +24,15 @@ import (
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/version"
 	v1 "k8s.io/api/core/v1"
 	discovery "k8s.io/api/discovery/v1beta1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -36,8 +43,9 @@ import (
 )
 
 const (
-	K8sVersionAttr         = "K8S_CONTROLLER"
-	serviceExportFinalizer = "multicluster.k8s.aws/service-export-finalizer"
+	K8sVersionAttr            = "K8S_CONTROLLER"
+	ServiceExportFinalizer    = "multicluster.k8s.aws/service-export-finalizer"
+	EndpointSliceServiceLabel = "kubernetes.io/service-name"
 )
 
 // ServiceExportReconciler reconciles a ServiceExport object
@@ -45,7 +53,7 @@ type ServiceExportReconciler struct {
 	client.Client
 	Log      logr.Logger
 	Scheme   *runtime.Scheme
-	Cloudmap cloudmap.ServiceDiscoveryClient
+	CloudMap cloudmap.ServiceDiscoveryClient
 }
 
 // +kubebuilder:rbac:groups="",resources=services,verbs=get
@@ -57,119 +65,148 @@ func (r *ServiceExportReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	log := r.Log.WithValues("serviceexport", req.NamespacedName)
+	r.Log.Info("reconciling ServiceExport", "Namespace", req.Namespace, "Name", req.NamespacedName)
 
-	svcExport := v1alpha1.ServiceExport{}
-	if err := r.Client.Get(ctx, req.NamespacedName, &svcExport); err != nil {
+	serviceExport := v1alpha1.ServiceExport{}
+	if err := r.Client.Get(ctx, req.NamespacedName, &serviceExport); err != nil {
+		r.Log.Error(err, "error fetching ServiceExport",
+			"Namespace", serviceExport.Namespace, "Name", serviceExport.Name)
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	if svcExport.DeletionTimestamp.IsZero() {
-		return r.handleUpdate(ctx, log, &svcExport)
-	} else {
-		return r.handleDelete(ctx, log, &svcExport)
+	// Mark ServiceExport to be deleted, which is indicated by the deletion timestamp being set.
+	isServiceExportMarkedForDelete := serviceExport.GetDeletionTimestamp() != nil
+
+	service := v1.Service{}
+	namespacedName := types.NamespacedName{Namespace: serviceExport.Namespace, Name: serviceExport.Name}
+	if err := r.Client.Get(ctx, namespacedName, &service); err != nil {
+		if errors.IsNotFound(err) {
+			r.Log.Error(err, "no Service found for ServiceExport",
+				"Namespace", serviceExport.Namespace, "Name", serviceExport.Name)
+			// Mark ServiceExport to be deleted, if the corresponding Service is not found
+			isServiceExportMarkedForDelete = true
+		} else {
+			r.Log.Error(err, "error fetching service",
+				"Namespace", serviceExport.Namespace, "Name", serviceExport.Name)
+			return ctrl.Result{}, err
+		}
 	}
+
+	// Check if the service export is marked to be deleted
+	if isServiceExportMarkedForDelete {
+		return r.handleDelete(ctx, &serviceExport)
+	}
+
+	return r.handleUpdate(ctx, &serviceExport, &service)
 }
 
-func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, log logr.Logger, svcExport *v1alpha1.ServiceExport) (ctrl.Result, error) {
-	// add finalizer if not present
-	if !controllerutil.ContainsFinalizer(svcExport, serviceExportFinalizer) {
-		controllerutil.AddFinalizer(svcExport, serviceExportFinalizer)
-		if err := r.Update(ctx, svcExport); err != nil {
+func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, serviceExport *v1alpha1.ServiceExport, service *v1.Service) (ctrl.Result, error) {
+
+	// Add the finalizer to the service export if not present, ensures the ServiceExport won't be deleted
+	if !controllerutil.ContainsFinalizer(serviceExport, ServiceExportFinalizer) {
+		controllerutil.AddFinalizer(serviceExport, ServiceExportFinalizer)
+		if err := r.Update(ctx, serviceExport); err != nil {
+			r.Log.Error(err, "error adding finalizer",
+				"Namespace", serviceExport.Namespace, "Name", serviceExport.Name)
 			return ctrl.Result{}, err
 		}
 	}
 
-	svc := v1.Service{}
-	if err := r.Client.Get(ctx, types.NamespacedName{Namespace: svcExport.Namespace, Name: svcExport.Name}, &svc); err != nil {
-		log.Error(err, "no service found for ServiceExport",
-			"Namespace", svcExport.GetNamespace(), "Name", svcExport.Name)
-		return ctrl.Result{}, client.IgnoreNotFound(err)
-	}
-
-	endpoints, err := r.extractEndpoints(ctx, &svc)
+	r.Log.Info("updating Cloud Map service", "namespace", service.Namespace, "name", service.Name)
+	cmService, err := r.createOrGetCloudMapService(ctx, service)
 	if err != nil {
+		r.Log.Error(err, "error fetching service from Cloud Map",
+			"namespace", service.Namespace, "name", service.Name)
 		return ctrl.Result{}, err
 	}
 
-	changes := model.Changes{
-		Create: endpoints,
-	}
-
-	log.Info("updating Cloud Map service", "namespace", svc.Namespace, "name", svc.Name)
-	srv, err := r.Cloudmap.GetService(ctx, svc.Namespace, svc.Name)
+	endpoints, err := r.extractEndpoints(ctx, service)
 	if err != nil {
-		log.Error(err, "error when fetching service from Cloud Map API", "namespace", svc.Namespace, "name", svc.Name)
+		r.Log.Error(err, "error extracting endpoints",
+			"Namespace", serviceExport.Namespace, "Name", serviceExport.Name)
 		return ctrl.Result{}, err
 	}
-	if srv == nil {
-		if err := r.Cloudmap.CreateService(ctx, svc.Namespace, svc.Name); err != nil {
-			log.Error(err, "error when creating new service in Cloud Map", "namespace", svc.Namespace, "name", svc.Name)
-			return ctrl.Result{}, err
-		}
-	} else {
-		// compute diff between Cloud Map and K8s and apply changes
-		plan := model.Plan{
-			Current: srv.Endpoints,
-			Desired: endpoints,
-		}
-		changes = plan.CalculateChanges()
+
+	// Compute diff between Cloud Map and K8s endpoints, and apply changes
+	plan := model.Plan{
+		Current: cmService.Endpoints,
+		Desired: endpoints,
 	}
+	changes := plan.CalculateChanges()
 
-	createRequired := len(changes.Create) > 0
-	updateRequired := len(changes.Update) > 0
-	deleteRequired := len(changes.Delete) > 0
-
-	if createRequired || updateRequired {
+	if changes.HasUpdates() {
 		// merge creates and updates (Cloud Map RegisterEndpoints can handle both)
-		upserts := append(changes.Create, changes.Update...)
+		upserts := changes.Create
+		upserts = append(upserts, changes.Update...)
 
-		if err := r.Cloudmap.RegisterEndpoints(ctx, svc.Namespace, svc.Name, upserts); err != nil {
-			log.Error(err, "error when registering endpoints to Cloud Map",
-				"namespace", svc.Namespace, "name", svc.Name)
+		if err := r.CloudMap.RegisterEndpoints(ctx, service.Namespace, service.Name, upserts); err != nil {
+			r.Log.Error(err, "error registering endpoints to Cloud Map",
+				"namespace", service.Namespace, "name", service.Name)
 			return ctrl.Result{}, err
 		}
 	}
 
-	if deleteRequired {
-		if err := r.Cloudmap.DeleteEndpoints(ctx, svc.Namespace, svc.Name, changes.Delete); err != nil {
-			log.Error(err, "error when deleting endpoints from Cloud Map",
-				"namespace", srv.Namespace, "name", srv.Name)
+	if changes.HasDeletes() {
+		if err := r.CloudMap.DeleteEndpoints(ctx, service.Namespace, service.Name, changes.Delete); err != nil {
+			r.Log.Error(err, "error deleting endpoints from Cloud Map",
+				"namespace", cmService.Namespace, "name", cmService.Name)
 			return ctrl.Result{}, err
 		}
 	}
 
-	if !createRequired && !updateRequired && !deleteRequired {
-		log.Info("no changes to export", "namespace", svc.Namespace, "name", svc.Name)
+	if changes.IsNone() {
+		r.Log.Info("no changes to export to Cloud Map", "namespace", service.Namespace, "name", service.Name)
 	}
 
 	return ctrl.Result{}, nil
 }
 
-func (r *ServiceExportReconciler) handleDelete(ctx context.Context, log logr.Logger, svcExport *v1alpha1.ServiceExport) (ctrl.Result, error) {
-	if controllerutil.ContainsFinalizer(svcExport, serviceExportFinalizer) {
+func (r *ServiceExportReconciler) createOrGetCloudMapService(ctx context.Context, service *v1.Service) (*model.Service, error) {
+	cmService, err := r.CloudMap.GetService(ctx, service.Namespace, service.Name)
+	if err != nil {
+		return nil, err
+	}
 
-		log.Info("removing Cloud Map service", "namespace", svcExport.Namespace, "name", svcExport.Name)
+	if cmService == nil {
+		if err := r.CloudMap.CreateService(ctx, service.Namespace, service.Name); err != nil {
+			r.Log.Error(err, "error creating a new service in Cloud Map",
+				"namespace", service.Namespace, "name", service.Name)
+			return nil, err
+		}
+		if cmService, err = r.CloudMap.GetService(ctx, service.Namespace, service.Name); err != nil {
+			return nil, err
+		}
+	}
 
-		srv, err := r.Cloudmap.GetService(ctx, svcExport.Namespace, svcExport.Name)
+	return cmService, nil
+}
+
+func (r *ServiceExportReconciler) handleDelete(ctx context.Context, serviceExport *v1alpha1.ServiceExport) (ctrl.Result, error) {
+	if controllerutil.ContainsFinalizer(serviceExport, ServiceExportFinalizer) {
+
+		r.Log.Info("removing service export", "namespace", serviceExport.Namespace, "name", serviceExport.Name)
+
+		cmService, err := r.CloudMap.GetService(ctx, serviceExport.Namespace, serviceExport.Name)
 		if err != nil {
-			log.Error(err, "error when fetching service from Cloud Map API",
-				"namespace", svcExport.Namespace, "name", svcExport.Name)
+			r.Log.Error(err, "error fetching service from Cloud Map",
+				"namespace", serviceExport.Namespace, "name", serviceExport.Name)
 			return ctrl.Result{}, err
 		}
-		if srv != nil {
-			if err := r.Cloudmap.DeleteEndpoints(ctx, srv.Namespace, srv.Name, srv.Endpoints); err != nil {
-				log.Error(err, "error when deleting endpoints from Cloud Map",
-					"namespace", srv.Namespace, "name", srv.Name)
+		if cmService != nil {
+			if err := r.CloudMap.DeleteEndpoints(ctx, cmService.Namespace, cmService.Name, cmService.Endpoints); err != nil {
+				r.Log.Error(err, "error deleting endpoints from Cloud Map",
+					"namespace", cmService.Namespace, "name", cmService.Name)
 				return ctrl.Result{}, err
 			}
 		}
 
-		// remove finalizer
-		controllerutil.RemoveFinalizer(svcExport, serviceExportFinalizer)
-		if err := r.Update(ctx, svcExport); err != nil {
+		// Remove finalizer. Once all finalizers have been
+		// removed, the ServiceExport object will be deleted.
+		controllerutil.RemoveFinalizer(serviceExport, ServiceExportFinalizer)
+		if err := r.Update(ctx, serviceExport); err != nil {
 			return ctrl.Result{}, err
 		}
+
 	}
 
 	return ctrl.Result{}, nil
@@ -223,5 +260,57 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 func (r *ServiceExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.ServiceExport{}).
+		// Watch for the changes to the EndpointSlice object. This object is bound to be
+		// updated when Service or Deployment are updated. There is also a filtering logic
+		// to enqueue those EndpointSlice event which have corresponding ServiceExport
+		Watches(
+			&source.Kind{Type: &discovery.EndpointSlice{}},
+			handler.EnqueueRequestsFromMapFunc(r.endpointSliceEventHandler()),
+			builder.WithPredicates(r.endpointSliceFilter()),
+		).
 		Complete(r)
+}
+
+func (r *ServiceExportReconciler) endpointSliceEventHandler() handler.MapFunc {
+	return func(object client.Object) []reconcile.Request {
+		labels := object.GetLabels()
+		serviceName := labels[EndpointSliceServiceLabel]
+		return []reconcile.Request{
+			{NamespacedName: types.NamespacedName{
+				Name:      serviceName,
+				Namespace: object.GetNamespace(),
+			}},
+		}
+	}
+}
+
+func (r *ServiceExportReconciler) endpointSliceFilter() predicate.Funcs {
+	return predicate.Funcs{
+		GenericFunc: func(e event.GenericEvent) bool {
+			return r.doesEndpointSliceHaveServiceExport(e.Object)
+		},
+		CreateFunc: func(e event.CreateEvent) bool {
+			return r.doesEndpointSliceHaveServiceExport(e.Object)
+		},
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			return r.doesEndpointSliceHaveServiceExport(e.ObjectNew)
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			return r.doesEndpointSliceHaveServiceExport(e.Object)
+		},
+	}
+}
+
+func (r *ServiceExportReconciler) doesEndpointSliceHaveServiceExport(object client.Object) bool {
+	labels := object.GetLabels()
+	serviceName := labels[EndpointSliceServiceLabel]
+	ns := types.NamespacedName{
+		Name:      serviceName,
+		Namespace: object.GetNamespace(),
+	}
+	svcExport := v1alpha1.ServiceExport{}
+	if err := r.Client.Get(context.TODO(), ns, &svcExport); err != nil {
+		return false
+	}
+	return true
 }

@@ -37,7 +37,7 @@ func TestCloudMapReconciler_Reconcile(t *testing.T) {
 	mockSDClient := cloudmap.NewMockServiceDiscoveryClient(mockController)
 	// The service model in the Cloudmap
 	mockSDClient.EXPECT().ListServices(context.TODO(), test.NsName).
-		Return([]*model.Service{test.GetTestServiceWithEndpoint1()}, nil)
+		Return([]*model.Service{test.GetTestServiceWithEndpoint([]*model.Endpoint{test.GetTestEndpoint1()})}, nil)
 
 	reconciler := getReconciler(t, mockSDClient, fakeClient)
 

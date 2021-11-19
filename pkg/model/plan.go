@@ -45,3 +45,15 @@ func (p *Plan) CalculateChanges() Changes {
 
 	return changes
 }
+
+func (c *Changes) HasUpdates() bool {
+	return len(c.Create) > 0 || len(c.Update) > 0
+}
+
+func (c *Changes) HasDeletes() bool {
+	return len(c.Delete) > 0
+}
+
+func (c *Changes) IsNone() bool {
+	return len(c.Create) == 0 && len(c.Update) == 0 && len(c.Delete) == 0
+}
