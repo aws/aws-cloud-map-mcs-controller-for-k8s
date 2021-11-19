@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base32"
+	"fmt"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/api/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
@@ -23,6 +24,8 @@ import (
 const (
 	// TODO move to configuration
 	syncPeriod = 2 * time.Second
+
+	maxEndpointsPerSlice = 100
 
 	// DerivedServiceAnnotation annotates a ServiceImport with derived Service name
 	DerivedServiceAnnotation = "multicluster.k8s.aws/derived-service"
@@ -219,11 +222,20 @@ func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport
 	matchedEndpoints := make(map[string]*discovery.Endpoint)
 	endpointsToCreate := make([]discovery.Endpoint, 0)
 
+	// populate map of existing endpoints in slices for lookup efficiency
+	existingEndpointMap := make(map[string]*discovery.Endpoint)
+	for _, existingSlice := range existingSlicesList.Items {
+		for _, existingEndpoint := range existingSlice.Endpoints {
+			ref := existingEndpoint
+			existingEndpointMap[ref.Addresses[0]] = &ref
+		}
+	}
+
 	// check if all desired endpoints are in an endpoint slice already
 	for _, desiredEndpoint := range desiredEndpoints {
-		existingEndpoint := findEndpointInSliceByIp(existingSlicesList.Items, desiredEndpoint.IP)
-		if existingEndpoint != nil {
-			matchedEndpoints[desiredEndpoint.IP] = existingEndpoint
+		match, exists := existingEndpointMap[desiredEndpoint.IP]
+		if exists {
+			matchedEndpoints[desiredEndpoint.IP] = match
 		} else {
 			endpointsToCreate = append(endpointsToCreate, createEndpointForSlice(svc, desiredEndpoint.IP))
 		}
@@ -239,14 +251,14 @@ func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport
 			}
 		}
 
-		dirty := len(existingSlice.Endpoints) != len(updatedEndpointList)
+		endpointSliceNeedsUpdate := len(existingSlice.Endpoints) != len(updatedEndpointList)
 
 		// fill endpoint slice with endpoints to create if necessary and there is sufficient room
 		for _, endpointToCreate := range endpointsToCreate {
-			if len(updatedEndpointList) >= 100 {
+			if len(updatedEndpointList) >= maxEndpointsPerSlice {
 				break
 			}
-			dirty = true
+			endpointSliceNeedsUpdate = true
 			updatedEndpointList = append(updatedEndpointList, endpointToCreate)
 			endpointsToCreate = endpointsToCreate[1:]
 		}
@@ -258,7 +270,7 @@ func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport
 		if len(updatedEndpointList) == 0 {
 			r.Logger.Info("deleting EndpointSlice", "namespace", sliceToUpdate.Namespace, "name", sliceToUpdate.Name)
 			if err := r.Client.Delete(ctx, &sliceToUpdate); err != nil {
-				return err
+				return fmt.Errorf("failed to delete EndpointSlice: %w", err)
 			}
 			continue
 		}
@@ -266,21 +278,21 @@ func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport
 		// needsUpdate = true if ports don't match
 		if !EndpointPortsAreEqualIgnoreOrder(desiredPorts, sliceToUpdate.Ports) {
 			sliceToUpdate.Ports = desiredPorts
-			dirty = true
+			endpointSliceNeedsUpdate = true
 		}
 
-		if dirty {
+		if endpointSliceNeedsUpdate {
 			r.Logger.Info("updating EndpointSlice", "namespace", sliceToUpdate.Namespace, "name", sliceToUpdate.Name)
 			if err := r.Client.Update(ctx, &sliceToUpdate); err != nil {
-				return err
+				return fmt.Errorf("failed to update EndpointSlice: %w", err)
 			}
 		}
 	}
 
 	slicesToCreate := make([]*discovery.EndpointSlice, 0)
-	for len(endpointsToCreate) > 100 {
-		slicesToCreate = append(slicesToCreate, createEndpointSliceStruct(svcImport, svc, endpointsToCreate[0:100], desiredPorts))
-		endpointsToCreate = endpointsToCreate[100:]
+	for len(endpointsToCreate) > maxEndpointsPerSlice {
+		slicesToCreate = append(slicesToCreate, createEndpointSliceStruct(svcImport, svc, endpointsToCreate[0:maxEndpointsPerSlice], desiredPorts))
+		endpointsToCreate = endpointsToCreate[maxEndpointsPerSlice:]
 	}
 
 	if len(endpointsToCreate) != 0 {
@@ -290,7 +302,7 @@ func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport
 	for _, newSlice := range slicesToCreate {
 		r.Logger.Info("creating EndpointSlice", "namespace", newSlice.Namespace)
 		if err := r.Client.Create(ctx, newSlice); err != nil {
-			return err
+			return fmt.Errorf("failed to create EndpointSlice: %w", err)
 		}
 	}
 
