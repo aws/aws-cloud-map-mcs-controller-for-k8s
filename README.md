@@ -98,12 +98,6 @@ To install from `latest` tag run
 kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_latest"
 ```
 
-## Integration testing
-The end-to-end integration test suite can be run locally to validate controller core functionality. This will provision a local Kind cluster and build and run the AWS Cloud Map MCS Controller for K8s. The test will verify service endpoints sync with AWS Cloud Map. If successful, the suite will then de-provision the local test cluster and delete AWS Cloud Map namespace `aws-cloud-map-mcs-e2e` along with test service and service instance resources.
-```sh
-make integration-suite
-```
-
 ## Slack community
 We have an open Slack community where users may get support with integration, discuss controller functionality and provide input on our feature roadmap. https://awsappmesh.slack.com/#k8s-mcs-controller
 Join the channel with this [invite](https://join.slack.com/t/awsappmesh/shared_invite/zt-dwgbt85c-Sj_md92__quV8YADKfsQSA).
