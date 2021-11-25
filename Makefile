@@ -87,12 +87,15 @@ run: manifests generate generate-mocks fmt vet ## Run a controller from your hos
 	go run -ldflags="-s -w -X ${PKG}.GitVersion=${GIT_TAG} -X ${PKG}.GitCommit=${GIT_COMMIT}" ./main.go
 
 docker-build: test ## Build docker image with the manager.
-	docker build $(ARGS) -t ${IMG} .
+	docker build --no-cache -t ${IMG} .
 
 docker-push: ## Push docker image with the manager.
-	docker push $(ARGS) ${IMG}
+	docker push ${IMG}
 
+.PHONY: clean
 clean:
+	@echo Cleaning...
+	go clean
 	rm -rf $(MOCKS_DESTINATION) bin/ testbin/ cover.out
 
 ##@ Deployment
