@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	testing2 "github.com/go-logr/logr/testing"
@@ -185,7 +186,7 @@ func TestOperationPoller_PollTimeout(t *testing.T) {
 	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
 
 	p := operationPoller{
-		log:     testing2.TestLogger{T: t},
+		log:     common.NewLoggerWithLogr(testing2.TestLogger{T: t}),
 		sdApi:   sdApi,
 		timeout: 2 * time.Millisecond,
 		opIds:   []string{test.OpId1, test.OpId2},

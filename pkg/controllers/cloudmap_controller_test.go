@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/api/v1alpha1"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	testingLogger "github.com/go-logr/logr/testing"
@@ -84,6 +85,6 @@ func getReconciler(t *testing.T, mockSDClient *cloudmap.MockServiceDiscoveryClie
 	return &CloudMapReconciler{
 		Client:   client,
 		Cloudmap: mockSDClient,
-		Logger:   testingLogger.TestLogger{T: t},
+		Log:      common.NewLoggerWithLogr(testingLogger.TestLogger{T: t}),
 	}
 }

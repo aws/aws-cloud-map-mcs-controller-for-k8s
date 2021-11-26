@@ -1,8 +1,7 @@
 package cloudmap
 
 import (
-	"github.com/go-logr/logr"
-	ctrl "sigs.k8s.io/controller-runtime"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"sync"
 )
 
@@ -22,7 +21,7 @@ type OperationCollector interface {
 }
 
 type opCollector struct {
-	log              logr.Logger
+	log              common.Logger
 	opChan           chan opResult
 	wg               sync.WaitGroup
 	startTime        int64
@@ -36,7 +35,7 @@ type opResult struct {
 
 func NewOperationCollector() OperationCollector {
 	return &opCollector{
-		log:              ctrl.Log.WithName("cloudmap"),
+		log:              common.NewLogger("cloudmap"),
 		opChan:           make(chan opResult),
 		startTime:        Now(),
 		createOpsSuccess: true,

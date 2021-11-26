@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/api/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
-	"github.com/go-logr/logr"
 	v1 "k8s.io/api/core/v1"
 	discovery "k8s.io/api/discovery/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -36,9 +36,9 @@ const (
 
 // CloudMapReconciler reconciles state of Cloud Map services with local ServiceImport objects
 type CloudMapReconciler struct {
-	client.Client
+	Client   client.Client
 	Cloudmap cloudmap.ServiceDiscoveryClient
-	logr.Logger
+	Log      common.Logger
 }
 
 // +kubebuilder:rbac:groups="",resources=namespaces,verbs=list;watch
@@ -53,12 +53,12 @@ func (r *CloudMapReconciler) Start(ctx context.Context) error {
 	for {
 		if err := r.Reconcile(ctx); err != nil {
 			// just log the error and continue running
-			r.Logger.Error(err, "Cloud Map reconciliation error")
+			r.Log.Error(err, "Cloud Map reconciliation error")
 		}
 		select {
 		case <-ticker.C:
 		case <-ctx.Done():
-			r.Logger.Info("terminating CloudMapReconciler")
+			r.Log.Info("terminating CloudMapReconciler")
 			return nil
 		}
 	}
@@ -69,7 +69,7 @@ func (r *CloudMapReconciler) Reconcile(ctx context.Context) error {
 
 	namespaces := v1.NamespaceList{}
 	if err := r.Client.List(ctx, &namespaces); err != nil {
-		r.Logger.Error(err, "unable to list namespaces")
+		r.Log.Error(err, "unable to list namespaces")
 		return err
 	}
 
@@ -85,7 +85,7 @@ func (r *CloudMapReconciler) Reconcile(ctx context.Context) error {
 }
 
 func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceName string) error {
-	r.Logger.Info("syncing namespace", "namespace", namespaceName)
+	r.Log.Debug("syncing namespace", "namespace", namespaceName)
 
 	desiredServices, err := r.Cloudmap.ListServices(ctx, namespaceName)
 	if err != nil {
@@ -94,7 +94,7 @@ func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceNa
 
 	serviceImports := v1alpha1.ServiceImportList{}
 	if err := r.Client.List(ctx, &serviceImports, client.InNamespace(namespaceName)); err != nil {
-		r.Logger.Error(err, "failed to reconcile namespace", "namespace", namespaceName)
+		r.Log.Error(err, "failed to reconcile namespace", "namespace", namespaceName)
 		return nil
 	}
 
@@ -110,7 +110,7 @@ func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceNa
 		}
 
 		if err := r.reconcileService(ctx, svc); err != nil {
-			r.Logger.Error(err, "error when syncing service", "namespace", svc.Namespace, "name", svc.Name)
+			r.Log.Error(err, "error when syncing service", "namespace", svc.Namespace, "name", svc.Name)
 		}
 		delete(existingImportsMap, svc.Namespace+"/"+svc.Name)
 	}
@@ -118,17 +118,17 @@ func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceNa
 	// delete remaining imports that have not been matched
 	for _, i := range existingImportsMap {
 		if err := r.Client.Delete(ctx, &i); err != nil {
-			r.Logger.Error(err, "error deleting ServiceImport", "namespace", i.Namespace, "name", i.Name)
+			r.Log.Error(err, "error deleting ServiceImport", "namespace", i.Namespace, "name", i.Name)
 			continue
 		}
-		r.Logger.Info("delete ServiceImport", "namespace", i.Namespace, "name", i.Name)
+		r.Log.Info("delete ServiceImport", "namespace", i.Namespace, "name", i.Name)
 	}
 
 	return nil
 }
 
 func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Service) error {
-	r.Logger.Info("syncing service", "namespace", svc.Namespace, "service", svc.Name)
+	r.Log.Info("syncing service", "namespace", svc.Namespace, "service", svc.Name)
 
 	svcImport, err := r.getServiceImport(ctx, svc.Namespace, svc.Name)
 	if err != nil {
@@ -190,7 +190,7 @@ func (r *CloudMapReconciler) createAndGetServiceImport(ctx context.Context, name
 	if err := r.Client.Create(ctx, imp); err != nil {
 		return nil, err
 	}
-	r.Logger.Info("created ServiceImport", "namespace", imp.Namespace, "name", imp.Name)
+	r.Log.Info("created ServiceImport", "namespace", imp.Namespace, "name", imp.Name)
 
 	return r.getServiceImport(ctx, namespace, name)
 }
@@ -206,7 +206,7 @@ func (r *CloudMapReconciler) createAndGetDerivedService(ctx context.Context, svc
 	if err := r.Client.Create(ctx, toCreate); err != nil {
 		return nil, err
 	}
-	r.Logger.Info("created derived Service", "namespace", toCreate.Namespace, "name", toCreate.Name)
+	r.Log.Info("created derived Service", "namespace", toCreate.Namespace, "name", toCreate.Name)
 
 	return r.getDerivedService(ctx, svc.Namespace, svcImport.Annotations[DerivedServiceAnnotation])
 }
@@ -268,7 +268,7 @@ func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport
 
 		// delete empty endpoint slice
 		if len(updatedEndpointList) == 0 {
-			r.Logger.Info("deleting EndpointSlice", "namespace", sliceToUpdate.Namespace, "name", sliceToUpdate.Name)
+			r.Log.Info("deleting EndpointSlice", "namespace", sliceToUpdate.Namespace, "name", sliceToUpdate.Name)
 			if err := r.Client.Delete(ctx, &sliceToUpdate); err != nil {
 				return fmt.Errorf("failed to delete EndpointSlice: %w", err)
 			}
@@ -282,7 +282,7 @@ func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport
 		}
 
 		if endpointSliceNeedsUpdate {
-			r.Logger.Info("updating EndpointSlice", "namespace", sliceToUpdate.Namespace, "name", sliceToUpdate.Name)
+			r.Log.Info("updating EndpointSlice", "namespace", sliceToUpdate.Namespace, "name", sliceToUpdate.Name)
 			if err := r.Client.Update(ctx, &sliceToUpdate); err != nil {
 				return fmt.Errorf("failed to update EndpointSlice: %w", err)
 			}
@@ -300,7 +300,7 @@ func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport
 	}
 
 	for _, newSlice := range slicesToCreate {
-		r.Logger.Info("creating EndpointSlice", "namespace", newSlice.Namespace)
+		r.Log.Info("creating EndpointSlice", "namespace", newSlice.Namespace)
 		if err := r.Client.Create(ctx, newSlice); err != nil {
 			return fmt.Errorf("failed to create EndpointSlice: %w", err)
 		}
@@ -409,10 +409,10 @@ func (r *CloudMapReconciler) updateServiceImport(ctx context.Context, svcImport 
 		for _, p := range svc.Spec.Ports {
 			svcImport.Spec.Ports = append(svcImport.Spec.Ports, servicePortToServiceImport(p))
 		}
-		if err := r.Update(ctx, svcImport); err != nil {
+		if err := r.Client.Update(ctx, svcImport); err != nil {
 			return err
 		}
-		r.Logger.Info("updated ServiceImport",
+		r.Log.Info("updated ServiceImport",
 			"namespace", svcImport.Namespace, "name", svcImport.Name,
 			"IP", svcImport.Spec.IPs, "ports", svcImport.Spec.Ports)
 	}
