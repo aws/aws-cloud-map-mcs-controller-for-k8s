@@ -3,10 +3,9 @@ package cloudmap
 import (
 	"errors"
 	"fmt"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
-	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/util/cache"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"time"
 )
 
@@ -33,7 +32,7 @@ type ServiceDiscoveryClientCache interface {
 }
 
 type sdCache struct {
-	log    logr.Logger
+	log    common.Logger
 	cache  *cache.LRUExpireCache
 	config *SdCacheConfig
 }
@@ -46,7 +45,7 @@ type SdCacheConfig struct {
 
 func NewServiceDiscoveryClientCache(cacheConfig *SdCacheConfig) ServiceDiscoveryClientCache {
 	return &sdCache{
-		log:    ctrl.Log.WithName("cloudmap"),
+		log:    common.NewLogger("cloudmap"),
 		cache:  cache.NewLRUExpireCache(defaultCacheSize),
 		config: cacheConfig,
 	}

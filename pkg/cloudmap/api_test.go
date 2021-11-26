@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -319,7 +320,7 @@ func TestServiceDiscoveryApi_PollNamespaceOperation_HappyCase(t *testing.T) {
 
 func getServiceDiscoveryApi(t *testing.T, awsFacade *cloudmap.MockAwsFacade) ServiceDiscoveryApi {
 	return &serviceDiscoveryApi{
-		log:       testingLogger.TestLogger{T: t},
+		log:       common.NewLoggerWithLogr(testingLogger.TestLogger{T: t}),
 		awsFacade: awsFacade,
 	}
 }
