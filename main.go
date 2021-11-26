@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"os"
 
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
@@ -42,8 +43,8 @@ import (
 )
 
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme = runtime.NewScheme()
+	log    = ctrl.Log.WithName("main")
 )
 
 func init() {
@@ -62,16 +63,18 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	opts := zap.Options{
-		Development: true,
-	}
+
+	// Add the zap logger flag set to the CLI. The flag set must
+	// be added before calling flag.Parse().
+	opts := zap.Options{}
 	opts.BindFlags(flag.CommandLine)
+
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	v := version.GetVersion()
-	setupLog.Info("starting AWS Cloud Map MCS Controller for K8s", "version", v)
+	log.Info("starting AWS Cloud Map MCS Controller for K8s", "version", v)
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -82,56 +85,56 @@ func main() {
 		LeaderElectionID:       "db692913.x-k8s.io",
 	})
 	if err != nil {
-		setupLog.Error(err, "unable to start manager")
+		log.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-	setupLog.Info("configuring AWS session")
+	log.Info("configuring AWS session")
 	// GO sdk will look for region in order 1) AWS_REGION env var, 2) ~/.aws/config file, 3) EC2 IMDS
 	awsCfg, err := config.LoadDefaultConfig(context.TODO(), config.WithEC2IMDSRegion())
 
 	if err != nil || awsCfg.Region == "" {
-		setupLog.Error(err, "unable to configure AWS session", "AWS_REGION", awsCfg.Region)
+		log.Error(err, "unable to configure AWS session", "AWS_REGION", awsCfg.Region)
 		os.Exit(1)
 	}
 
-	setupLog.Info("Running with AWS region", "AWS_REGION", awsCfg.Region)
+	log.Info("Running with AWS region", "AWS_REGION", awsCfg.Region)
 
 	serviceDiscoveryClient := cloudmap.NewDefaultServiceDiscoveryClient(&awsCfg)
 	if err = (&controllers.ServiceExportReconciler{
 		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("ServiceExport"),
+		Log:      common.NewLogger(ctrl.Log.WithName("controllers").WithName("ServiceExport")),
 		Scheme:   mgr.GetScheme(),
 		CloudMap: serviceDiscoveryClient,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ServiceExport")
+		log.Error(err, "unable to create controller", "controller", "ServiceExport")
 		os.Exit(1)
 	}
 
 	cloudMapReconciler := &controllers.CloudMapReconciler{
 		Client:   mgr.GetClient(),
 		Cloudmap: serviceDiscoveryClient,
-		Logger:   ctrl.Log.WithName("controllers").WithName("CloudMap"),
+		Log:      common.NewLogger(ctrl.Log.WithName("controllers").WithName("Cloudmap")),
 	}
 
 	if err = mgr.Add(cloudMapReconciler); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "CloudMap")
+		log.Error(err, "unable to create controller", "controller", "CloudMap")
 		os.Exit(1)
 	}
 
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up health check")
+		log.Error(err, "unable to set up health check")
 		os.Exit(1)
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up ready check")
+		log.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
 
-	setupLog.Info("starting manager")
+	log.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running manager")
+		log.Error(err, "problem running manager")
 		os.Exit(1)
 	}
 }

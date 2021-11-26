@@ -3,9 +3,9 @@ package cloudmap
 import (
 	"context"
 	"errors"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
-	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"strconv"
@@ -29,7 +29,7 @@ type OperationPoller interface {
 }
 
 type operationPoller struct {
-	log     logr.Logger
+	log     common.Logger
 	sdApi   ServiceDiscoveryApi
 	timeout time.Duration
 
@@ -41,7 +41,7 @@ type operationPoller struct {
 
 func newOperationPoller(sdApi ServiceDiscoveryApi, svcId string, opIds []string, startTime int64) operationPoller {
 	return operationPoller{
-		log:     ctrl.Log.WithName("cloudmap"),
+		log:     common.NewLogger(ctrl.Log.WithName("cloudmap")),
 		sdApi:   sdApi,
 		timeout: defaultOperationPollTimeout,
 

@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/version"
 	v1 "k8s.io/api/core/v1"
@@ -34,7 +35,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -50,8 +50,8 @@ const (
 
 // ServiceExportReconciler reconciles a ServiceExport object
 type ServiceExportReconciler struct {
-	client.Client
-	Log      logr.Logger
+	Client   client.Client
+	Log      common.Logger
 	Scheme   *runtime.Scheme
 	CloudMap cloudmap.ServiceDiscoveryClient
 }
@@ -65,7 +65,7 @@ func (r *ServiceExportReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	r.Log.Info("reconciling ServiceExport", "Namespace", req.Namespace, "Name", req.NamespacedName)
+	r.Log.Debug("reconciling ServiceExport", "Namespace", req.Namespace, "Name", req.NamespacedName)
 
 	serviceExport := v1alpha1.ServiceExport{}
 	if err := r.Client.Get(ctx, req.NamespacedName, &serviceExport); err != nil {
@@ -105,7 +105,7 @@ func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, serviceExpor
 	// Add the finalizer to the service export if not present, ensures the ServiceExport won't be deleted
 	if !controllerutil.ContainsFinalizer(serviceExport, ServiceExportFinalizer) {
 		controllerutil.AddFinalizer(serviceExport, ServiceExportFinalizer)
-		if err := r.Update(ctx, serviceExport); err != nil {
+		if err := r.Client.Update(ctx, serviceExport); err != nil {
 			r.Log.Error(err, "error adding finalizer",
 				"Namespace", serviceExport.Namespace, "Name", serviceExport.Name)
 			return ctrl.Result{}, err
@@ -203,7 +203,7 @@ func (r *ServiceExportReconciler) handleDelete(ctx context.Context, serviceExpor
 		// Remove finalizer. Once all finalizers have been
 		// removed, the ServiceExport object will be deleted.
 		controllerutil.RemoveFinalizer(serviceExport, ServiceExportFinalizer)
-		if err := r.Update(ctx, serviceExport); err != nil {
+		if err := r.Client.Update(ctx, serviceExport); err != nil {
 			return ctrl.Result{}, err
 		}
 

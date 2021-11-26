@@ -3,9 +3,9 @@ package cloudmap
 import (
 	"context"
 	"fmt"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/go-logr/logr"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -29,7 +29,7 @@ type ServiceDiscoveryClient interface {
 }
 
 type serviceDiscoveryClient struct {
-	log   logr.Logger
+	log   common.Logger
 	sdApi ServiceDiscoveryApi
 	cache ServiceDiscoveryClientCache
 }
@@ -38,7 +38,7 @@ type serviceDiscoveryClient struct {
 // from a given AWS client config.
 func NewDefaultServiceDiscoveryClient(cfg *aws.Config) ServiceDiscoveryClient {
 	return &serviceDiscoveryClient{
-		log:   ctrl.Log.WithName("cloudmap"),
+		log:   common.NewLogger(ctrl.Log.WithName("cloudmap")),
 		sdApi: NewServiceDiscoveryApiFromConfig(cfg),
 		cache: NewDefaultServiceDiscoveryClientCache(),
 	}
@@ -46,7 +46,7 @@ func NewDefaultServiceDiscoveryClient(cfg *aws.Config) ServiceDiscoveryClient {
 
 func NewServiceDiscoveryClientWithCustomCache(cfg *aws.Config, cacheConfig *SdCacheConfig) ServiceDiscoveryClient {
 	return &serviceDiscoveryClient{
-		log:   ctrl.Log.WithName("cloudmap"),
+		log:   common.NewLogger(ctrl.Log.WithName("cloudmap")),
 		sdApi: NewServiceDiscoveryApiFromConfig(cfg),
 		cache: NewServiceDiscoveryClientCache(cacheConfig),
 	}

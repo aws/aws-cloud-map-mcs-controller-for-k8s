@@ -24,3 +24,5 @@ ignore:
   - "config/**/*"
   - "pkg/api/**/*"
   - "mocks/**/*"
+  - "integration/scenarios/**/*"
+  - "pkg/common/logger.go"
