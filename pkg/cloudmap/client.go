@@ -6,7 +6,6 @@ import (
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 // ServiceDiscoveryClient provides the service endpoint management functionality required by the AWS Cloud Map
@@ -38,7 +37,7 @@ type serviceDiscoveryClient struct {
 // from a given AWS client config.
 func NewDefaultServiceDiscoveryClient(cfg *aws.Config) ServiceDiscoveryClient {
 	return &serviceDiscoveryClient{
-		log:   common.NewLogger(ctrl.Log.WithName("cloudmap")),
+		log:   common.NewLogger("cloudmap"),
 		sdApi: NewServiceDiscoveryApiFromConfig(cfg),
 		cache: NewDefaultServiceDiscoveryClientCache(),
 	}
@@ -46,7 +45,7 @@ func NewDefaultServiceDiscoveryClient(cfg *aws.Config) ServiceDiscoveryClient {
 
 func NewServiceDiscoveryClientWithCustomCache(cfg *aws.Config, cacheConfig *SdCacheConfig) ServiceDiscoveryClient {
 	return &serviceDiscoveryClient{
-		log:   common.NewLogger(ctrl.Log.WithName("cloudmap")),
+		log:   common.NewLogger("cloudmap"),
 		sdApi: NewServiceDiscoveryApiFromConfig(cfg),
 		cache: NewServiceDiscoveryClientCache(cacheConfig),
 	}

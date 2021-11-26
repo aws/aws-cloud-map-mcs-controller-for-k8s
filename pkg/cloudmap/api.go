@@ -4,13 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
-	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/util/wait"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 const (
@@ -52,14 +51,14 @@ type ServiceDiscoveryApi interface {
 }
 
 type serviceDiscoveryApi struct {
-	log       logr.Logger
+	log       common.Logger
 	awsFacade AwsFacade
 }
 
 // NewServiceDiscoveryApiFromConfig creates a new AWS Cloud Map API connection manager from an AWS client config.
 func NewServiceDiscoveryApiFromConfig(cfg *aws.Config) ServiceDiscoveryApi {
 	return &serviceDiscoveryApi{
-		log:       ctrl.Log.WithName("cloudmap"),
+		log:       common.NewLogger("cloudmap"),
 		awsFacade: NewAwsFacadeFromConfig(cfg),
 	}
 }

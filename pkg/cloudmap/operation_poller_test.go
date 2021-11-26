@@ -186,7 +186,7 @@ func TestOperationPoller_PollTimeout(t *testing.T) {
 	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
 
 	p := operationPoller{
-		log:     common.NewLogger(testing2.TestLogger{T: t}),
+		log:     common.NewLoggerWithLogr(testing2.TestLogger{T: t}),
 		sdApi:   sdApi,
 		timeout: 2 * time.Millisecond,
 		opIds:   []string{test.OpId1, test.OpId2},

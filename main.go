@@ -102,7 +102,7 @@ func main() {
 	serviceDiscoveryClient := cloudmap.NewDefaultServiceDiscoveryClient(&awsCfg)
 	if err = (&controllers.ServiceExportReconciler{
 		Client:   mgr.GetClient(),
-		Log:      common.NewLogger(ctrl.Log.WithName("controllers").WithName("ServiceExport")),
+		Log:      common.NewLogger("controllers", "ServiceExport"),
 		Scheme:   mgr.GetScheme(),
 		CloudMap: serviceDiscoveryClient,
 	}).SetupWithManager(mgr); err != nil {
@@ -113,7 +113,7 @@ func main() {
 	cloudMapReconciler := &controllers.CloudMapReconciler{
 		Client:   mgr.GetClient(),
 		Cloudmap: serviceDiscoveryClient,
-		Log:      common.NewLogger(ctrl.Log.WithName("controllers").WithName("Cloudmap")),
+		Log:      common.NewLogger("controllers", "Cloudmap"),
 	}
 
 	if err = mgr.Add(cloudMapReconciler); err != nil {

@@ -2,6 +2,7 @@ package common
 
 import (
 	"github.com/go-logr/logr"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 type Logger interface {
@@ -14,7 +15,15 @@ type logger struct {
 	log logr.Logger
 }
 
-func NewLogger(l logr.Logger) Logger {
+func NewLogger(name string, names ...string) Logger {
+	l := ctrl.Log.WithName(name)
+	for _, n := range names {
+		l = l.WithName(n)
+	}
+	return logger{log: l}
+}
+
+func NewLoggerWithLogr(l logr.Logger) Logger {
 	return logger{log: l}
 }
 

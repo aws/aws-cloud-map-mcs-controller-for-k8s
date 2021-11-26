@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	"k8s.io/apimachinery/pkg/util/wait"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"strconv"
 	"time"
 )
@@ -41,7 +40,7 @@ type operationPoller struct {
 
 func newOperationPoller(sdApi ServiceDiscoveryApi, svcId string, opIds []string, startTime int64) operationPoller {
 	return operationPoller{
-		log:     common.NewLogger(ctrl.Log.WithName("cloudmap")),
+		log:     common.NewLogger("cloudmap"),
 		sdApi:   sdApi,
 		timeout: defaultOperationPollTimeout,
 

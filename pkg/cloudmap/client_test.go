@@ -411,7 +411,7 @@ func getTestSdClient(t *testing.T) *testSdClient {
 	mockApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
 	return &testSdClient{
 		client: &serviceDiscoveryClient{
-			log:   common.NewLogger(testing2.TestLogger{T: t}),
+			log:   common.NewLoggerWithLogr(testing2.TestLogger{T: t}),
 			sdApi: mockApi,
 			cache: mockCache,
 		},

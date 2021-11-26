@@ -85,6 +85,6 @@ func getReconciler(t *testing.T, mockSDClient *cloudmap.MockServiceDiscoveryClie
 	return &CloudMapReconciler{
 		Client:   client,
 		Cloudmap: mockSDClient,
-		Log:      common.NewLogger(testingLogger.TestLogger{T: t}),
+		Log:      common.NewLoggerWithLogr(testingLogger.TestLogger{T: t}),
 	}
 }
