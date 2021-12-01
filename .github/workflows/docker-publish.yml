@@ -45,7 +45,14 @@ jobs:
 
 
       - name: Tag image for github container repository with commit SHA
-        run: 'docker pull runakash/coredns-arm64:v1.8.6 runakash/coredns-arm:v1.8.6 runakash/coredns-amd64:v1.8.6 runakash/coredns:v1.8.6'
+        run: 'docker pull runakash/coredns-arm64:v1.8.6'
+      - name: Tag image for github container repository with commit SHA
+        run: 'docker pull runakash/coredns-arm:v1.8.6'
+      - name: Tag image for github container repository with commit SHA
+        run: 'docker pull runakash/coredns-amd64:v1.8.6'
+      - name: Tag image for github container repository with commit SHA
+        run: 'docker pull runakash/coredns:v1.8.6'
+      
       - name: Tag image for github container repository with commit SHA
         run: 'docker tag runakash/coredns-arm64:v1.8.6 ghcr.io/aws/aws-cloud-map-mcs-controller-for-k8s/coredns-multicluster/coredns-arm64:v1.8.6'   
       - name: Tag image for github container repository with commit SHA  
