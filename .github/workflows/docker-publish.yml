@@ -45,11 +45,21 @@ jobs:
 
 
       - name: Tag image for github container repository with commit SHA
-        run: 'docker pull thomasliddledba/coredns-multicluster:1.8.6'
-          
+        run: 'docker pull runakash/coredns-arm64:v1.8.6 runakash/coredns-arm:v1.8.6 runakash/coredns-amd64:v1.8.6 runakash/coredns:v1.8.6'
       - name: Tag image for github container repository with commit SHA
-        run: 'docker tag thomasliddledba/coredns-multicluster:1.8.6 ghcr.io/aws/aws-cloud-map-mcs-controller-for-k8s/coredns-multicluster:v1.8.6'   
-          
+        run: 'docker tag runakash/coredns-arm64:v1.8.6 ghcr.io/aws/aws-cloud-map-mcs-controller-for-k8s/coredns-multicluster/coredns-arm64:v1.8.6'   
+      - name: Tag image for github container repository with commit SHA  
+        run: 'docker tag runakash/coredns-arm:v1.8.6 ghcr.io/aws/aws-cloud-map-mcs-controller-for-k8s/coredns-multicluster/coredns-arm:v1.8.6'   
+      - name: Tag image for github container repository with commit SHA  
+        run: 'docker tag runakash/coredns-amd64:v1.8.6 ghcr.io/aws/aws-cloud-map-mcs-controller-for-k8s/coredns-multicluster/coredns-amd64:v1.8.6'   
+      - name: Tag image for github container repository with commit SHA  
+        run: 'docker tag runakash/coredns-amd64:v1.8.6 ghcr.io/aws/aws-cloud-map-mcs-controller-for-k8s/coredns-multicluster/coredns:v1.8.6'   
+         
       - name: Push
-        run: 'docker push ghcr.io/aws/aws-cloud-map-mcs-controller-for-k8s/coredns-multicluster:v1.8.6'
-          
+        run: 'docker push ghcr.io/aws/aws-cloud-map-mcs-controller-for-k8s/coredns-multicluster/coredns:v1.8.6'
+      - name: Push
+        run: 'docker push ghcr.io/aws/aws-cloud-map-mcs-controller-for-k8s/coredns-multicluster/coredns-arm64:v1.8.6'
+      - name: Push
+        run: 'docker push ghcr.io/aws/aws-cloud-map-mcs-controller-for-k8s/coredns-multicluster/coredns-arm:v1.8.6'
+      - name: Push
+        run: 'docker push ghcr.io/aws/aws-cloud-map-mcs-controller-for-k8s/coredns-multicluster/coredns-amd64:v1.8.6'
