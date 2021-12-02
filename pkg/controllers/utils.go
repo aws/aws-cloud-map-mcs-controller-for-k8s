@@ -1,11 +1,12 @@
 package controllers
 
 import (
+	"reflect"
+
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	v1 "k8s.io/api/core/v1"
 	discovery "k8s.io/api/discovery/v1beta1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"reflect"
 )
 
 func ServicePortToPort(svcPort v1.ServicePort) model.Port {

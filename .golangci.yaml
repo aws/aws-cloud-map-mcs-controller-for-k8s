@@ -1,0 +1,29 @@
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+  goconst:
+    min-len: 2
+    min-occurrences: 3
+  govet:
+    check-shadowing: true
+  nolintlint:
+    require-explanation: true
+    require-specific: true
+
+linters:
+  enable:
+    - dupl
+    - goconst
+    - gocritic
+    - gofmt
+    - goimports
+    - misspell
+    - whitespace
+
+run:
+  issues-exit-code: 1
+  concurrency: 4
+  skip:
+    - .*_mock.go
+    - mocks/
+    - pkg/api/

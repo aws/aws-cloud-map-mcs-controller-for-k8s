@@ -1,9 +1,10 @@
 package model
 
 import (
-	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	"reflect"
 	"testing"
+
+	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 )
 
 var instId = "my-instance"

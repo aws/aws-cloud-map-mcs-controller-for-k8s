@@ -3,6 +3,7 @@ package cloudmap
 import (
 	"context"
 	"fmt"
+
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -220,7 +221,8 @@ func (sdc *serviceDiscoveryClient) DeleteEndpoints(ctx context.Context, nsName s
 }
 
 func (sdc *serviceDiscoveryClient) listEndpoints(ctx context.Context, nsName string, svcName string) (endpts []*model.Endpoint, err error) {
-	if endpts, found := sdc.cache.GetEndpoints(nsName, svcName); found {
+	endpts, found := sdc.cache.GetEndpoints(nsName, svcName)
+	if found {
 		return endpts, nil
 	}
 

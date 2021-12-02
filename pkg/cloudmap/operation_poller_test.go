@@ -3,6 +3,10 @@ package cloudmap
 import (
 	"context"
 	"errors"
+	"strconv"
+	"testing"
+	"time"
+
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
@@ -10,9 +14,6 @@ import (
 	testing2 "github.com/go-logr/logr/testing"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"strconv"
-	"testing"
-	"time"
 )
 
 func TestOperationPoller_HappyCases(t *testing.T) {

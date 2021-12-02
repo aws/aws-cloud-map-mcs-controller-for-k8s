@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"testing"
+
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
@@ -14,7 +16,6 @@ import (
 	testingLogger "github.com/go-logr/logr/testing"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestNewServiceDiscoveryApi(t *testing.T) {
@@ -132,7 +133,6 @@ func TestServiceDiscoveryApi_ListOperations_HappyCase(t *testing.T) {
 	assert.Nil(t, err, "No error for happy case")
 	assert.True(t, len(ops) == 1)
 	assert.Equal(t, ops[test.OpId1], types.OperationStatusSuccess)
-
 }
 
 func TestServiceDiscoveryApi_GetOperation_HappyCase(t *testing.T) {
@@ -164,7 +164,6 @@ func TestServiceDiscoveryApi_CreateHttNamespace_HappyCase(t *testing.T) {
 	opId, err := sdApi.CreateHttpNamespace(context.TODO(), test.NsName)
 	assert.Nil(t, err, "No error for happy case")
 	assert.Equal(t, test.OpId1, opId)
-
 }
 
 func TestServiceDiscoveryApi_CreateService_CreateForHttpNamespace(t *testing.T) {
@@ -233,7 +232,7 @@ func TestServiceDiscoveryApi_CreateService_ThrowError(t *testing.T) {
 
 	retSvcId, err := sdApi.CreateService(context.TODO(), *test.GetTestHttpNamespace(), svcName)
 	assert.Empty(t, retSvcId)
-	assert.Equal(t, "dummy error", fmt.Sprint(err), "Got error")
+	assert.Equal(t, "dummy error", err.Error(), "Got error")
 }
 
 func TestServiceDiscoveryApi_RegisterInstance_HappyCase(t *testing.T) {

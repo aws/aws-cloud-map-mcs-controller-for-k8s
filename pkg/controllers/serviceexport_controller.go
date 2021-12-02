@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
@@ -101,7 +102,6 @@ func (r *ServiceExportReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 }
 
 func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, serviceExport *v1alpha1.ServiceExport, service *v1.Service) (ctrl.Result, error) {
-
 	// Add the finalizer to the service export if not present, ensures the ServiceExport won't be deleted
 	if !controllerutil.ContainsFinalizer(serviceExport, ServiceExportFinalizer) {
 		controllerutil.AddFinalizer(serviceExport, ServiceExportFinalizer)
@@ -168,7 +168,8 @@ func (r *ServiceExportReconciler) createOrGetCloudMapService(ctx context.Context
 	}
 
 	if cmService == nil {
-		if err := r.CloudMap.CreateService(ctx, service.Namespace, service.Name); err != nil {
+		err = r.CloudMap.CreateService(ctx, service.Namespace, service.Name)
+		if err != nil {
 			r.Log.Error(err, "error creating a new service in Cloud Map",
 				"namespace", service.Namespace, "name", service.Name)
 			return nil, err
@@ -183,7 +184,6 @@ func (r *ServiceExportReconciler) createOrGetCloudMapService(ctx context.Context
 
 func (r *ServiceExportReconciler) handleDelete(ctx context.Context, serviceExport *v1alpha1.ServiceExport) (ctrl.Result, error) {
 	if controllerutil.ContainsFinalizer(serviceExport, ServiceExportFinalizer) {
-
 		r.Log.Info("removing service export", "namespace", serviceExport.Namespace, "name", serviceExport.Name)
 
 		cmService, err := r.CloudMap.GetService(ctx, serviceExport.Namespace, serviceExport.Name)
@@ -206,7 +206,6 @@ func (r *ServiceExportReconciler) handleDelete(ctx context.Context, serviceExpor
 		if err := r.Client.Update(ctx, serviceExport); err != nil {
 			return ctrl.Result{}, err
 		}
-
 	}
 
 	return ctrl.Result{}, nil

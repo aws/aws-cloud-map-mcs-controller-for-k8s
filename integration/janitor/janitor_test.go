@@ -2,6 +2,8 @@ package janitor
 
 import (
 	"context"
+	"testing"
+
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/integration/janitor"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
@@ -9,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 type testJanitor struct {
