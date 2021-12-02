@@ -3,10 +3,11 @@ package janitor
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"os"
 )
 
 // CloudMapJanitor handles AWS Cloud Map resource cleanup during integration tests.

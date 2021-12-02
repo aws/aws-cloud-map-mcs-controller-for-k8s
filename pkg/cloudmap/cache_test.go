@@ -1,19 +1,23 @@
 package cloudmap
 
 import (
+	"testing"
+	"time"
+
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestNewServiceDiscoveryClientCache(t *testing.T) {
-	sdc := NewServiceDiscoveryClientCache(&SdCacheConfig{
+	sdc, ok := NewServiceDiscoveryClientCache(&SdCacheConfig{
 		NsTTL:    3 * time.Second,
 		SvcTTL:   3 * time.Second,
 		EndptTTL: 3 * time.Second,
 	}).(*sdCache)
+	if !ok {
+		t.Fatalf("failed to create cache")
+	}
 
 	assert.Equal(t, 3*time.Second, sdc.config.NsTTL)
 	assert.Equal(t, 3*time.Second, sdc.config.SvcTTL)
@@ -21,7 +25,10 @@ func TestNewServiceDiscoveryClientCache(t *testing.T) {
 }
 
 func TestNewDefaultServiceDiscoveryClientCache(t *testing.T) {
-	sdc := NewDefaultServiceDiscoveryClientCache().(*sdCache)
+	sdc, ok := NewDefaultServiceDiscoveryClientCache().(*sdCache)
+	if !ok {
+		t.Fatalf("failed to create cache")
+	}
 
 	assert.Equal(t, defaultNsTTL, sdc.config.NsTTL)
 	assert.Equal(t, defaultSvcTTL, sdc.config.SvcTTL)
@@ -55,7 +62,10 @@ func TestServiceDiscoveryClientCacheGetNamespace_Nil(t *testing.T) {
 }
 
 func TestServiceDiscoveryClientCacheGetNamespace_Corrupt(t *testing.T) {
-	sdc := NewDefaultServiceDiscoveryClientCache().(*sdCache)
+	sdc, ok := NewDefaultServiceDiscoveryClientCache().(*sdCache)
+	if !ok {
+		t.Fatalf("failed to create cache")
+	}
 	sdc.cache.Add(sdc.buildNsKey(test.NsName), &model.Resource{}, time.Minute)
 
 	ns, found := sdc.GetNamespace(test.NsName)
@@ -81,8 +91,10 @@ func TestServiceDiscoveryClientCacheGetServiceId_NotFound(t *testing.T) {
 }
 
 func TestServiceDiscoveryClientCacheGetServiceId_Corrupt(t *testing.T) {
-	sdc := NewDefaultServiceDiscoveryClientCache().(*sdCache)
-
+	sdc, ok := NewDefaultServiceDiscoveryClientCache().(*sdCache)
+	if !ok {
+		t.Fatalf("failed to create cache")
+	}
 	sdc.cache.Add(sdc.buildSvcKey(test.NsName, test.SvcName), &model.Resource{}, time.Minute)
 	svcId, found := sdc.GetServiceId(test.NsName, test.SvcName)
 	assert.False(t, found)
@@ -107,7 +119,10 @@ func TestServiceDiscoveryClientCacheGetEndpoints_NotFound(t *testing.T) {
 }
 
 func TestServiceDiscoveryClientCacheGetEndpoints_Corrupt(t *testing.T) {
-	sdc := NewDefaultServiceDiscoveryClientCache().(*sdCache)
+	sdc, ok := NewDefaultServiceDiscoveryClientCache().(*sdCache)
+	if !ok {
+		t.Fatalf("failed to create cache")
+	}
 
 	sdc.cache.Add(sdc.buildEndptsKey(test.NsName, test.SvcName), &model.Resource{}, time.Minute)
 	endpts, found := sdc.GetEndpoints(test.NsName, test.SvcName)

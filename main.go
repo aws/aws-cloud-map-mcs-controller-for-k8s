@@ -19,8 +19,9 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"os"
+
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/version"

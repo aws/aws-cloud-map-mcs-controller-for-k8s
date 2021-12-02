@@ -11,7 +11,7 @@ require (
 	github.com/onsi/ginkgo v1.14.1
 	github.com/onsi/gomega v1.10.2
 	github.com/stretchr/testify v1.6.1
-	gotest.tools v2.2.0+incompatible
+	golang.org/x/tools v0.1.7 // indirect
 	k8s.io/api v0.20.2
 	k8s.io/apimachinery v0.20.2
 	k8s.io/client-go v0.20.2

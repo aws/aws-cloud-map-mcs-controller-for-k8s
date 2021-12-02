@@ -3,10 +3,11 @@ package model
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 )
 
 // Resource encapsulates a ID/name pair.
@@ -189,8 +190,8 @@ func (e *Endpoint) String() string {
 
 // EndpointIdFromIPAddressAndPort converts an IP address to human-readable identifier.
 func EndpointIdFromIPAddressAndPort(address string, port Port) string {
-	address = strings.Replace(address, ".", "_", -1)
-	address = strings.Replace(address, ":", "_", -1)
+	address = strings.ReplaceAll(address, ".", "_")
+	address = strings.ReplaceAll(address, ":", "_")
 	return fmt.Sprintf("%s-%s-%d", strings.ToLower(port.Protocol), address, port.Port)
 }
 

@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/integration/janitor"
 	"os"
+
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/integration/janitor"
 )
 
 func main() {

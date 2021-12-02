@@ -54,11 +54,29 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
+mod:
+	go mod download
+
+tidy:
+	go mod tidy
+
+golangci-lint: ## Download golangci-lint
+	@mkdir -p $(shell pwd)/bin
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell pwd)/bin v1.43.0
+
+.PHONY: lint
+lint: golangci-lint ## Run linter
+	$(shell pwd)/bin/golangci-lint run
+
+.PHONY: goimports
+goimports: ## run goimports updating files in place
+	goimports -w .
+
 ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
 test: manifests generate generate-mocks fmt vet test-setup ## Run tests.
 	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; setup_envtest_env $(ENVTEST_ASSETS_DIR); go test ./... -coverprofile cover.out -covermode=atomic
 
-test-setup: # setup test environment
+test-setup: ## setup test environment
 	mkdir -p ${ENVTEST_ASSETS_DIR}
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.7.2/hack/setup-envtest.sh
 	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR)
@@ -80,7 +98,8 @@ integration-cleanup: kind  ## Cleanup integration test resources in Cloud Map an
 
 ##@ Build
 
-build: manifests generate generate-mocks fmt vet ## Build manager binary.
+.DEFAULT: build
+build: manifests generate generate-mocks fmt vet lint ## Build manager binary.
 	go build -ldflags="-s -w -X ${PKG}.GitVersion=${GIT_TAG} -X ${PKG}.GitCommit=${GIT_COMMIT}" -o bin/manager main.go
 
 run: manifests generate generate-mocks fmt vet ## Run a controller from your host.

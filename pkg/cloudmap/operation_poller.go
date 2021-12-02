@@ -3,12 +3,13 @@ package cloudmap
 import (
 	"context"
 	"errors"
+	"strconv"
+	"time"
+
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"strconv"
-	"time"
 )
 
 const (

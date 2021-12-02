@@ -3,6 +3,8 @@ package cloudmap
 import (
 	"context"
 	"errors"
+	"testing"
+
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
@@ -12,7 +14,6 @@ import (
 	testing2 "github.com/go-logr/logr/testing"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 type testSdClient struct {
@@ -42,34 +43,7 @@ func TestServiceDiscoveryClient_ListServices_HappyCase(t *testing.T) {
 
 	tc.mockCache.EXPECT().GetEndpoints(test.NsName, test.SvcName).Return(nil, false)
 	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.NsName, test.SvcName).
-		Return([]types.HttpInstanceSummary{
-			{
-				InstanceId: aws.String(test.EndptId1),
-				Attributes: map[string]string{
-					model.EndpointIpv4Attr:      test.EndptIp1,
-					model.EndpointPortAttr:      test.PortStr1,
-					model.EndpointPortNameAttr:  test.PortName1,
-					model.EndpointProtocolAttr:  test.Protocol1,
-					model.ServicePortNameAttr:   test.PortName1,
-					model.ServicePortAttr:       test.ServicePortStr1,
-					model.ServiceProtocolAttr:   test.Protocol1,
-					model.ServiceTargetPortAttr: test.PortStr1,
-				},
-			},
-			{
-				InstanceId: aws.String(test.EndptId2),
-				Attributes: map[string]string{
-					model.EndpointIpv4Attr:      test.EndptIp2,
-					model.EndpointPortAttr:      test.PortStr2,
-					model.EndpointPortNameAttr:  test.PortName2,
-					model.EndpointProtocolAttr:  test.Protocol2,
-					model.ServicePortNameAttr:   test.PortName2,
-					model.ServicePortAttr:       test.ServicePortStr2,
-					model.ServiceProtocolAttr:   test.Protocol2,
-					model.ServiceTargetPortAttr: test.PortStr2,
-				},
-			},
-		}, nil)
+		Return(testHttpInstanceSummary(), nil)
 	tc.mockCache.EXPECT().CacheEndpoints(test.NsName, test.SvcName,
 		[]*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()})
 
@@ -292,34 +266,7 @@ func TestServiceDiscoveryClient_GetService_HappyCase(t *testing.T) {
 
 	tc.mockCache.EXPECT().GetEndpoints(test.NsName, test.SvcName).Return([]*model.Endpoint{}, false)
 	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.NsName, test.SvcName).
-		Return([]types.HttpInstanceSummary{
-			{
-				InstanceId: aws.String(test.EndptId1),
-				Attributes: map[string]string{
-					model.EndpointIpv4Attr:      test.EndptIp1,
-					model.EndpointPortAttr:      test.PortStr1,
-					model.EndpointPortNameAttr:  test.PortName1,
-					model.EndpointProtocolAttr:  test.Protocol1,
-					model.ServicePortNameAttr:   test.PortName1,
-					model.ServicePortAttr:       test.ServicePortStr1,
-					model.ServiceProtocolAttr:   test.Protocol1,
-					model.ServiceTargetPortAttr: test.PortStr1,
-				},
-			},
-			{
-				InstanceId: aws.String(test.EndptId2),
-				Attributes: map[string]string{
-					model.EndpointIpv4Attr:      test.EndptIp2,
-					model.EndpointPortAttr:      test.PortStr2,
-					model.EndpointPortNameAttr:  test.PortName2,
-					model.EndpointProtocolAttr:  test.Protocol2,
-					model.ServicePortNameAttr:   test.PortName2,
-					model.ServicePortAttr:       test.ServicePortStr2,
-					model.ServiceProtocolAttr:   test.Protocol2,
-					model.ServiceTargetPortAttr: test.PortStr2,
-				},
-			},
-		}, nil)
+		Return(testHttpInstanceSummary(), nil)
 	tc.mockCache.EXPECT().CacheEndpoints(test.NsName, test.SvcName,
 		[]*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()})
 
@@ -418,5 +365,36 @@ func getTestSdClient(t *testing.T) *testSdClient {
 		mockApi:   *mockApi,
 		mockCache: *mockCache,
 		close:     func() { mockController.Finish() },
+	}
+}
+
+func testHttpInstanceSummary() []types.HttpInstanceSummary {
+	return []types.HttpInstanceSummary{
+		{
+			InstanceId: aws.String(test.EndptId1),
+			Attributes: map[string]string{
+				model.EndpointIpv4Attr:      test.EndptIp1,
+				model.EndpointPortAttr:      test.PortStr1,
+				model.EndpointPortNameAttr:  test.PortName1,
+				model.EndpointProtocolAttr:  test.Protocol1,
+				model.ServicePortNameAttr:   test.PortName1,
+				model.ServicePortAttr:       test.ServicePortStr1,
+				model.ServiceProtocolAttr:   test.Protocol1,
+				model.ServiceTargetPortAttr: test.PortStr1,
+			},
+		},
+		{
+			InstanceId: aws.String(test.EndptId2),
+			Attributes: map[string]string{
+				model.EndpointIpv4Attr:      test.EndptIp2,
+				model.EndpointPortAttr:      test.PortStr2,
+				model.EndpointPortNameAttr:  test.PortName2,
+				model.EndpointProtocolAttr:  test.Protocol2,
+				model.ServicePortNameAttr:   test.PortName2,
+				model.ServicePortAttr:       test.ServicePortStr2,
+				model.ServiceProtocolAttr:   test.Protocol2,
+				model.ServiceTargetPortAttr: test.PortStr2,
+			},
+		},
 	}
 }

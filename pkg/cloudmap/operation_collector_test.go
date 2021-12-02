@@ -2,27 +2,33 @@ package cloudmap
 
 import (
 	"errors"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+)
+
+const (
+	op1 = "one"
+	op2 = "two"
 )
 
 func TestOpCollector_HappyCase(t *testing.T) {
 	oc := NewOperationCollector()
-	oc.Add(func() (opId string, err error) { return "one", nil })
-	oc.Add(func() (opId string, err error) { return "two", nil })
+	oc.Add(func() (opId string, err error) { return op1, nil })
+	oc.Add(func() (opId string, err error) { return op2, nil })
 
 	result := oc.Collect()
 	assert.True(t, oc.IsAllOperationsCreated())
 	assert.Equal(t, 2, len(result))
-	assert.Contains(t, result, "one")
-	assert.Contains(t, result, "two")
+	assert.Contains(t, result, op1)
+	assert.Contains(t, result, op2)
 }
 
 func TestOpCollector_AllFail(t *testing.T) {
 	oc := NewOperationCollector()
-	oc.Add(func() (opId string, err error) { return "one", errors.New("fail one") })
-	oc.Add(func() (opId string, err error) { return "two", errors.New("fail two") })
+	oc.Add(func() (opId string, err error) { return op1, errors.New("fail one") })
+	oc.Add(func() (opId string, err error) { return op2, errors.New("fail two") })
 
 	result := oc.Collect()
 	assert.False(t, oc.IsAllOperationsCreated())
@@ -31,12 +37,12 @@ func TestOpCollector_AllFail(t *testing.T) {
 
 func TestOpCollector_MixedSuccess(t *testing.T) {
 	oc := NewOperationCollector()
-	oc.Add(func() (opId string, err error) { return "one", errors.New("fail one") })
-	oc.Add(func() (opId string, err error) { return "two", nil })
+	oc.Add(func() (opId string, err error) { return op1, errors.New("fail one") })
+	oc.Add(func() (opId string, err error) { return op2, nil })
 
 	result := oc.Collect()
 	assert.False(t, oc.IsAllOperationsCreated())
-	assert.Equal(t, []string{"two"}, result)
+	assert.Equal(t, []string{op2}, result)
 }
 
 func TestOpCollector_GetStartTime(t *testing.T) {
