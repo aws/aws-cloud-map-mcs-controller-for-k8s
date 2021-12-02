@@ -20,6 +20,12 @@ linters:
     - misspell
     - whitespace
 
+issues:
+  exclude-rules:
+    - path: _test\.go # disable some linters on test files
+      linters:
+        - dupl
+
 run:
   issues-exit-code: 1
   concurrency: 4

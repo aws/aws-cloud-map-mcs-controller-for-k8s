@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/controllers"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -46,7 +47,7 @@ func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, po
 	for _, ip := range strings.Split(ips, ",") {
 		endpointPort := model.Port{
 			Port:     int32(port),
-			Protocol: model.TCPProtocol,
+			Protocol: string(v1.ProtocolTCP),
 		}
 		endpts = append(endpts, &model.Endpoint{
 			Id: model.EndpointIdFromIPAddressAndPort(ip, endpointPort),
@@ -54,7 +55,7 @@ func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, po
 			ServicePort: model.Port{
 				Port:       int32(servicePort),
 				TargetPort: portStr,
-				Protocol:   model.TCPProtocol,
+				Protocol:   string(v1.ProtocolTCP),
 			},
 			EndpointPort: endpointPort,
 			Attributes:   make(map[string]string),

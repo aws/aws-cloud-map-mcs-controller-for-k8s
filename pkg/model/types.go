@@ -66,9 +66,6 @@ const (
 	ServicePortAttr       = "SERVICE_PORT"
 	ServiceTargetPortAttr = "SERVICE_TARGET_PORT"
 	ServiceProtocolAttr   = "SERVICE_PROTOCOL"
-	TCPProtocol           = "TCP"
-	UDPProtocol           = "UDP"
-	SCTPProtocol          = "SCTP"
 )
 
 // NewEndpointFromInstance converts a Cloud Map HttpInstanceSummary to an endpoint.
@@ -210,6 +207,11 @@ func (namespaceType *NamespaceType) IsUnsupported() bool {
 	return *namespaceType == UnsupportedNamespaceType
 }
 
-func (port *Port) GetID() string {
-	return fmt.Sprintf("%s:%d", port.Protocol, port.Port)
+func (p *Port) GetID() string {
+	return fmt.Sprintf("%s:%d", p.Protocol, p.Port)
+}
+
+// Equals evaluates if two Ports are "deeply equal" (including all fields).
+func (p *Port) Equals(other *Port) bool {
+	return reflect.DeepEqual(p, other)
 }
