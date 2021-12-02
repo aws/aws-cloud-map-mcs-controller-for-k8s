@@ -1,8 +1,9 @@
 package cloudmap
 
 import (
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"sync"
+
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 )
 
 // OperationCollector collects a list of operation IDs asynchronously with thread safety.

@@ -3,10 +3,11 @@ package cloudmap
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"k8s.io/apimachinery/pkg/util/cache"
-	"time"
 )
 
 const (

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -87,7 +88,6 @@ func (sdApi *serviceDiscoveryApi) ListNamespaces(ctx context.Context) (namespace
 }
 
 func (sdApi *serviceDiscoveryApi) ListServices(ctx context.Context, nsId string) (svcs []*model.Resource, err error) {
-
 	filter := types.ServiceFilter{
 		Name:   types.ServiceFilterNameNamespaceId,
 		Values: []string{nsId},
@@ -128,7 +128,7 @@ func (sdApi *serviceDiscoveryApi) DiscoverInstances(ctx context.Context, nsName 
 }
 
 func (sdApi *serviceDiscoveryApi) ListOperations(ctx context.Context, opFilters []types.OperationFilter) (opStatusMap map[string]types.OperationStatus, err error) {
-	opStatusMap = make(map[string]types.OperationStatus, 0)
+	opStatusMap = make(map[string]types.OperationStatus)
 
 	pages := sd.NewListOperationsPaginator(sdApi.awsFacade, &sd.ListOperationsInput{
 		Filters: opFilters,
@@ -231,7 +231,6 @@ func (sdApi *serviceDiscoveryApi) DeregisterInstance(ctx context.Context, svcId 
 	}
 
 	return aws.ToString(deregResp.OperationId), err
-
 }
 
 func (sdApi *serviceDiscoveryApi) PollNamespaceOperation(ctx context.Context, opId string) (nsId string, err error) {
