@@ -28,7 +28,7 @@ func NewLoggerWithLogr(l logr.Logger) Logger {
 }
 
 func (l logger) Info(msg string, keysAndValues ...interface{}) {
-	l.log.Info(msg, keysAndValues...)
+	l.log.V(0).Info(msg, keysAndValues...)
 }
 
 func (l logger) Debug(msg string, keysAndValues ...interface{}) {
