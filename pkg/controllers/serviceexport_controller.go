@@ -89,7 +89,7 @@ func (r *ServiceExportReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	namespacedName := types.NamespacedName{Namespace: serviceExport.Namespace, Name: serviceExport.Name}
 	if err := r.Client.Get(ctx, namespacedName, &service); err != nil {
 		if errors.IsNotFound(err) {
-			r.Log.Info("no Service found for ServiceExport, deleting the Service",
+			r.Log.Info("no Service found, deleting the ServiceExport",
 				"Namespace", serviceExport.Namespace, "Name", serviceExport.Name)
 			// Mark ServiceExport to be deleted, if the corresponding Service is not found
 			isServiceExportMarkedForDelete = true
