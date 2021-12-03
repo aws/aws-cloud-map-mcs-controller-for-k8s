@@ -1,6 +1,8 @@
 package test
 
 import (
+	"fmt"
+
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 )
 
@@ -22,7 +24,7 @@ const (
 	Port2           = 2
 	PortStr2        = "2"
 	PortName2       = "http"
-	Protocol2       = "TCP"
+	Protocol2       = "UDP"
 	ServicePort2    = 22
 	ServicePortStr2 = "22"
 	OpId1           = "operation-id-1"
@@ -98,4 +100,15 @@ func GetTestEndpoint2() *model.Endpoint {
 		},
 		Attributes: make(map[string]string),
 	}
+}
+
+func GetTestEndpoints(count int) (endpts []*model.Endpoint) {
+	// use +3 offset go avoid collision with test endpoint 1 and 2
+	for i := 3; i < count+3; i++ {
+		e := GetTestEndpoint1()
+		e.Id = fmt.Sprintf("tcp-192_168_0_%d-1", i)
+		e.IP = fmt.Sprintf("192.168.0.%d", i)
+		endpts = append(endpts, e)
+	}
+	return endpts
 }
