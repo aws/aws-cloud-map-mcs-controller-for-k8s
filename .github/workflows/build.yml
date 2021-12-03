@@ -25,3 +25,8 @@ jobs:
       uses: codecov/codecov-action@v2
       with:
         files: cover.out
+
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v2
+      with:
+        version: v1.43
