@@ -89,6 +89,7 @@ func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceNa
 
 	desiredServices, err := r.Cloudmap.ListServices(ctx, namespaceName)
 	if err != nil {
+		r.Log.Error(err, "failed to fetch the list Services")
 		return err
 	}
 
@@ -128,7 +129,7 @@ func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceNa
 }
 
 func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Service) error {
-	r.Log.Info("syncing service", "namespace", svc.Namespace, "service", svc.Name)
+	r.Log.Debug("syncing service", "namespace", svc.Namespace, "service", svc.Name)
 
 	svcImport, err := r.getServiceImport(ctx, svc.Namespace, svc.Name)
 	if err != nil {
