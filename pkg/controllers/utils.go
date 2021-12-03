@@ -116,7 +116,12 @@ func PortsEqualIgnoreOrder(a, b []*model.Port) (equal bool) {
 	}
 
 	for _, portB := range b {
-		if !portB.Equals(aMap[portB.GetID()]) {
+		portA, found := aMap[portB.GetID()]
+		if !found {
+			return false
+		}
+
+		if !portB.Equals(portA) {
 			return false
 		}
 	}

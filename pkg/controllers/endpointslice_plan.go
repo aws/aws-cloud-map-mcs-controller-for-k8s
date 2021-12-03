@@ -30,7 +30,7 @@ type EndpointSlicePlan struct {
 	ServiceImportName string
 
 	// Current EndpontSlices
-	Current []discovery.EndpointSlice
+	Current []*discovery.EndpointSlice
 
 	// Desired Endpoints
 	Desired []*model.Endpoint
@@ -86,8 +86,7 @@ func (p *EndpointSlicePlan) trimSlices(desiredEndpoints map[string]*model.Endpoi
 
 		// mark slice for deletion if all endpoints were removed
 		if len(updatedEndpointList) == 0 {
-			sliceRef := existingSlice
-			changes.Delete = append(changes.Delete, &sliceRef)
+			changes.Delete = append(changes.Delete, existingSlice)
 			continue
 		}
 
@@ -105,11 +104,10 @@ func (p *EndpointSlicePlan) trimSlices(desiredEndpoints map[string]*model.Endpoi
 			sliceNeedsUpdate = true
 		}
 
-		sliceRef := existingSlice
 		if sliceNeedsUpdate {
-			changes.Update = append(changes.Update, &sliceRef)
+			changes.Update = append(changes.Update, existingSlice)
 		} else {
-			changes.Unmodified = append(changes.Unmodified, &sliceRef)
+			changes.Unmodified = append(changes.Unmodified, existingSlice)
 		}
 	}
 

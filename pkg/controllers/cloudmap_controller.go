@@ -194,8 +194,13 @@ func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport
 		return err
 	}
 
+	existingSlices := make([]*discovery.EndpointSlice, 0)
+	for _, existingSlice := range existingSlicesList.Items {
+		existingSlices = append(existingSlices, &existingSlice)
+	}
+
 	plan := EndpointSlicePlan{
-		Current:           existingSlicesList.Items,
+		Current:           existingSlices,
 		Desired:           desiredEndpoints,
 		Service:           svc,
 		ServiceImportName: svcImport.Name,

@@ -10,6 +10,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
+// Factory functions for testing
+
 func k8sNamespaceForTest() *v1.Namespace {
 	return &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{

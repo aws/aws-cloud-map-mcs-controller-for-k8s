@@ -13,7 +13,7 @@ import (
 
 func TestEndpointSlicePlan_CalculateChanges(t *testing.T) {
 	type fields struct {
-		Current []discovery.EndpointSlice
+		Current []*discovery.EndpointSlice
 		Desired []*model.Endpoint
 	}
 	tests := []struct {
@@ -24,7 +24,7 @@ func TestEndpointSlicePlan_CalculateChanges(t *testing.T) {
 		{
 			name: "no changes",
 			fields: fields{
-				Current: []discovery.EndpointSlice{*endpointSliceForTest()},
+				Current: []*discovery.EndpointSlice{endpointSliceForTest()},
 				Desired: []*model.Endpoint{test.GetTestEndpoint1()},
 			},
 			want: EndpointSliceChanges{
@@ -34,7 +34,7 @@ func TestEndpointSlicePlan_CalculateChanges(t *testing.T) {
 		{
 			name: "delete slice",
 			fields: fields{
-				Current: []discovery.EndpointSlice{*endpointSliceForTest()},
+				Current: []*discovery.EndpointSlice{endpointSliceForTest()},
 				Desired: []*model.Endpoint{},
 			},
 			want: EndpointSliceChanges{
@@ -44,7 +44,7 @@ func TestEndpointSlicePlan_CalculateChanges(t *testing.T) {
 		{
 			name: "new slice",
 			fields: fields{
-				Current: []discovery.EndpointSlice{},
+				Current: []*discovery.EndpointSlice{},
 				Desired: []*model.Endpoint{test.GetTestEndpoint1()},
 			},
 			want: EndpointSliceChanges{
@@ -61,8 +61,8 @@ func TestEndpointSlicePlan_CalculateChanges(t *testing.T) {
 		{
 			name: "removed endpoint needs slice update",
 			fields: fields{
-				Current: []discovery.EndpointSlice{
-					*endpointSliceWithIpsAndPortsForTest(
+				Current: []*discovery.EndpointSlice{
+					endpointSliceWithIpsAndPortsForTest(
 						[]string{test.EndptIp1, test.EndptIp2},
 						[]discovery.EndpointPort{
 							PortToEndpointPort(test.GetTestEndpoint1().EndpointPort),
@@ -85,8 +85,8 @@ func TestEndpointSlicePlan_CalculateChanges(t *testing.T) {
 		{
 			name: "added endpoint needs slice update",
 			fields: fields{
-				Current: []discovery.EndpointSlice{
-					*endpointSliceWithIpsAndPortsForTest(
+				Current: []*discovery.EndpointSlice{
+					endpointSliceWithIpsAndPortsForTest(
 						[]string{test.EndptIp1},
 						[]discovery.EndpointPort{
 							PortToEndpointPort(model.Port{Name: test.PortName1, Port: test.Port1, Protocol: test.Protocol1}),
@@ -121,8 +121,8 @@ func TestEndpointSlicePlan_CalculateChanges(t *testing.T) {
 		{
 			name: "swapped endpoints need slice update",
 			fields: fields{
-				Current: []discovery.EndpointSlice{
-					*endpointSliceWithIpsAndPortsForTest(
+				Current: []*discovery.EndpointSlice{
+					endpointSliceWithIpsAndPortsForTest(
 						[]string{test.EndptIp1},
 						[]discovery.EndpointPort{
 							PortToEndpointPort(test.GetTestEndpoint2().EndpointPort),
@@ -148,8 +148,8 @@ func TestEndpointSlicePlan_CalculateChanges(t *testing.T) {
 		{
 			name: "changed ports need slice update",
 			fields: fields{
-				Current: []discovery.EndpointSlice{
-					*endpointSliceWithIpsAndPortsForTest(
+				Current: []*discovery.EndpointSlice{
+					endpointSliceWithIpsAndPortsForTest(
 						[]string{test.EndptIp2},
 						[]discovery.EndpointPort{
 							PortToEndpointPort(test.GetTestEndpoint1().EndpointPort),
@@ -194,7 +194,7 @@ func TestEndpointSlicePlan_MultipleSliceCreation(t *testing.T) {
 		maxEndpointsPerSlice: 2,
 		Service:              k8sServiceForTest(),
 		ServiceImportName:    test.SvcName,
-		Current:              []discovery.EndpointSlice{},
+		Current:              []*discovery.EndpointSlice{},
 		Desired:              test.GetTestEndpoints(43),
 	}
 	changes := p.CalculateChanges()
@@ -206,7 +206,7 @@ func TestEndpointSlicePlan_PreferCreateOverMultipleSliceUpdate(t *testing.T) {
 		maxEndpointsPerSlice: 2,
 		Service:              k8sServiceForTest(),
 		ServiceImportName:    test.SvcName,
-		Current:              []discovery.EndpointSlice{*endpointSliceForTest()},
+		Current:              []*discovery.EndpointSlice{endpointSliceForTest()},
 		Desired:              []*model.Endpoint{test.GetTestEndpoint1()},
 	}
 	p.Desired = append(p.Desired, test.GetTestEndpoints(2)...)
