@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/api/discovery/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -25,7 +24,7 @@ import (
 
 func TestCloudMapReconciler_Reconcile(t *testing.T) {
 	// create a fake controller client and add some objects
-	objs := []runtime.Object{testNamespace()}
+	objs := []runtime.Object{k8sNamespaceForTest()}
 
 	s := scheme.Scheme
 	s.AddKnownTypes(v1alpha1.GroupVersion, &v1alpha1.ServiceImportList{}, &v1alpha1.ServiceImport{})
@@ -71,15 +70,6 @@ func TestCloudMapReconciler_Reconcile(t *testing.T) {
 	assert.Equal(t, test.SvcName, endpointSlice.Labels["multicluster.kubernetes.io/service-name"], "Endpoint slice is created")
 	assert.Equal(t, int32(test.Port1), *endpointSlice.Ports[0].Port)
 	assert.Equal(t, test.EndptIp1, endpointSlice.Endpoints[0].Addresses[0])
-}
-
-func testNamespace() *v1.Namespace {
-	return &v1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      test.NsName,
-			Namespace: test.NsName,
-		},
-	}
 }
 
 func getReconciler(t *testing.T, mockSDClient *cloudmap.MockServiceDiscoveryClient, client client.Client) *CloudMapReconciler {

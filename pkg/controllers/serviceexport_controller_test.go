@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	testing2 "github.com/go-logr/logr/testing"
 	"github.com/golang/mock/gomock"
 
@@ -17,10 +16,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	discovery "k8s.io/api/discovery/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -30,8 +27,10 @@ func TestServiceExportReconciler_Reconcile_NewServiceExport(t *testing.T) {
 	// create a fake controller client and add some objects
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(getServiceExportScheme()).
-		WithObjects(testServiceObj(), testServiceExportObj()).
-		WithLists(testEndpointSliceObj()).
+		WithObjects(k8sServiceForTest(), serviceExportForTest()).
+		WithLists(&discovery.EndpointSliceList{
+			Items: []discovery.EndpointSlice{*endpointSliceForTest()},
+		}).
 		Build()
 
 	// create a mock cloudmap service discovery client
@@ -76,8 +75,10 @@ func TestServiceExportReconciler_Reconcile_ExistingServiceExport(t *testing.T) {
 	// create a fake controller client and add some objects
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(getServiceExportScheme()).
-		WithObjects(testServiceObj(), testServiceExportObj()).
-		WithLists(testEndpointSliceObj()).
+		WithObjects(k8sServiceForTest(), serviceExportForTest()).
+		WithLists(&discovery.EndpointSliceList{
+			Items: []discovery.EndpointSlice{*endpointSliceForTest()},
+		}).
 		Build()
 
 	mockController := gomock.NewController(t)
@@ -116,13 +117,15 @@ func TestServiceExportReconciler_Reconcile_ExistingServiceExport(t *testing.T) {
 
 func TestServiceExportReconciler_Reconcile_DeleteExistingService(t *testing.T) {
 	// create a fake controller client and add some objects
-	serviceExportObj := testServiceExportObj()
+	serviceExportObj := serviceExportForTest()
 	// Add finalizer string to the service
 	serviceExportObj.Finalizers = []string{ServiceExportFinalizer}
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(getServiceExportScheme()).
 		WithObjects(serviceExportObj).
-		WithLists(testEndpointSliceObj()).
+		WithLists(&discovery.EndpointSliceList{
+			Items: []discovery.EndpointSlice{*endpointSliceForTest()},
+		}).
 		Build()
 
 	mockController := gomock.NewController(t)
@@ -170,58 +173,5 @@ func getServiceExportReconciler(t *testing.T, mockClient *cloudmap.MockServiceDi
 		Log:      common.NewLoggerWithLogr(testing2.TestLogger{T: t}),
 		Scheme:   client.Scheme(),
 		CloudMap: mockClient,
-	}
-}
-
-func testEndpointSliceObj() *discovery.EndpointSliceList {
-	port := int32(test.Port1)
-	protocol := v1.ProtocolTCP
-	endpointSlice := &discovery.EndpointSlice{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: test.NsName,
-			Name:      test.SvcName + "-slice",
-			Labels:    map[string]string{discovery.LabelServiceName: test.SvcName},
-		},
-		AddressType: discovery.AddressTypeIPv4,
-		Endpoints: []discovery.Endpoint{{
-			Addresses: []string{test.EndptIp1},
-		}},
-		Ports: []discovery.EndpointPort{{
-			Name:     aws.String("http"),
-			Protocol: &protocol,
-			Port:     &port,
-		}},
-	}
-	endpointSliceList := &discovery.EndpointSliceList{
-		Items: []discovery.EndpointSlice{*endpointSlice},
-	}
-	return endpointSliceList
-}
-
-func testServiceObj() *v1.Service {
-	return &v1.Service{
-		TypeMeta: metav1.TypeMeta{},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      test.SvcName,
-			Namespace: test.NsName,
-		},
-		Spec: v1.ServiceSpec{
-			Ports: []v1.ServicePort{{
-				Name:       "http",
-				Protocol:   test.Protocol1,
-				Port:       test.ServicePort1,
-				TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: test.Port1},
-			}},
-		},
-		Status: v1.ServiceStatus{},
-	}
-}
-
-func testServiceExportObj() *v1alpha1.ServiceExport {
-	return &v1alpha1.ServiceExport{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      test.SvcName,
-			Namespace: test.NsName,
-		},
 	}
 }
