@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
+	cloudmapMock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
@@ -20,7 +20,7 @@ func TestOperationPoller_HappyCases(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
+	sdApi := cloudmapMock.NewMockServiceDiscoveryApi(mockController)
 
 	pollerTypes := []struct {
 		constructor    func() OperationPoller
@@ -105,7 +105,7 @@ func TestOperationPoller_PollEmpty(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
+	sdApi := cloudmapMock.NewMockServiceDiscoveryApi(mockController)
 
 	p := NewRegisterInstancePoller(sdApi, test.SvcId, []string{}, test.OpStart)
 	err := p.Poll(context.TODO())
@@ -116,7 +116,7 @@ func TestOperationPoller_PollFailure(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
+	sdApi := cloudmapMock.NewMockServiceDiscoveryApi(mockController)
 
 	p := NewRegisterInstancePoller(sdApi, test.SvcId, []string{test.OpId1, test.OpId2}, test.OpStart)
 
@@ -134,7 +134,7 @@ func TestOperationPoller_PollOpFailure(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
+	sdApi := cloudmapMock.NewMockServiceDiscoveryApi(mockController)
 
 	p := NewRegisterInstancePoller(sdApi, test.SvcId, []string{test.OpId1, test.OpId2}, test.OpStart)
 
@@ -160,7 +160,7 @@ func TestOperationPoller_PollOpFailureAndMessageFailure(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
+	sdApi := cloudmapMock.NewMockServiceDiscoveryApi(mockController)
 
 	p := NewRegisterInstancePoller(sdApi, test.SvcId, []string{test.OpId1, test.OpId2}, test.OpStart)
 
@@ -184,7 +184,7 @@ func TestOperationPoller_PollTimeout(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	sdApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
+	sdApi := cloudmapMock.NewMockServiceDiscoveryApi(mockController)
 
 	p := operationPoller{
 		log:     common.NewLoggerWithLogr(testing2.TestLogger{T: t}),

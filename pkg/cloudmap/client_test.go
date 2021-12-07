@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
+	cloudmapMock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
@@ -18,8 +18,8 @@ import (
 
 type testSdClient struct {
 	client    *serviceDiscoveryClient
-	mockApi   cloudmap.MockServiceDiscoveryApi
-	mockCache cloudmap.MockServiceDiscoveryClientCache
+	mockApi   cloudmapMock.MockServiceDiscoveryApi
+	mockCache cloudmapMock.MockServiceDiscoveryClientCache
 	close     func()
 }
 
@@ -354,8 +354,8 @@ func TestServiceDiscoveryClient_DeleteEndpoints(t *testing.T) {
 
 func getTestSdClient(t *testing.T) *testSdClient {
 	mockController := gomock.NewController(t)
-	mockCache := cloudmap.NewMockServiceDiscoveryClientCache(mockController)
-	mockApi := cloudmap.NewMockServiceDiscoveryApi(mockController)
+	mockCache := cloudmapMock.NewMockServiceDiscoveryClientCache(mockController)
+	mockApi := cloudmapMock.NewMockServiceDiscoveryApi(mockController)
 	return &testSdClient{
 		client: &serviceDiscoveryClient{
 			log:   common.NewLoggerWithLogr(testing2.TestLogger{T: t}),
