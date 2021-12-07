@@ -25,3 +25,12 @@ jobs:
       uses: codecov/codecov-action@v2
       with:
         files: cover.out
+
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v2
+      with:
+        version: v1.43
+        # Optional: if set to true then the action don't cache or restore ~/go/pkg.
+        skip-pkg-cache: true
+        # Optional: if set to true then the action don't cache or restore ~/.cache/go-build.
+        skip-build-cache: true
