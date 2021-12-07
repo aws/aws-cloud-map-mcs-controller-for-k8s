@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/integration/janitor"
+	janitorMock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/integration/janitor"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
@@ -20,7 +20,7 @@ func TestServiceDiscoveryJanitorApi_DeleteNamespace_HappyCase(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	mocksdk := janitor.NewMockSdkJanitorFacade(mockController)
+	mocksdk := janitorMock.NewMockSdkJanitorFacade(mockController)
 	jApi := getJanitorApi(mocksdk)
 
 	mocksdk.EXPECT().DeleteNamespace(context.TODO(), &sd.DeleteNamespaceInput{Id: aws.String(test.NsId)}).
@@ -35,7 +35,7 @@ func TestServiceDiscoveryJanitorApi_DeleteService_HappyCase(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	mocksdk := janitor.NewMockSdkJanitorFacade(mockController)
+	mocksdk := janitorMock.NewMockSdkJanitorFacade(mockController)
 	jApi := getJanitorApi(mocksdk)
 
 	mocksdk.EXPECT().DeleteService(context.TODO(), &sd.DeleteServiceInput{Id: aws.String(test.SvcId)}).
@@ -45,7 +45,7 @@ func TestServiceDiscoveryJanitorApi_DeleteService_HappyCase(t *testing.T) {
 	assert.Nil(t, err, "No error for happy case")
 }
 
-func getJanitorApi(sdk *janitor.MockSdkJanitorFacade) ServiceDiscoveryJanitorApi {
+func getJanitorApi(sdk *janitorMock.MockSdkJanitorFacade) ServiceDiscoveryJanitorApi {
 	return &serviceDiscoveryJanitorApi{
 		janitorFacade: sdk,
 	}

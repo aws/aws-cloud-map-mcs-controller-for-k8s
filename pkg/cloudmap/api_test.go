@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
+	cloudmapMock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
@@ -27,7 +27,7 @@ func TestServiceDiscoveryApi_ListNamespaces_HappyCase(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	sdApi := getServiceDiscoveryApi(t, awsFacade)
 
 	id, name := test.NsId, test.NsName
@@ -48,7 +48,7 @@ func TestServiceDiscoveryApi_ListNamespaces_SkipPublicDNSNotSupported(t *testing
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	sdApi := getServiceDiscoveryApi(t, awsFacade)
 
 	id, name := test.NsId, test.NsName
@@ -68,7 +68,7 @@ func TestServiceDiscoveryApi_ListServices_HappyCase(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	sdApi := getServiceDiscoveryApi(t, awsFacade)
 
 	filter := types.ServiceFilter{
@@ -91,7 +91,7 @@ func TestServiceDiscoveryApi_DiscoverInstances_HappyCase(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	sdApi := getServiceDiscoveryApi(t, awsFacade)
 
 	awsFacade.EXPECT().DiscoverInstances(context.TODO(),
@@ -119,7 +119,7 @@ func TestServiceDiscoveryApi_ListOperations_HappyCase(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	sdApi := getServiceDiscoveryApi(t, awsFacade)
 
 	filters := make([]types.OperationFilter, 0)
@@ -139,7 +139,7 @@ func TestServiceDiscoveryApi_GetOperation_HappyCase(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	sdApi := getServiceDiscoveryApi(t, awsFacade)
 
 	expectedOp := &types.Operation{Id: aws.String(test.OpId1), Status: types.OperationStatusPending}
@@ -155,7 +155,7 @@ func TestServiceDiscoveryApi_CreateHttNamespace_HappyCase(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	sdApi := getServiceDiscoveryApi(t, awsFacade)
 
 	awsFacade.EXPECT().CreateHttpNamespace(context.TODO(), &sd.CreateHttpNamespaceInput{Name: aws.String(test.NsName)}).
@@ -170,7 +170,7 @@ func TestServiceDiscoveryApi_CreateService_CreateForHttpNamespace(t *testing.T) 
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	sdApi := getServiceDiscoveryApi(t, awsFacade)
 
 	nsId, svcId, svcName := test.NsId, test.SvcId, test.SvcName
@@ -192,7 +192,7 @@ func TestServiceDiscoveryApi_CreateService_CreateForDnsNamespace(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	sdApi := getServiceDiscoveryApi(t, awsFacade)
 
 	nsId, svcId, svcName := test.NsId, test.SvcId, test.SvcName
@@ -220,7 +220,7 @@ func TestServiceDiscoveryApi_CreateService_ThrowError(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	sdApi := getServiceDiscoveryApi(t, awsFacade)
 
 	nsId, svcName := test.NsId, test.SvcName
@@ -241,7 +241,7 @@ func TestServiceDiscoveryApi_RegisterInstance_HappyCase(t *testing.T) {
 
 	attrs := map[string]string{"a": "b"}
 
-	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	awsFacade.EXPECT().RegisterInstance(context.TODO(),
 		&sd.RegisterInstanceInput{
 			ServiceId:  aws.String(test.SvcId),
@@ -260,7 +260,7 @@ func TestServiceDiscoveryApi_RegisterInstance_Error(t *testing.T) {
 	defer mockController.Finish()
 
 	sdkErr := errors.New("fail")
-	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	awsFacade.EXPECT().RegisterInstance(context.TODO(), gomock.Any()).Return(nil, sdkErr)
 
 	sdApi := getServiceDiscoveryApi(t, awsFacade)
@@ -272,7 +272,7 @@ func TestServiceDiscoveryApi_DeregisterInstance_HappyCase(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	awsFacade.EXPECT().DeregisterInstance(context.TODO(),
 		&sd.DeregisterInstanceInput{
 			ServiceId:  aws.String(test.SvcId),
@@ -290,7 +290,7 @@ func TestServiceDiscoveryApi_DeregisterInstance_Error(t *testing.T) {
 	defer mockController.Finish()
 
 	sdkErr := errors.New("fail")
-	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	awsFacade.EXPECT().DeregisterInstance(context.TODO(), gomock.Any()).Return(nil, sdkErr)
 
 	sdApi := getServiceDiscoveryApi(t, awsFacade)
@@ -302,7 +302,7 @@ func TestServiceDiscoveryApi_PollNamespaceOperation_HappyCase(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	awsFacade := cloudmap.NewMockAwsFacade(mockController)
+	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	awsFacade.EXPECT().GetOperation(context.TODO(), &sd.GetOperationInput{OperationId: aws.String(test.OpId1)}).
 		Return(&sd.GetOperationOutput{Operation: &types.Operation{Status: types.OperationStatusPending}}, nil)
 
@@ -317,7 +317,7 @@ func TestServiceDiscoveryApi_PollNamespaceOperation_HappyCase(t *testing.T) {
 	assert.Equal(t, test.NsId, nsId)
 }
 
-func getServiceDiscoveryApi(t *testing.T, awsFacade *cloudmap.MockAwsFacade) ServiceDiscoveryApi {
+func getServiceDiscoveryApi(t *testing.T, awsFacade *cloudmapMock.MockAwsFacade) ServiceDiscoveryApi {
 	return &serviceDiscoveryApi{
 		log:       common.NewLoggerWithLogr(testingLogger.TestLogger{T: t}),
 		awsFacade: awsFacade,

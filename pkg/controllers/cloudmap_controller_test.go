@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
+	cloudmapMock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/api/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
@@ -35,7 +35,7 @@ func TestCloudMapReconciler_Reconcile(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	mockSDClient := cloudmap.NewMockServiceDiscoveryClient(mockController)
+	mockSDClient := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
 	// The service model in the Cloudmap
 	mockSDClient.EXPECT().ListServices(context.TODO(), test.NsName).
 		Return([]*model.Service{test.GetTestServiceWithEndpoint([]*model.Endpoint{test.GetTestEndpoint1()})}, nil)
@@ -72,7 +72,7 @@ func TestCloudMapReconciler_Reconcile(t *testing.T) {
 	assert.Equal(t, test.EndptIp1, endpointSlice.Endpoints[0].Addresses[0])
 }
 
-func getReconciler(t *testing.T, mockSDClient *cloudmap.MockServiceDiscoveryClient, client client.Client) *CloudMapReconciler {
+func getReconciler(t *testing.T, mockSDClient *cloudmapMock.MockServiceDiscoveryClient, client client.Client) *CloudMapReconciler {
 	return &CloudMapReconciler{
 		Client:   client,
 		Cloudmap: mockSDClient,
