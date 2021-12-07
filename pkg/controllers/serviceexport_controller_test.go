@@ -3,7 +3,7 @@ package controllers
 import (
 	"context"
 
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
+	cloudmapMock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/api/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
@@ -37,7 +37,7 @@ func TestServiceExportReconciler_Reconcile_NewServiceExport(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	mock := cloudmap.NewMockServiceDiscoveryClient(mockController)
+	mock := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
 	// expected interactions with the Cloud Map client
 	// The first get call is expected to return nil, then second call after the creation of service is
 	// supposed to return the value
@@ -84,7 +84,7 @@ func TestServiceExportReconciler_Reconcile_ExistingServiceExport(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	mock := cloudmap.NewMockServiceDiscoveryClient(mockController)
+	mock := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
 
 	// GetService from Cloudmap returns endpoint1 and endpoint2
 	mock.EXPECT().GetService(gomock.Any(), test.NsName, test.SvcName).
@@ -131,7 +131,7 @@ func TestServiceExportReconciler_Reconcile_DeleteExistingService(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	mock := cloudmap.NewMockServiceDiscoveryClient(mockController)
+	mock := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
 
 	// GetService from Cloudmap returns endpoint1 and endpoint2
 	mock.EXPECT().GetService(gomock.Any(), test.NsName, test.SvcName).
@@ -167,7 +167,7 @@ func getServiceExportScheme() *runtime.Scheme {
 	return scheme
 }
 
-func getServiceExportReconciler(t *testing.T, mockClient *cloudmap.MockServiceDiscoveryClient, client client.Client) *ServiceExportReconciler {
+func getServiceExportReconciler(t *testing.T, mockClient *cloudmapMock.MockServiceDiscoveryClient, client client.Client) *ServiceExportReconciler {
 	return &ServiceExportReconciler{
 		Client:   client,
 		Log:      common.NewLoggerWithLogr(testing2.TestLogger{T: t}),

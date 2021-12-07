@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/integration/janitor"
+	janitorMock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/integration/janitor"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -15,7 +15,7 @@ import (
 
 type testJanitor struct {
 	janitor *cloudMapJanitor
-	mockApi *janitor.MockServiceDiscoveryJanitorApi
+	mockApi *janitorMock.MockServiceDiscoveryJanitorApi
 	failed  *bool
 	close   func()
 }
@@ -63,7 +63,7 @@ func TestCleanupNothingToClean(t *testing.T) {
 
 func getTestJanitor(t *testing.T) *testJanitor {
 	mockController := gomock.NewController(t)
-	api := janitor.NewMockServiceDiscoveryJanitorApi(mockController)
+	api := janitorMock.NewMockServiceDiscoveryJanitorApi(mockController)
 	failed := false
 	return &testJanitor{
 		janitor: &cloudMapJanitor{
