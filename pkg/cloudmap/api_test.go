@@ -30,7 +30,7 @@ func TestServiceDiscoveryApi_ListNamespaces_HappyCase(t *testing.T) {
 	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	sdApi := getServiceDiscoveryApi(t, awsFacade)
 
-	id, name := test.NsId, test.NsName
+	id, name := test.DnsNsId, test.DnsNsName
 	ns := types.NamespaceSummary{
 		Name: &name,
 		Id:   &id,
@@ -51,7 +51,7 @@ func TestServiceDiscoveryApi_ListNamespaces_SkipPublicDNSNotSupported(t *testing
 	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	sdApi := getServiceDiscoveryApi(t, awsFacade)
 
-	id, name := test.NsId, test.NsName
+	id, name := test.DnsNsId, test.DnsNsName
 	ns := types.NamespaceSummary{
 		Name: &name,
 		Id:   &id,
@@ -73,7 +73,7 @@ func TestServiceDiscoveryApi_ListServices_HappyCase(t *testing.T) {
 
 	filter := types.ServiceFilter{
 		Name:   types.ServiceFilterNameNamespaceId,
-		Values: []string{test.NsId},
+		Values: []string{test.HttpNsId},
 	}
 
 	awsFacade.EXPECT().ListServices(context.TODO(), &sd.ListServicesInput{Filters: []types.ServiceFilter{filter}}).
@@ -81,7 +81,7 @@ func TestServiceDiscoveryApi_ListServices_HappyCase(t *testing.T) {
 			{Id: aws.String(test.SvcId), Name: aws.String(test.SvcName)},
 		}}, nil)
 
-	svcs, err := sdApi.ListServices(context.TODO(), test.NsId)
+	svcs, err := sdApi.ListServices(context.TODO(), test.HttpNsId)
 	assert.Nil(t, err, "No error for happy case")
 	assert.True(t, len(svcs) == 1)
 	assert.Equal(t, svcs[0], &model.Resource{Id: test.SvcId, Name: test.SvcName})
@@ -96,7 +96,7 @@ func TestServiceDiscoveryApi_DiscoverInstances_HappyCase(t *testing.T) {
 
 	awsFacade.EXPECT().DiscoverInstances(context.TODO(),
 		&sd.DiscoverInstancesInput{
-			NamespaceName: aws.String(test.NsName),
+			NamespaceName: aws.String(test.HttpNsName),
 			ServiceName:   aws.String(test.SvcName),
 			HealthStatus:  types.HealthStatusFilterAll,
 			MaxResults:    aws.Int32(1000),
@@ -108,7 +108,7 @@ func TestServiceDiscoveryApi_DiscoverInstances_HappyCase(t *testing.T) {
 			},
 		}, nil)
 
-	insts, err := sdApi.DiscoverInstances(context.TODO(), test.NsName, test.SvcName)
+	insts, err := sdApi.DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName)
 	assert.Nil(t, err, "No error for happy case")
 	assert.True(t, len(insts) == 2)
 	assert.Equal(t, test.EndptId1, *insts[0].InstanceId)
@@ -158,10 +158,10 @@ func TestServiceDiscoveryApi_CreateHttNamespace_HappyCase(t *testing.T) {
 	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	sdApi := getServiceDiscoveryApi(t, awsFacade)
 
-	awsFacade.EXPECT().CreateHttpNamespace(context.TODO(), &sd.CreateHttpNamespaceInput{Name: aws.String(test.NsName)}).
+	awsFacade.EXPECT().CreateHttpNamespace(context.TODO(), &sd.CreateHttpNamespaceInput{Name: aws.String(test.HttpNsName)}).
 		Return(&sd.CreateHttpNamespaceOutput{OperationId: aws.String(test.OpId1)}, nil)
 
-	opId, err := sdApi.CreateHttpNamespace(context.TODO(), test.NsName)
+	opId, err := sdApi.CreateHttpNamespace(context.TODO(), test.HttpNsName)
 	assert.Nil(t, err, "No error for happy case")
 	assert.Equal(t, test.OpId1, opId)
 }
@@ -173,7 +173,7 @@ func TestServiceDiscoveryApi_CreateService_CreateForHttpNamespace(t *testing.T) 
 	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	sdApi := getServiceDiscoveryApi(t, awsFacade)
 
-	nsId, svcId, svcName := test.NsId, test.SvcId, test.SvcName
+	nsId, svcId, svcName := test.HttpNsId, test.SvcId, test.SvcName
 	awsFacade.EXPECT().CreateService(context.TODO(), &sd.CreateServiceInput{
 		Name:        &svcName,
 		NamespaceId: &nsId,
@@ -195,7 +195,7 @@ func TestServiceDiscoveryApi_CreateService_CreateForDnsNamespace(t *testing.T) {
 	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	sdApi := getServiceDiscoveryApi(t, awsFacade)
 
-	nsId, svcId, svcName := test.NsId, test.SvcId, test.SvcName
+	nsId, svcId, svcName := test.DnsNsId, test.SvcId, test.SvcName
 	awsFacade.EXPECT().CreateService(context.TODO(), &sd.CreateServiceInput{
 		Name:        &svcName,
 		NamespaceId: &nsId,
@@ -223,7 +223,7 @@ func TestServiceDiscoveryApi_CreateService_ThrowError(t *testing.T) {
 	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
 	sdApi := getServiceDiscoveryApi(t, awsFacade)
 
-	nsId, svcName := test.NsId, test.SvcName
+	nsId, svcName := test.HttpNsId, test.SvcName
 	awsFacade.EXPECT().CreateService(context.TODO(), &sd.CreateServiceInput{
 		Name:        &svcName,
 		NamespaceId: &nsId,
@@ -308,13 +308,13 @@ func TestServiceDiscoveryApi_PollNamespaceOperation_HappyCase(t *testing.T) {
 
 	awsFacade.EXPECT().GetOperation(context.TODO(), &sd.GetOperationInput{OperationId: aws.String(test.OpId1)}).
 		Return(&sd.GetOperationOutput{Operation: &types.Operation{Status: types.OperationStatusSuccess,
-			Targets: map[string]string{string(types.OperationTargetTypeNamespace): test.NsId}}}, nil)
+			Targets: map[string]string{string(types.OperationTargetTypeNamespace): test.HttpNsId}}}, nil)
 
 	sdApi := getServiceDiscoveryApi(t, awsFacade)
 
 	nsId, err := sdApi.PollNamespaceOperation(context.TODO(), test.OpId1)
 	assert.Nil(t, err)
-	assert.Equal(t, test.NsId, nsId)
+	assert.Equal(t, test.HttpNsId, nsId)
 }
 
 func getServiceDiscoveryApi(t *testing.T, awsFacade *cloudmapMock.MockAwsFacade) ServiceDiscoveryApi {
