@@ -23,10 +23,10 @@ func TestServiceDiscoveryJanitorApi_DeleteNamespace_HappyCase(t *testing.T) {
 	mocksdk := janitorMock.NewMockSdkJanitorFacade(mockController)
 	jApi := getJanitorApi(mocksdk)
 
-	mocksdk.EXPECT().DeleteNamespace(context.TODO(), &sd.DeleteNamespaceInput{Id: aws.String(test.NsId)}).
+	mocksdk.EXPECT().DeleteNamespace(context.TODO(), &sd.DeleteNamespaceInput{Id: aws.String(test.HttpNsId)}).
 		Return(&sd.DeleteNamespaceOutput{OperationId: aws.String(test.OpId1)}, nil)
 
-	opId, err := jApi.DeleteNamespace(context.TODO(), test.NsId)
+	opId, err := jApi.DeleteNamespace(context.TODO(), test.HttpNsId)
 	assert.Nil(t, err, "No error for happy case")
 	assert.Equal(t, test.OpId1, opId)
 }

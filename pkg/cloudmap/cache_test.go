@@ -39,7 +39,7 @@ func TestServiceDiscoveryClientCacheGetNamespace_Found(t *testing.T) {
 	sdc := NewDefaultServiceDiscoveryClientCache()
 	sdc.CacheNamespace(test.GetTestHttpNamespace())
 
-	ns, found := sdc.GetNamespace(test.NsName)
+	ns, found := sdc.GetNamespace(test.HttpNsName)
 	assert.True(t, found)
 	assert.Equal(t, test.GetTestHttpNamespace(), ns)
 }
@@ -47,16 +47,16 @@ func TestServiceDiscoveryClientCacheGetNamespace_Found(t *testing.T) {
 func TestServiceDiscoveryClientCacheGetNamespace_NotFound(t *testing.T) {
 	sdc := NewDefaultServiceDiscoveryClientCache()
 
-	ns, found := sdc.GetNamespace(test.NsName)
+	ns, found := sdc.GetNamespace(test.HttpNsName)
 	assert.False(t, found)
 	assert.Nil(t, ns)
 }
 
 func TestServiceDiscoveryClientCacheGetNamespace_Nil(t *testing.T) {
 	sdc := NewDefaultServiceDiscoveryClientCache()
-	sdc.CacheNilNamespace(test.NsName)
+	sdc.CacheNilNamespace(test.HttpNsName)
 
-	ns, found := sdc.GetNamespace(test.NsName)
+	ns, found := sdc.GetNamespace(test.HttpNsName)
 	assert.True(t, found)
 	assert.Nil(t, ns)
 }
@@ -66,18 +66,18 @@ func TestServiceDiscoveryClientCacheGetNamespace_Corrupt(t *testing.T) {
 	if !ok {
 		t.Fatalf("failed to create cache")
 	}
-	sdc.cache.Add(sdc.buildNsKey(test.NsName), &model.Resource{}, time.Minute)
+	sdc.cache.Add(sdc.buildNsKey(test.HttpNsName), &model.Resource{}, time.Minute)
 
-	ns, found := sdc.GetNamespace(test.NsName)
+	ns, found := sdc.GetNamespace(test.HttpNsName)
 	assert.False(t, found)
 	assert.Nil(t, ns)
 }
 
 func TestServiceDiscoveryClientCacheGetServiceId_Found(t *testing.T) {
 	sdc := NewDefaultServiceDiscoveryClientCache()
-	sdc.CacheServiceId(test.NsName, test.SvcName, test.SvcId)
+	sdc.CacheServiceId(test.HttpNsName, test.SvcName, test.SvcId)
 
-	svcId, found := sdc.GetServiceId(test.NsName, test.SvcName)
+	svcId, found := sdc.GetServiceId(test.HttpNsName, test.SvcName)
 	assert.True(t, found)
 	assert.Equal(t, test.SvcId, svcId)
 }
@@ -85,7 +85,7 @@ func TestServiceDiscoveryClientCacheGetServiceId_Found(t *testing.T) {
 func TestServiceDiscoveryClientCacheGetServiceId_NotFound(t *testing.T) {
 	sdc := NewDefaultServiceDiscoveryClientCache()
 
-	svcId, found := sdc.GetServiceId(test.NsName, test.SvcName)
+	svcId, found := sdc.GetServiceId(test.HttpNsName, test.SvcName)
 	assert.False(t, found)
 	assert.Empty(t, svcId)
 }
@@ -95,17 +95,17 @@ func TestServiceDiscoveryClientCacheGetServiceId_Corrupt(t *testing.T) {
 	if !ok {
 		t.Fatalf("failed to create cache")
 	}
-	sdc.cache.Add(sdc.buildSvcKey(test.NsName, test.SvcName), &model.Resource{}, time.Minute)
-	svcId, found := sdc.GetServiceId(test.NsName, test.SvcName)
+	sdc.cache.Add(sdc.buildSvcKey(test.HttpNsName, test.SvcName), &model.Resource{}, time.Minute)
+	svcId, found := sdc.GetServiceId(test.HttpNsName, test.SvcName)
 	assert.False(t, found)
 	assert.Empty(t, svcId)
 }
 
 func TestServiceDiscoveryClientCacheGetEndpoints_Found(t *testing.T) {
 	sdc := NewDefaultServiceDiscoveryClientCache()
-	sdc.CacheEndpoints(test.NsName, test.SvcName, []*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()})
+	sdc.CacheEndpoints(test.HttpNsName, test.SvcName, []*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()})
 
-	endpts, found := sdc.GetEndpoints(test.NsName, test.SvcName)
+	endpts, found := sdc.GetEndpoints(test.HttpNsName, test.SvcName)
 	assert.True(t, found)
 	assert.Equal(t, []*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()}, endpts)
 }
@@ -113,7 +113,7 @@ func TestServiceDiscoveryClientCacheGetEndpoints_Found(t *testing.T) {
 func TestServiceDiscoveryClientCacheGetEndpoints_NotFound(t *testing.T) {
 	sdc := NewDefaultServiceDiscoveryClientCache()
 
-	endpts, found := sdc.GetEndpoints(test.NsName, test.SvcName)
+	endpts, found := sdc.GetEndpoints(test.HttpNsName, test.SvcName)
 	assert.False(t, found)
 	assert.Nil(t, endpts)
 }
@@ -124,18 +124,18 @@ func TestServiceDiscoveryClientCacheGetEndpoints_Corrupt(t *testing.T) {
 		t.Fatalf("failed to create cache")
 	}
 
-	sdc.cache.Add(sdc.buildEndptsKey(test.NsName, test.SvcName), &model.Resource{}, time.Minute)
-	endpts, found := sdc.GetEndpoints(test.NsName, test.SvcName)
+	sdc.cache.Add(sdc.buildEndptsKey(test.HttpNsName, test.SvcName), &model.Resource{}, time.Minute)
+	endpts, found := sdc.GetEndpoints(test.HttpNsName, test.SvcName)
 	assert.False(t, found)
 	assert.Nil(t, endpts)
 }
 
 func TestServiceDiscoveryClientEvictEndpoints(t *testing.T) {
 	sdc := NewDefaultServiceDiscoveryClientCache()
-	sdc.CacheEndpoints(test.NsName, test.SvcName, []*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()})
-	sdc.EvictEndpoints(test.NsName, test.SvcName)
+	sdc.CacheEndpoints(test.HttpNsName, test.SvcName, []*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()})
+	sdc.EvictEndpoints(test.HttpNsName, test.SvcName)
 
-	endpts, found := sdc.GetEndpoints(test.NsName, test.SvcName)
+	endpts, found := sdc.GetEndpoints(test.HttpNsName, test.SvcName)
 	assert.False(t, found)
 	assert.Nil(t, endpts)
 }
