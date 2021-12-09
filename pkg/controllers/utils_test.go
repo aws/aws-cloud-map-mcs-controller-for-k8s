@@ -466,9 +466,9 @@ func TestCreateServiceImportStruct(t *testing.T) {
 			},
 			want: v1alpha1.ServiceImport{
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace:   test.NsName,
+					Namespace:   test.HttpNsName,
 					Name:        test.SvcName,
-					Annotations: map[string]string{DerivedServiceAnnotation: DerivedName(test.NsName, test.SvcName)},
+					Annotations: map[string]string{DerivedServiceAnnotation: DerivedName(test.HttpNsName, test.SvcName)},
 				},
 				Spec: v1alpha1.ServiceImportSpec{
 					IPs:  []string{},
@@ -483,7 +483,7 @@ func TestCreateServiceImportStruct(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := CreateServiceImportStruct(test.NsName, test.SvcName, tt.args.servicePorts); !reflect.DeepEqual(*got, tt.want) {
+			if got := CreateServiceImportStruct(test.HttpNsName, test.SvcName, tt.args.servicePorts); !reflect.DeepEqual(*got, tt.want) {
 				t.Errorf("CreateServiceImportStruct() = %v, want %v", got, tt.want)
 			}
 		})

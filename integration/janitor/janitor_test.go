@@ -29,10 +29,10 @@ func TestCleanupHappyCase(t *testing.T) {
 	defer tj.close()
 
 	tj.mockApi.EXPECT().ListNamespaces(context.TODO()).
-		Return([]*model.Namespace{{Id: test.NsId, Name: test.NsName}}, nil)
-	tj.mockApi.EXPECT().ListServices(context.TODO(), test.NsId).
+		Return([]*model.Namespace{{Id: test.HttpNsId, Name: test.HttpNsName}}, nil)
+	tj.mockApi.EXPECT().ListServices(context.TODO(), test.HttpNsId).
 		Return([]*model.Resource{{Id: test.SvcId, Name: test.SvcName}}, nil)
-	tj.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.NsName, test.SvcName).
+	tj.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName).
 		Return([]types.HttpInstanceSummary{{InstanceId: aws.String(test.EndptId1)}}, nil)
 
 	tj.mockApi.EXPECT().DeregisterInstance(context.TODO(), test.SvcId, test.EndptId1).
@@ -41,12 +41,12 @@ func TestCleanupHappyCase(t *testing.T) {
 		Return(map[string]types.OperationStatus{test.OpId1: types.OperationStatusSuccess}, nil)
 	tj.mockApi.EXPECT().DeleteService(context.TODO(), test.SvcId).
 		Return(nil)
-	tj.mockApi.EXPECT().DeleteNamespace(context.TODO(), test.NsId).
+	tj.mockApi.EXPECT().DeleteNamespace(context.TODO(), test.HttpNsId).
 		Return(test.OpId2, nil)
 	tj.mockApi.EXPECT().PollNamespaceOperation(context.TODO(), test.OpId2).
-		Return(test.NsId, nil)
+		Return(test.HttpNsId, nil)
 
-	tj.janitor.Cleanup(context.TODO(), test.NsName)
+	tj.janitor.Cleanup(context.TODO(), test.HttpNsName)
 	assert.False(t, *tj.failed)
 }
 
@@ -57,7 +57,7 @@ func TestCleanupNothingToClean(t *testing.T) {
 	tj.mockApi.EXPECT().ListNamespaces(context.TODO()).
 		Return([]*model.Namespace{}, nil)
 
-	tj.janitor.Cleanup(context.TODO(), test.NsName)
+	tj.janitor.Cleanup(context.TODO(), test.HttpNsName)
 	assert.False(t, *tj.failed)
 }
 

@@ -15,8 +15,8 @@ import (
 func k8sNamespaceForTest() *v1.Namespace {
 	return &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      test.NsName,
-			Namespace: test.NsName,
+			Name:      test.HttpNsName,
+			Namespace: test.HttpNsName,
 		},
 	}
 }
@@ -26,7 +26,7 @@ func k8sServiceForTest() *v1.Service {
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      test.SvcName,
-			Namespace: test.NsName,
+			Namespace: test.HttpNsName,
 		},
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{{
@@ -44,7 +44,7 @@ func serviceExportForTest() *v1alpha1.ServiceExport {
 	return &v1alpha1.ServiceExport{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      test.SvcName,
-			Namespace: test.NsName,
+			Namespace: test.HttpNsName,
 		},
 	}
 }
@@ -54,7 +54,7 @@ func endpointSliceForTest() *discovery.EndpointSlice {
 	protocol := v1.ProtocolTCP
 	return &discovery.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: test.NsName,
+			Namespace: test.HttpNsName,
 			Name:      test.SvcName + "-slice",
 			Labels:    map[string]string{discovery.LabelServiceName: test.SvcName},
 		},

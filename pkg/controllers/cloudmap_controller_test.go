@@ -37,7 +37,7 @@ func TestCloudMapReconciler_Reconcile(t *testing.T) {
 
 	mockSDClient := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
 	// The service model in the Cloudmap
-	mockSDClient.EXPECT().ListServices(context.TODO(), test.NsName).
+	mockSDClient.EXPECT().ListServices(context.TODO(), test.HttpNsName).
 		Return([]*model.Service{test.GetTestServiceWithEndpoint([]*model.Endpoint{test.GetTestEndpoint1()})}, nil)
 
 	reconciler := getReconciler(t, mockSDClient, fakeClient)
@@ -49,13 +49,13 @@ func TestCloudMapReconciler_Reconcile(t *testing.T) {
 
 	// assert service import object
 	serviceImport := &v1alpha1.ServiceImport{}
-	err = fakeClient.Get(context.TODO(), types.NamespacedName{Namespace: test.NsName, Name: test.SvcName}, serviceImport)
+	err = fakeClient.Get(context.TODO(), types.NamespacedName{Namespace: test.HttpNsName, Name: test.SvcName}, serviceImport)
 	assert.NoError(t, err)
 	assert.Equal(t, test.SvcName, serviceImport.Name, "Service imported")
 
 	// assert derived service is successfully created
 	derivedServiceList := &v1.ServiceList{}
-	err = fakeClient.List(context.TODO(), derivedServiceList, client.InNamespace(test.NsName))
+	err = fakeClient.List(context.TODO(), derivedServiceList, client.InNamespace(test.HttpNsName))
 	assert.NoError(t, err)
 	derivedService := derivedServiceList.Items[0]
 	assert.True(t, strings.Contains(derivedService.Name, "imported-"), "Derived service created", "service", derivedService.Name)
@@ -64,7 +64,7 @@ func TestCloudMapReconciler_Reconcile(t *testing.T) {
 
 	// assert endpoint slices are created
 	endpointSliceList := &v1beta1.EndpointSliceList{}
-	err = fakeClient.List(context.TODO(), endpointSliceList, client.InNamespace(test.NsName))
+	err = fakeClient.List(context.TODO(), endpointSliceList, client.InNamespace(test.HttpNsName))
 	assert.NoError(t, err)
 	endpointSlice := endpointSliceList.Items[0]
 	assert.Equal(t, test.SvcName, endpointSlice.Labels["multicluster.kubernetes.io/service-name"], "Endpoint slice is created")
