@@ -55,11 +55,9 @@ func (r *CloudMapReconciler) Start(ctx context.Context) error {
 func (r *CloudMapReconciler) Reconcile(ctx context.Context) error {
 	namespaces := v1.NamespaceList{}
 	if err := r.Client.List(ctx, &namespaces); err != nil {
-		r.Log.Error(err, "unable to list namespaces")
+		r.Log.Error(err, "unable to list cluster namespaces")
 		return err
 	}
-
-	//TODO: Fetch list of namespaces from Cloudmap and only reconcile the intersection
 
 	for _, ns := range namespaces.Items {
 		if err := r.reconcileNamespace(ctx, ns.Name); err != nil {

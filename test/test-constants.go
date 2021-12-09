@@ -7,8 +7,10 @@ import (
 )
 
 const (
-	NsName          = "ns-name"
-	NsId            = "ns-id"
+	HttpNsName      = "ns-name-1"
+	DnsNsName       = "ns-name-2"
+	HttpNsId        = "ns-id-1"
+	DnsNsId         = "ns-id-2"
 	SvcName         = "svc-name"
 	SvcId           = "svc-id"
 	EndptId1        = "tcp-192_168_0_1-1"
@@ -23,7 +25,7 @@ const (
 	ServicePortStr1 = "11"
 	Port2           = 2
 	PortStr2        = "2"
-	PortName2       = "http"
+	PortName2       = "https"
 	Protocol2       = "UDP"
 	ServicePort2    = 22
 	ServicePortStr2 = "22"
@@ -34,23 +36,23 @@ const (
 
 func GetTestHttpNamespace() *model.Namespace {
 	return &model.Namespace{
-		Id:   NsId,
-		Name: NsName,
+		Id:   HttpNsId,
+		Name: HttpNsName,
 		Type: model.HttpNamespaceType,
 	}
 }
 
 func GetTestDnsNamespace() *model.Namespace {
 	return &model.Namespace{
-		Id:   NsId,
-		Name: NsName,
+		Id:   DnsNsId,
+		Name: DnsNsName,
 		Type: model.DnsPrivateNamespaceType,
 	}
 }
 
 func GetTestService() *model.Service {
 	return &model.Service{
-		Namespace: NsName,
+		Namespace: HttpNsName,
 		Name:      SvcName,
 		Endpoints: []*model.Endpoint{GetTestEndpoint1(), GetTestEndpoint2()},
 	}
@@ -58,7 +60,7 @@ func GetTestService() *model.Service {
 
 func GetTestServiceWithEndpoint(endpoints []*model.Endpoint) *model.Service {
 	return &model.Service{
-		Namespace: NsName,
+		Namespace: HttpNsName,
 		Name:      SvcName,
 		Endpoints: endpoints,
 	}

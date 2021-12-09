@@ -41,19 +41,19 @@ func TestServiceExportReconciler_Reconcile_NewServiceExport(t *testing.T) {
 	// expected interactions with the Cloud Map client
 	// The first get call is expected to return nil, then second call after the creation of service is
 	// supposed to return the value
-	first := mock.EXPECT().GetService(gomock.Any(), test.NsName, test.SvcName).Return(nil, nil)
-	second := mock.EXPECT().GetService(gomock.Any(), test.NsName, test.SvcName).
-		Return(&model.Service{Namespace: test.NsName, Name: test.SvcName}, nil)
+	first := mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName).Return(nil, nil)
+	second := mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName).
+		Return(&model.Service{Namespace: test.HttpNsName, Name: test.SvcName}, nil)
 	gomock.InOrder(first, second)
-	mock.EXPECT().CreateService(gomock.Any(), test.NsName, test.SvcName).Return(nil).Times(1)
-	mock.EXPECT().RegisterEndpoints(gomock.Any(), test.NsName, test.SvcName,
+	mock.EXPECT().CreateService(gomock.Any(), test.HttpNsName, test.SvcName).Return(nil).Times(1)
+	mock.EXPECT().RegisterEndpoints(gomock.Any(), test.HttpNsName, test.SvcName,
 		[]*model.Endpoint{test.GetTestEndpoint1()}).Return(nil).Times(1)
 
 	reconciler := getServiceExportReconciler(t, mock, fakeClient)
 
 	request := ctrl.Request{
 		NamespacedName: types.NamespacedName{
-			Namespace: test.NsName,
+			Namespace: test.HttpNsName,
 			Name:      test.SvcName,
 		},
 	}
@@ -66,7 +66,7 @@ func TestServiceExportReconciler_Reconcile_NewServiceExport(t *testing.T) {
 	assert.Equal(t, ctrl.Result{}, got, "Result should be empty")
 
 	serviceExport := &v1alpha1.ServiceExport{}
-	err = fakeClient.Get(context.TODO(), types.NamespacedName{Namespace: test.NsName, Name: test.SvcName}, serviceExport)
+	err = fakeClient.Get(context.TODO(), types.NamespacedName{Namespace: test.HttpNsName, Name: test.SvcName}, serviceExport)
 	assert.NoError(t, err)
 	assert.Contains(t, serviceExport.Finalizers, ServiceExportFinalizer, "Finalizer added to the service export")
 }
@@ -87,15 +87,15 @@ func TestServiceExportReconciler_Reconcile_ExistingServiceExport(t *testing.T) {
 	mock := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
 
 	// GetService from Cloudmap returns endpoint1 and endpoint2
-	mock.EXPECT().GetService(gomock.Any(), test.NsName, test.SvcName).
+	mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName).
 		Return(test.GetTestService(), nil)
 	// call to delete the endpoint not present in the k8s cluster
-	mock.EXPECT().DeleteEndpoints(gomock.Any(), test.NsName, test.SvcName,
+	mock.EXPECT().DeleteEndpoints(gomock.Any(), test.HttpNsName, test.SvcName,
 		[]*model.Endpoint{test.GetTestEndpoint2()}).Return(nil).Times(1)
 
 	request := ctrl.Request{
 		NamespacedName: types.NamespacedName{
-			Namespace: test.NsName,
+			Namespace: test.HttpNsName,
 			Name:      test.SvcName,
 		},
 	}
@@ -110,7 +110,7 @@ func TestServiceExportReconciler_Reconcile_ExistingServiceExport(t *testing.T) {
 	assert.Equal(t, ctrl.Result{}, got, "Result should be empty")
 
 	serviceExport := &v1alpha1.ServiceExport{}
-	err = fakeClient.Get(context.TODO(), types.NamespacedName{Namespace: test.NsName, Name: test.SvcName}, serviceExport)
+	err = fakeClient.Get(context.TODO(), types.NamespacedName{Namespace: test.HttpNsName, Name: test.SvcName}, serviceExport)
 	assert.NoError(t, err)
 	assert.Contains(t, serviceExport.Finalizers, ServiceExportFinalizer, "Finalizer added to the service export")
 }
@@ -134,15 +134,15 @@ func TestServiceExportReconciler_Reconcile_DeleteExistingService(t *testing.T) {
 	mock := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
 
 	// GetService from Cloudmap returns endpoint1 and endpoint2
-	mock.EXPECT().GetService(gomock.Any(), test.NsName, test.SvcName).
+	mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName).
 		Return(test.GetTestService(), nil)
 	// call to delete the endpoint in the cloudmap
-	mock.EXPECT().DeleteEndpoints(gomock.Any(), test.NsName, test.SvcName,
+	mock.EXPECT().DeleteEndpoints(gomock.Any(), test.HttpNsName, test.SvcName,
 		[]*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()}).Return(nil).Times(1)
 
 	request := ctrl.Request{
 		NamespacedName: types.NamespacedName{
-			Namespace: test.NsName,
+			Namespace: test.HttpNsName,
 			Name:      test.SvcName,
 		},
 	}
@@ -154,7 +154,7 @@ func TestServiceExportReconciler_Reconcile_DeleteExistingService(t *testing.T) {
 	assert.Equal(t, ctrl.Result{}, got, "Result should be empty")
 
 	serviceExport := &v1alpha1.ServiceExport{}
-	err = fakeClient.Get(context.TODO(), types.NamespacedName{Namespace: test.NsName, Name: test.SvcName}, serviceExport)
+	err = fakeClient.Get(context.TODO(), types.NamespacedName{Namespace: test.HttpNsName, Name: test.SvcName}, serviceExport)
 	assert.NoError(t, err)
 	assert.Empty(t, serviceExport.Finalizers, "Finalizer removed from the service export")
 }
