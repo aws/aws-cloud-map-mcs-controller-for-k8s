@@ -25,7 +25,7 @@ const (
 	ServicePortStr1 = "11"
 	Port2           = 2
 	PortStr2        = "2"
-	PortName2       = "http"
+	PortName2       = "https"
 	Protocol2       = "UDP"
 	ServicePort2    = 22
 	ServicePortStr2 = "22"
