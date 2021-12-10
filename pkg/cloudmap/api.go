@@ -20,11 +20,11 @@ const (
 // ServiceDiscoveryApi handles the AWS Cloud Map API request and response processing logic, and converts results to
 // internal data structures. It manages all interactions with the AWS SDK.
 type ServiceDiscoveryApi interface {
-	// ListNamespaces returns a list of all namespaces.
-	ListNamespaces(ctx context.Context) (namespaces []*model.Namespace, err error)
+	// GetNamespaceMap returns a map of all namespaces in the Cloud Map account indexed by namespace name.
+	GetNamespaceMap(ctx context.Context) (namespaces map[string]*model.Namespace, err error)
 
-	// ListServices returns a list of services for a given namespace.
-	ListServices(ctx context.Context, namespaceId string) (services []*model.Resource, err error)
+	// GetServiceIdMap returns a map of all service IDs for a given namespace indexed by service name.
+	GetServiceIdMap(ctx context.Context, namespaceId string) (serviceIdMap map[string]string, err error)
 
 	// DiscoverInstances returns a list of service instances registered to a given service.
 	DiscoverInstances(ctx context.Context, nsName string, svcName string) (insts []types.HttpInstanceSummary, err error)
@@ -64,52 +64,53 @@ func NewServiceDiscoveryApiFromConfig(cfg *aws.Config) ServiceDiscoveryApi {
 	}
 }
 
-func (sdApi *serviceDiscoveryApi) ListNamespaces(ctx context.Context) (namespaces []*model.Namespace, err error) {
-	pages := sd.NewListNamespacesPaginator(sdApi.awsFacade, &sd.ListNamespacesInput{})
+func (sdApi *serviceDiscoveryApi) GetNamespaceMap(ctx context.Context) (map[string]*model.Namespace, error) {
+	namespaceMap := make(map[string]*model.Namespace)
 
+	pages := sd.NewListNamespacesPaginator(sdApi.awsFacade, &sd.ListNamespacesInput{})
 	for pages.HasMorePages() {
 		output, err := pages.NextPage(ctx)
 		if err != nil {
-			return namespaces, err
+			return nil, err
 		}
 
 		for _, ns := range output.Namespaces {
-			if namespaceType := model.ConvertNamespaceType(ns.Type); !namespaceType.IsUnsupported() {
-				namespaces = append(namespaces, &model.Namespace{
-					Id:   aws.ToString(ns.Id),
-					Name: aws.ToString(ns.Name),
-					Type: namespaceType,
-				})
+			namespaceType := model.ConvertNamespaceType(ns.Type)
+			if namespaceType.IsUnsupported() {
+				continue
+			}
+			namespaceMap[aws.ToString(ns.Name)] = &model.Namespace{
+				Id:   aws.ToString(ns.Id),
+				Name: aws.ToString(ns.Name),
+				Type: namespaceType,
 			}
 		}
 	}
 
-	return namespaces, nil
+	return namespaceMap, nil
 }
 
-func (sdApi *serviceDiscoveryApi) ListServices(ctx context.Context, nsId string) (svcs []*model.Resource, err error) {
+func (sdApi *serviceDiscoveryApi) GetServiceIdMap(ctx context.Context, nsId string) (map[string]string, error) {
+	serviceIdMap := make(map[string]string)
+
 	filter := types.ServiceFilter{
 		Name:   types.ServiceFilterNameNamespaceId,
 		Values: []string{nsId},
 	}
 
 	pages := sd.NewListServicesPaginator(sdApi.awsFacade, &sd.ListServicesInput{Filters: []types.ServiceFilter{filter}})
-
 	for pages.HasMorePages() {
 		output, err := pages.NextPage(ctx)
 		if err != nil {
-			return svcs, err
+			return nil, err
 		}
 
 		for _, svc := range output.Services {
-			svcs = append(svcs, &model.Resource{
-				Id:   aws.ToString(svc.Id),
-				Name: aws.ToString(svc.Name),
-			})
+			serviceIdMap[aws.ToString(svc.Name)] = aws.ToString(svc.Id)
 		}
 	}
 
-	return svcs, nil
+	return serviceIdMap, nil
 }
 
 func (sdApi *serviceDiscoveryApi) DiscoverInstances(ctx context.Context, nsName string, svcName string) (insts []types.HttpInstanceSummary, err error) {
@@ -127,8 +128,8 @@ func (sdApi *serviceDiscoveryApi) DiscoverInstances(ctx context.Context, nsName 
 	return out.Instances, nil
 }
 
-func (sdApi *serviceDiscoveryApi) ListOperations(ctx context.Context, opFilters []types.OperationFilter) (opStatusMap map[string]types.OperationStatus, err error) {
-	opStatusMap = make(map[string]types.OperationStatus)
+func (sdApi *serviceDiscoveryApi) ListOperations(ctx context.Context, opFilters []types.OperationFilter) (map[string]types.OperationStatus, error) {
+	opStatusMap := make(map[string]types.OperationStatus)
 
 	pages := sd.NewListOperationsPaginator(sdApi.awsFacade, &sd.ListOperationsInput{
 		Filters: opFilters,
@@ -190,7 +191,7 @@ func (sdApi *serviceDiscoveryApi) CreateService(ctx context.Context, namespace m
 	}
 
 	svcId = aws.ToString(output.Service.Id)
-	sdApi.log.Info("service created", "svcId", svcId)
+	sdApi.log.Info("service created", "namespace", namespace.Name, "name", svcName, "id", svcId)
 	return svcId, nil
 }
 

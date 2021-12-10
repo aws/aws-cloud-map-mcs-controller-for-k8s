@@ -4,9 +4,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
+	testing2 "github.com/go-logr/logr/testing"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/util/cache"
 )
 
 func TestNewServiceDiscoveryClientCache(t *testing.T) {
@@ -35,70 +38,84 @@ func TestNewDefaultServiceDiscoveryClientCache(t *testing.T) {
 	assert.Equal(t, defaultEndptTTL, sdc.config.EndptTTL)
 }
 
-func TestServiceDiscoveryClientCacheGetNamespace_Found(t *testing.T) {
+func TestServiceDiscoveryClientCacheGetNamespaceMap_Found(t *testing.T) {
 	sdc := NewDefaultServiceDiscoveryClientCache()
-	sdc.CacheNamespace(test.GetTestHttpNamespace())
+	sdc.CacheNamespaceMap(map[string]*model.Namespace{
+		test.HttpNsName: test.GetTestHttpNamespace(),
+	})
 
-	ns, found := sdc.GetNamespace(test.HttpNsName)
+	nsMap, found := sdc.GetNamespaceMap()
 	assert.True(t, found)
-	assert.Equal(t, test.GetTestHttpNamespace(), ns)
+	assert.Equal(t, test.GetTestHttpNamespace(), nsMap[test.HttpNsName])
 }
 
-func TestServiceDiscoveryClientCacheGetNamespace_NotFound(t *testing.T) {
+func TestServiceDiscoveryClientCacheGetNamespaceMap_NotFound(t *testing.T) {
 	sdc := NewDefaultServiceDiscoveryClientCache()
 
-	ns, found := sdc.GetNamespace(test.HttpNsName)
+	nsMap, found := sdc.GetNamespaceMap()
 	assert.False(t, found)
-	assert.Nil(t, ns)
+	assert.Nil(t, nsMap)
 }
 
-func TestServiceDiscoveryClientCacheGetNamespace_Nil(t *testing.T) {
-	sdc := NewDefaultServiceDiscoveryClientCache()
-	sdc.CacheNilNamespace(test.HttpNsName)
+func TestServiceDiscoveryClientCacheGetNamespaceMap_Corrupt(t *testing.T) {
+	sdc := getCacheImpl(t)
+	sdc.cache.Add(nsKey, &model.Plan{}, time.Minute)
 
-	ns, found := sdc.GetNamespace(test.HttpNsName)
+	nsMap, found := sdc.GetNamespaceMap()
+	assert.False(t, found)
+	assert.Nil(t, nsMap)
+}
+
+func TestServiceDiscoveryClientEvictNamespaceMap(t *testing.T) {
+	sdc := NewDefaultServiceDiscoveryClientCache()
+	sdc.CacheNamespaceMap(map[string]*model.Namespace{
+		test.HttpNsName: test.GetTestHttpNamespace(),
+	})
+	sdc.EvictNamespaceMap()
+
+	nsMap, found := sdc.GetNamespaceMap()
+	assert.False(t, found)
+	assert.Nil(t, nsMap)
+}
+
+func TestServiceDiscoveryClientCacheGetServiceIdMap_Found(t *testing.T) {
+	sdc := NewDefaultServiceDiscoveryClientCache()
+	sdc.CacheServiceIdMap(test.HttpNsName, map[string]string{
+		test.SvcName: test.SvcId,
+	})
+
+	svcIdMap, found := sdc.GetServiceIdMap(test.HttpNsName)
 	assert.True(t, found)
-	assert.Nil(t, ns)
+	assert.Equal(t, test.SvcId, svcIdMap[test.SvcName])
 }
 
-func TestServiceDiscoveryClientCacheGetNamespace_Corrupt(t *testing.T) {
-	sdc, ok := NewDefaultServiceDiscoveryClientCache().(*sdCache)
-	if !ok {
-		t.Fatalf("failed to create cache")
-	}
-	sdc.cache.Add(sdc.buildNsKey(test.HttpNsName), &model.Resource{}, time.Minute)
-
-	ns, found := sdc.GetNamespace(test.HttpNsName)
-	assert.False(t, found)
-	assert.Nil(t, ns)
-}
-
-func TestServiceDiscoveryClientCacheGetServiceId_Found(t *testing.T) {
-	sdc := NewDefaultServiceDiscoveryClientCache()
-	sdc.CacheServiceId(test.HttpNsName, test.SvcName, test.SvcId)
-
-	svcId, found := sdc.GetServiceId(test.HttpNsName, test.SvcName)
-	assert.True(t, found)
-	assert.Equal(t, test.SvcId, svcId)
-}
-
-func TestServiceDiscoveryClientCacheGetServiceId_NotFound(t *testing.T) {
+func TestServiceDiscoveryClientCacheGetServiceIdMap_NotFound(t *testing.T) {
 	sdc := NewDefaultServiceDiscoveryClientCache()
 
-	svcId, found := sdc.GetServiceId(test.HttpNsName, test.SvcName)
+	svcIdMap, found := sdc.GetServiceIdMap(test.HttpNsName)
 	assert.False(t, found)
-	assert.Empty(t, svcId)
+	assert.Empty(t, svcIdMap)
 }
 
-func TestServiceDiscoveryClientCacheGetServiceId_Corrupt(t *testing.T) {
-	sdc, ok := NewDefaultServiceDiscoveryClientCache().(*sdCache)
-	if !ok {
-		t.Fatalf("failed to create cache")
-	}
-	sdc.cache.Add(sdc.buildSvcKey(test.HttpNsName, test.SvcName), &model.Resource{}, time.Minute)
-	svcId, found := sdc.GetServiceId(test.HttpNsName, test.SvcName)
+func TestServiceDiscoveryClientCacheGetServiceIdMap_Corrupt(t *testing.T) {
+	sdc := getCacheImpl(t)
+	sdc.cache.Add(sdc.buildSvcKey(test.HttpNsName), &model.Plan{}, time.Minute)
+
+	svcIdMap, found := sdc.GetServiceIdMap(test.HttpNsName)
 	assert.False(t, found)
-	assert.Empty(t, svcId)
+	assert.Empty(t, svcIdMap)
+}
+
+func TestServiceDiscoveryClientEvictServiceIdMap(t *testing.T) {
+	sdc := NewDefaultServiceDiscoveryClientCache()
+	sdc.CacheServiceIdMap(test.HttpNsName, map[string]string{
+		test.SvcName: test.SvcId,
+	})
+	sdc.EvictServiceIdMap(test.HttpNsName)
+
+	svcIdMap, found := sdc.GetServiceIdMap(test.HttpNsName)
+	assert.False(t, found)
+	assert.Empty(t, svcIdMap)
 }
 
 func TestServiceDiscoveryClientCacheGetEndpoints_Found(t *testing.T) {
@@ -119,12 +136,9 @@ func TestServiceDiscoveryClientCacheGetEndpoints_NotFound(t *testing.T) {
 }
 
 func TestServiceDiscoveryClientCacheGetEndpoints_Corrupt(t *testing.T) {
-	sdc, ok := NewDefaultServiceDiscoveryClientCache().(*sdCache)
-	if !ok {
-		t.Fatalf("failed to create cache")
-	}
+	sdc := getCacheImpl(t)
+	sdc.cache.Add(sdc.buildEndptsKey(test.HttpNsName, test.SvcName), &model.Plan{}, time.Minute)
 
-	sdc.cache.Add(sdc.buildEndptsKey(test.HttpNsName, test.SvcName), &model.Resource{}, time.Minute)
 	endpts, found := sdc.GetEndpoints(test.HttpNsName, test.SvcName)
 	assert.False(t, found)
 	assert.Nil(t, endpts)
@@ -138,4 +152,11 @@ func TestServiceDiscoveryClientEvictEndpoints(t *testing.T) {
 	endpts, found := sdc.GetEndpoints(test.HttpNsName, test.SvcName)
 	assert.False(t, found)
 	assert.Nil(t, endpts)
+}
+
+func getCacheImpl(t *testing.T) sdCache {
+	return sdCache{
+		log:   common.NewLoggerWithLogr(testing2.TestLogger{T: t}),
+		cache: cache.NewLRUExpireCache(defaultCacheSize),
+	}
 }
