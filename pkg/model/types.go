@@ -10,12 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 )
 
-// Resource encapsulates a ID/name pair.
-type Resource struct {
-	Id   string
-	Name string
-}
-
 const (
 	HttpNamespaceType       NamespaceType = "HTTP"
 	DnsPrivateNamespaceType NamespaceType = "DNS_PRIVATE"
