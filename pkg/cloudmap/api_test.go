@@ -8,7 +8,6 @@ import (
 
 	cloudmapMock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
@@ -23,7 +22,7 @@ func TestNewServiceDiscoveryApi(t *testing.T) {
 	assert.NotNil(t, sdc)
 }
 
-func TestServiceDiscoveryApi_ListNamespaces_HappyCase(t *testing.T) {
+func TestServiceDiscoveryApi_GetNamespaceMap_HappyCase(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
@@ -39,12 +38,13 @@ func TestServiceDiscoveryApi_ListNamespaces_HappyCase(t *testing.T) {
 	awsFacade.EXPECT().ListNamespaces(context.TODO(), &sd.ListNamespacesInput{}).
 		Return(&sd.ListNamespacesOutput{Namespaces: []types.NamespaceSummary{ns}}, nil)
 
-	namespaces, _ := sdApi.ListNamespaces(context.TODO())
+	namespaces, err := sdApi.GetNamespaceMap(context.TODO())
+	assert.Nil(t, err, "No error for happy case")
 	assert.True(t, len(namespaces) == 1)
-	assert.Equal(t, test.GetTestDnsNamespace(), namespaces[0], "No error for happy case")
+	assert.Equal(t, test.GetTestDnsNamespace(), namespaces[test.DnsNsName])
 }
 
-func TestServiceDiscoveryApi_ListNamespaces_SkipPublicDNSNotSupported(t *testing.T) {
+func TestServiceDiscoveryApi_GetNamespaceMap_SkipPublicDNSNotSupported(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
@@ -60,11 +60,12 @@ func TestServiceDiscoveryApi_ListNamespaces_SkipPublicDNSNotSupported(t *testing
 	awsFacade.EXPECT().ListNamespaces(context.TODO(), &sd.ListNamespacesInput{}).
 		Return(&sd.ListNamespacesOutput{Namespaces: []types.NamespaceSummary{ns}}, nil)
 
-	namespaces, _ := sdApi.ListNamespaces(context.TODO())
-	assert.True(t, len(namespaces) == 0, "Successfully skipped DNS_PUBLIC from the output")
+	namespaces, err := sdApi.GetNamespaceMap(context.TODO())
+	assert.Nil(t, err, "No error for happy case")
+	assert.Empty(t, namespaces, "Successfully skipped DNS_PUBLIC from the output")
 }
 
-func TestServiceDiscoveryApi_ListServices_HappyCase(t *testing.T) {
+func TestServiceDiscoveryApi_GetServiceIdMap_HappyCase(t *testing.T) {
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
@@ -81,10 +82,10 @@ func TestServiceDiscoveryApi_ListServices_HappyCase(t *testing.T) {
 			{Id: aws.String(test.SvcId), Name: aws.String(test.SvcName)},
 		}}, nil)
 
-	svcs, err := sdApi.ListServices(context.TODO(), test.HttpNsId)
+	svcs, err := sdApi.GetServiceIdMap(context.TODO(), test.HttpNsId)
 	assert.Nil(t, err, "No error for happy case")
 	assert.True(t, len(svcs) == 1)
-	assert.Equal(t, svcs[0], &model.Resource{Id: test.SvcId, Name: test.SvcName})
+	assert.Equal(t, svcs[test.SvcName], test.SvcId)
 }
 
 func TestServiceDiscoveryApi_DiscoverInstances_HappyCase(t *testing.T) {
@@ -184,7 +185,8 @@ func TestServiceDiscoveryApi_CreateService_CreateForHttpNamespace(t *testing.T) 
 			},
 		}, nil)
 
-	retSvcId, _ := sdApi.CreateService(context.TODO(), *test.GetTestHttpNamespace(), svcName)
+	retSvcId, err := sdApi.CreateService(context.TODO(), *test.GetTestHttpNamespace(), svcName)
+	assert.Nil(t, err)
 	assert.Equal(t, svcId, retSvcId, "Successfully created service")
 }
 
@@ -212,7 +214,8 @@ func TestServiceDiscoveryApi_CreateService_CreateForDnsNamespace(t *testing.T) {
 			},
 		}, nil)
 
-	retSvcId, _ := sdApi.CreateService(context.TODO(), *test.GetTestDnsNamespace(), svcName)
+	retSvcId, err := sdApi.CreateService(context.TODO(), *test.GetTestDnsNamespace(), svcName)
+	assert.Nil(t, err)
 	assert.Equal(t, svcId, retSvcId, "Successfully created service")
 }
 

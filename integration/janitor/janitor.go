@@ -39,37 +39,31 @@ func NewDefaultJanitor() CloudMapJanitor {
 func (j *cloudMapJanitor) Cleanup(ctx context.Context, nsName string) {
 	fmt.Printf("Cleaning up all test resources in Cloud Map for namespace : %s\n", nsName)
 
-	nsList, err := j.sdApi.ListNamespaces(ctx)
+	nsMap, err := j.sdApi.GetNamespaceMap(ctx)
 	j.checkOrFail(err, "", "could not find namespace to clean")
 
-	var nsId string
-	for _, ns := range nsList {
-		if ns.Name == nsName {
-			nsId = ns.Id
-		}
-	}
-
-	if nsId == "" {
+	ns, found := nsMap[nsName]
+	if !found {
 		fmt.Println("namespace does not exist in account, nothing to clean")
 		return
 	}
 
-	fmt.Printf("found namespace to clean: %s\n", nsId)
+	fmt.Printf("found namespace to clean: %s\n", ns.Id)
 
-	svcs, err := j.sdApi.ListServices(ctx, nsId)
+	svcIdMap, err := j.sdApi.GetServiceIdMap(ctx, ns.Id)
 	j.checkOrFail(err,
-		fmt.Sprintf("namespace has %d services to clean", len(svcs)),
+		fmt.Sprintf("namespace has %d services to clean", len(svcIdMap)),
 		"could not find services to clean")
 
-	for _, svc := range svcs {
-		fmt.Printf("found service to clean: %s\n", svc.Id)
-		j.deregisterInstances(ctx, nsName, svc.Name, svc.Id)
+	for svcName, svcId := range svcIdMap {
+		fmt.Printf("found service to clean: %s\n", svcId)
+		j.deregisterInstances(ctx, nsName, svcName, svcId)
 
-		delSvcErr := j.sdApi.DeleteService(ctx, svc.Id)
+		delSvcErr := j.sdApi.DeleteService(ctx, svcId)
 		j.checkOrFail(delSvcErr, "service deleted", "could not cleanup service")
 	}
 
-	opId, err := j.sdApi.DeleteNamespace(ctx, nsId)
+	opId, err := j.sdApi.DeleteNamespace(ctx, ns.Id)
 	if err == nil {
 		fmt.Println("namespace delete in progress")
 		_, err = j.sdApi.PollNamespaceOperation(ctx, opId)

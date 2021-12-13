@@ -28,10 +28,10 @@ func TestCleanupHappyCase(t *testing.T) {
 	tj := getTestJanitor(t)
 	defer tj.close()
 
-	tj.mockApi.EXPECT().ListNamespaces(context.TODO()).
-		Return([]*model.Namespace{{Id: test.HttpNsId, Name: test.HttpNsName}}, nil)
-	tj.mockApi.EXPECT().ListServices(context.TODO(), test.HttpNsId).
-		Return([]*model.Resource{{Id: test.SvcId, Name: test.SvcName}}, nil)
+	tj.mockApi.EXPECT().GetNamespaceMap(context.TODO()).
+		Return(map[string]*model.Namespace{test.HttpNsName: test.GetTestHttpNamespace()}, nil)
+	tj.mockApi.EXPECT().GetServiceIdMap(context.TODO(), test.HttpNsId).
+		Return(map[string]string{test.SvcName: test.SvcId}, nil)
 	tj.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName).
 		Return([]types.HttpInstanceSummary{{InstanceId: aws.String(test.EndptId1)}}, nil)
 
@@ -54,8 +54,8 @@ func TestCleanupNothingToClean(t *testing.T) {
 	tj := getTestJanitor(t)
 	defer tj.close()
 
-	tj.mockApi.EXPECT().ListNamespaces(context.TODO()).
-		Return([]*model.Namespace{}, nil)
+	tj.mockApi.EXPECT().GetNamespaceMap(context.TODO()).
+		Return(map[string]*model.Namespace{}, nil)
 
 	tj.janitor.Cleanup(context.TODO(), test.HttpNsName)
 	assert.False(t, *tj.failed)
