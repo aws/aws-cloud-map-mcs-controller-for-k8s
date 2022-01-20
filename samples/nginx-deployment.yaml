@@ -1,12 +1,12 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: example
-  name: nginx-deployment
+  namespace: demo
+  name: nginx-demo
   labels:
     app: nginx
 spec:
-  replicas: 5
+  replicas: 3
   selector:
     matchLabels:
       app: nginx
@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: nginx:1.14.2
+          image: nginxdemos/hello:plain-text
           ports:
             - containerPort: 80

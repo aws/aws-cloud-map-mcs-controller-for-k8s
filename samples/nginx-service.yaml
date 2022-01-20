@@ -1,8 +1,8 @@
 kind: Service
 apiVersion: v1
 metadata:
-  namespace: example
-  name: my-service
+  namespace: demo
+  name: nginx-hello
 spec:
   selector:
     app: nginx
