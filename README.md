@@ -13,26 +13,55 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/aws/aws-cloud-map-mcs-controller-for-k8s)](https://goreportcard.com/report/github.com/aws/aws-cloud-map-mcs-controller-for-k8s)
 
 ## Introduction
-AWS Cloud Map multi-cluster service discovery for Kubernetes (K8s) is a controller that implements existing multi-cluster services API that allows services to communicate across multiple clusters. The implementation relies on [AWS Cloud Map](https://aws.amazon.com/cloud-map/) for enabling cross-cluster service discovery.
+The AWS Cloud Map Multi-cluster Service Discovery Controller for Kubernetes (K8s) implements the [multi-cluster services API](https://github.com/kubernetes/enhancements/tree/master/keps/sig-multicluster/1645-multi-cluster-services-api) specification, which allows services to communicate across multiple clusters. The implementation relies on [AWS Cloud Map](https://aws.amazon.com/cloud-map/) for enabling cross-cluster service discovery.
 
 See the demo from AWS Container Day x KubeCon!
 
 [![Watch the video](https://img.youtube.com/vi/3f0Tv7IiQQw/0.jpg)](https://youtu.be/3f0Tv7IiQQw?t=24458)
 
-## Usage
-> ⚠ **There must exist network connectivity (i.e. VPC peering, security group rules, ACLs, etc.) between clusters**: Undefined behavior may occur if controller is set up without network connectivity between clusters.
+## Installation
 
-### Setup clusters
+Perform the following installation steps on each participating cluster.
 
-First, install the controller with latest release on at least 2 AWS EKS clusters. Nodes must have sufficient IAM permissions to perform CloudMap operations.
+- For multi-cluster service discovery and consumption, the controller should be installed on a minimum of 2 EKS clusters.
+- Participating clusters should be provisioned into a single AWS account, within a single AWS region.
 
-> **_NOTE:_** AWS region environment variable can be _optionaly_ set like `export AWS_REGION=us-west-2` Otherwise controller will infer region in the order `AWS_REGION` environment variable, ~/.aws/config file, then EC2 metadata (for EKS environment)
+### Dependencies
+
+#### Network
+
+> ⚠ **The AWS Cloud Map MCS Controller for K8s provides service discovery and communication across multiple clusters, therefore implementations depend on end-end network connectivity between workloads provisioned within each participating cluster.** 
+
+- In deployment scenarios where participating clusters are provisioned into separate VPCs, connectivity will depend on correctly configured  [VPC Peering](https://docs.aws.amazon.com/vpc/latest/peering/create-vpc-peering-connection.html), [inter-VPC routing](https://docs.aws.amazon.com/vpc/latest/peering/vpc-peering-routing.html), and Security Group configuration. The [VPC Reachability Analyzer](https://docs.aws.amazon.com/vpc/latest/reachability/getting-started.html) can be used to test and validate end-end connectivity between worker nodes within each cluster.
+- Undefined behavior may occur if controllers are deployed without the required network connectivity between clusters.
+
+#### Configure CoreDNS
+
+Install the The CoreDNS multicluster plugin into each participating cluster. The multicluster plugin enables CoreDNS to lifecycle manage DNS records for `ServiceImport` objects.
+
+To install the plugin, run the following commands.
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/coredns-clusterrole.yaml
+kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/coredns-configmap.yaml
+kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/coredns-deployment.yaml
+```
+
+### Install Controller
+
+To install the latest release of the controller, run the following commands.
+
+> **_NOTE:_** AWS region environment variable can be _optionaly_ set like `export AWS_REGION=us-west-2` Otherwise the controller will infer region in the order `AWS_REGION` environment variable, ~/.aws/config file, then EC2 metadata (for EKS environment)
 
 ```sh
 kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_release"
 ```
 
 > 📌 See [Releases](#Releases) section for details on how to install other versions.
+
+The controller must have sufficient IAM permissions to perform required Cloud Map operations. Grant IAM access rights `AWSCloudMapFullAccess` to the controller Service Account to enable the controller to manage Cloud Map resources.
+
+## Usage
 
 ### Export services
 
@@ -58,9 +87,9 @@ metadata:
 *See the `samples` directory for a set of example yaml files to set up a service and export it. To apply the sample files run*
 ```sh
 kubectl create namespace example
-kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/nginx-deployment.yaml
-kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/nginx-service.yaml
-kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/nginx-serviceexport.yaml
+kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/example-deployment.yaml
+kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/example-service.yaml
+kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/example-serviceexport.yaml
 ```
 
 ### Import services
