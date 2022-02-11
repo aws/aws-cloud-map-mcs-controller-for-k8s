@@ -13,7 +13,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/aws/aws-cloud-map-mcs-controller-for-k8s)](https://goreportcard.com/report/github.com/aws/aws-cloud-map-mcs-controller-for-k8s)
 
 ## Introduction
-The AWS Cloud Map Multi-cluster Service Discovery Controller for Kubernetes (K8s) implements the [multi-cluster services API](https://github.com/kubernetes/enhancements/tree/master/keps/sig-multicluster/1645-multi-cluster-services-api) specification, which allows services to communicate across multiple clusters. The implementation relies on [AWS Cloud Map](https://aws.amazon.com/cloud-map/) for enabling cross-cluster service discovery.
+The AWS Cloud Map Multi-cluster Service Discovery Controller for Kubernetes (K8s) implements the Kubernetes [multi-cluster services API](https://github.com/kubernetes/enhancements/tree/master/keps/sig-multicluster/1645-multi-cluster-services-api) specification, which allows services to communicate across multiple clusters. The implementation relies on [AWS Cloud Map](https://aws.amazon.com/cloud-map/) for enabling cross-cluster service discovery.
 
 See the demo from AWS Container Day x KubeCon!
 
@@ -42,9 +42,9 @@ Install the The CoreDNS multicluster plugin into each participating cluster. The
 To install the plugin, run the following commands.
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/coredns-clusterrole.yaml
-kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/coredns-configmap.yaml
-kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/coredns-deployment.yaml
+kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/coredns-clusterrole.yaml
+kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/coredns-configmap.yaml
+kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/coredns-deployment.yaml
 ```
 
 ### Install Controller
@@ -84,17 +84,18 @@ metadata:
   name: my-amazing-service
 ```
 
-*See the `samples` directory for a set of example yaml files to set up a service and export it. To apply the sample files run*
+*See the `samples` directory for a set of example yaml files to set up a service and export it. To apply the sample files run the following commands.*
+
 ```sh
 kubectl create namespace example
-kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/example-deployment.yaml
-kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/example-service.yaml
-kubectl apply -f https://raw.githubusercontent.com/aws/aws-cloud-map-mcs-controller-for-k8s/main/samples/example-serviceexport.yaml
+kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/example-deployment.yaml
+kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/example-service.yaml
+kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/example-serviceexport.yaml
 ```
 
 ### Import services
 
-In your other cluster, the controller will automatically sync services registered in AWS Cloud Map by applying the appropriate `ServiceImport`. To list them all, run
+In your other cluster, the controller will automatically sync services registered in AWS Cloud Map by applying the appropriate `ServiceImport`. To list them all, run the following command.
 ```sh
 kubectl get ServiceImport -A
 ```
@@ -105,24 +106,24 @@ AWS Cloud Map MCS Controller for K8s adheres to the [SemVer](https://semver.org/
 
 > **_NOTE:_** AWS region environment variable can be _optionally_ set like `export AWS_REGION=us-west-2` Otherwise controller will infer region in the order `AWS_REGION` environment variable, ~/.aws/config file, then EC2 metadata (for EKS environment)
 
-To install from a release run
+The following command format is used to install from a particular release.
 ```sh
 kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_release[?ref=*git version tag*]"
 ```
 
-Example to install latest release
+Run the following command to install the latest release.
 ```sh
 kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_release"
 ```
 
-Example to install v0.1.0
+The following example will install release v0.1.0.
 ```sh
 kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_release?ref=v0.1.0"
 ```
 
 We also maintain a `latest` tag, which is updated to stay in line with the `main` branch. We **do not** recommend installing this on any production cluster, as any new major versions updated on the `main` branch will introduce breaking changes.
 
-To install from `latest` tag run
+To install from `latest` tag run the following command.
 ```sh
 kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_latest"
 ```
