@@ -62,7 +62,7 @@ tidy:
 
 golangci-lint: ## Download golangci-lint
 	@mkdir -p $(shell pwd)/bin
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell pwd)/bin v1.43.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell pwd)/bin v1.45.2
 
 .PHONY: lint
 lint: golangci-lint ## Run linter

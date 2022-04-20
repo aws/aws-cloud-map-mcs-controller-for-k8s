@@ -11,25 +11,27 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
 
     - name: Set up Go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
         go-version: 1.17
+
+    - name: checkout
+      uses: actions/checkout@v3
 
     - name: Unit tests
       run: make test
 
     - name: Upload code coverage
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v3
       with:
         files: cover.out
 
     - name: golangci-lint
-      uses: golangci/golangci-lint-action@v2
+      uses: golangci/golangci-lint-action@v3
       with:
-        version: v1.43
+        version: v1.45.2
         # Optional: if set to true then the action don't cache or restore ~/go/pkg.
         skip-pkg-cache: true
         # Optional: if set to true then the action don't cache or restore ~/.cache/go-build.
