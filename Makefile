@@ -16,6 +16,16 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+# Find current user version of Go, set golangci-lint version accordingly
+GOLANGCI_VER= 1.43.0
+GO_VER = $(shell go version | awk '{ print $$3 }' | awk -F '.' '{ print $$2 }')
+
+ifeq ($(shell expr $(GO_VER) \> 17), 1)
+GOLANGCI_VER = 1.45.2
+else
+GOLANGCI_VER = 1.43.0
+endif
+
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
@@ -62,7 +72,7 @@ tidy:
 
 golangci-lint: ## Download golangci-lint
 	@mkdir -p $(shell pwd)/bin
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell pwd)/bin v1.45.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell pwd)/bin v$(GOLANGCI_VER)
 
 .PHONY: lint
 lint: golangci-lint ## Run linter
@@ -150,7 +160,7 @@ controller-gen: ## Download controller-gen locally if necessary.
 
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 kustomize: ## Download kustomize locally if necessary.
-	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v3@v3.8.7)
+	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@v4.5.4)
 
 MOCKGEN = $(shell pwd)/bin/mockgen
 mockgen: ## Download mockgen
@@ -159,6 +169,12 @@ mockgen: ## Download mockgen
 KIND = $(shell pwd)/bin/kind
 kind: ## Download kind
 	$(call go-get-tool,$(KIND),sigs.k8s.io/kind@v0.11.1)
+
+
+GOGET_CMD = "install"
+ifeq ($(shell expr $(GO_VER) \< 16), 1)
+GOGET_CMD = "get"
+endif
 
 # go-get-tool will 'go get' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
@@ -169,7 +185,7 @@ TMP_DIR=$$(mktemp -d) ;\
 cd $$TMP_DIR ;\
 go mod init tmp ;\
 echo "Downloading $(2)" ;\
-GOBIN=$(PROJECT_DIR)/bin go get $(2) ;\
+GOBIN=$(PROJECT_DIR)/bin go $(GOGET_CMD) $(2) ;\
 rm -rf $$TMP_DIR ;\
 }
 endef
