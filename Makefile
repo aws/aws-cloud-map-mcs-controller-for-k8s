@@ -168,7 +168,7 @@ mockgen: ## Download mockgen
 
 KIND = $(shell pwd)/bin/kind
 kind: ## Download kind
-	$(call go-get-tool,$(KIND),sigs.k8s.io/kind@v0.11.1)
+	$(call go-get-tool,$(KIND),sigs.k8s.io/kind@v0.13.0)
 
 
 GOGET_CMD = "install"
