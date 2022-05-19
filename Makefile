@@ -16,16 +16,6 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-# Find current user version of Go, set golangci-lint version accordingly
-GOLANGCI_VER= 1.43.0
-GO_VER = $(shell go version | awk '{ print $$3 }' | awk -F '.' '{ print $$2 }')
-
-ifeq ($(shell expr $(GO_VER) \> 17), 1)
-GOLANGCI_VER = 1.45.2
-else
-GOLANGCI_VER = 1.43.0
-endif
-
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
@@ -72,7 +62,7 @@ tidy:
 
 golangci-lint: ## Download golangci-lint
 	@mkdir -p $(shell pwd)/bin
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell pwd)/bin v$(GOLANGCI_VER)
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell pwd)/bin v1.45.2
 
 .PHONY: lint
 lint: golangci-lint ## Run linter
