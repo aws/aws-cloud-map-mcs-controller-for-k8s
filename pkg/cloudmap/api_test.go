@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
-	testingLogger "github.com/go-logr/logr/testing"
+	"github.com/go-logr/logr/testr"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -322,7 +322,7 @@ func TestServiceDiscoveryApi_PollNamespaceOperation_HappyCase(t *testing.T) {
 
 func getServiceDiscoveryApi(t *testing.T, awsFacade *cloudmapMock.MockAwsFacade) ServiceDiscoveryApi {
 	return &serviceDiscoveryApi{
-		log:       common.NewLoggerWithLogr(testingLogger.TestLogger{T: t}),
+		log:       common.NewLoggerWithLogr(testr.New(t)),
 		awsFacade: awsFacade,
 	}
 }

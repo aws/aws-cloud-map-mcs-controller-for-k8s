@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
-	testing2 "github.com/go-logr/logr/testing"
+	"github.com/go-logr/logr/testr"
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -347,7 +347,7 @@ func getTestSdClient(t *testing.T) *testSdClient {
 	mockApi := cloudmapMock.NewMockServiceDiscoveryApi(mockController)
 	return &testSdClient{
 		client: &serviceDiscoveryClient{
-			log:   common.NewLoggerWithLogr(testing2.TestLogger{T: t}),
+			log:   common.NewLoggerWithLogr(testr.New(t)),
 			sdApi: mockApi,
 			cache: mockCache,
 		},
