@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
-	testing2 "github.com/go-logr/logr/testing"
+	"github.com/go-logr/logr/testr"
 	"github.com/golang/mock/gomock"
 
 	"testing"
@@ -170,7 +170,7 @@ func getServiceExportScheme() *runtime.Scheme {
 func getServiceExportReconciler(t *testing.T, mockClient *cloudmapMock.MockServiceDiscoveryClient, client client.Client) *ServiceExportReconciler {
 	return &ServiceExportReconciler{
 		Client:   client,
-		Log:      common.NewLoggerWithLogr(testing2.TestLogger{T: t}),
+		Log:      common.NewLoggerWithLogr(testr.New(t)),
 		Scheme:   client.Scheme(),
 		CloudMap: mockClient,
 	}
