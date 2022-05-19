@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
-	testing2 "github.com/go-logr/logr/testing"
+	"github.com/go-logr/logr/testr"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/util/cache"
 )
@@ -156,7 +156,7 @@ func TestServiceDiscoveryClientEvictEndpoints(t *testing.T) {
 
 func getCacheImpl(t *testing.T) sdCache {
 	return sdCache{
-		log:   common.NewLoggerWithLogr(testing2.TestLogger{T: t}),
+		log:   common.NewLoggerWithLogr(testr.New(t)),
 		cache: cache.NewLRUExpireCache(defaultCacheSize),
 	}
 }
