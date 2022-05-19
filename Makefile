@@ -170,12 +170,6 @@ KIND = $(shell pwd)/bin/kind
 kind: ## Download kind
 	$(call go-get-tool,$(KIND),sigs.k8s.io/kind@v0.13.0)
 
-
-GOGET_CMD = "install"
-ifeq ($(shell expr $(GO_VER) \< 16), 1)
-GOGET_CMD = "get"
-endif
-
 # go-get-tool will 'go get' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 define go-get-tool
@@ -185,7 +179,7 @@ TMP_DIR=$$(mktemp -d) ;\
 cd $$TMP_DIR ;\
 go mod init tmp ;\
 echo "Downloading $(2)" ;\
-GOBIN=$(PROJECT_DIR)/bin go $(GOGET_CMD) $(2) ;\
+GOBIN=$(PROJECT_DIR)/bin go install $(2) ;\
 rm -rf $$TMP_DIR ;\
 }
 endef
