@@ -22,7 +22,7 @@ const (
 	LabelServiceImportName = "multicluster.kubernetes.io/service-name"
 
 	// LabelEntityManagedBy indicates the name of the entity that manages the EndpointSlice.
-	LabelEntityManagedBy = "multicluster.kubernetes.io/managed-by"
+	LabelEntityManagedBy = "endpointslice.kubernetes.io/managed-by"
 
 	// ValueEntityManagedBy indicates the name of the entity that manages the EndpointSlice.
 	ValueEntityManagedBy = "aws-cloud-map-mcs-controller-for-k8s"
