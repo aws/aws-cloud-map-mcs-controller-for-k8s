@@ -68,6 +68,7 @@ func TestCloudMapReconciler_Reconcile(t *testing.T) {
 	assert.NoError(t, err)
 	endpointSlice := endpointSliceList.Items[0]
 	assert.Equal(t, test.SvcName, endpointSlice.Labels["multicluster.kubernetes.io/service-name"], "Endpoint slice is created")
+	assert.Contains(t, endpointSlice.Labels, LabelEntityManagedBy, "Managed by label is added")
 	assert.Equal(t, int32(test.Port1), *endpointSlice.Ports[0].Port)
 	assert.Equal(t, test.EndptIp1, endpointSlice.Endpoints[0].Addresses[0])
 }
