@@ -93,8 +93,24 @@ integration-run: ## Run the integration test controller
 	@./integration/scripts/run-tests.sh
 
 integration-cleanup: kind  ## Cleanup integration test resources in Cloud Map and local kind cluster
-	@./integration/scripts/cleanup-cloudmap.sh
+	@./integration/scripts/cleanup-cloudmap.sh ./integration/scripts/common.sh
 	@./integration/scripts/cleanup-kind.sh
+
+
+eks-integration-suite: ## Provision and run EKS integration tests with cleanup
+	make eks-integration-setup && \
+	make eks-integration-run && \
+	make eks-integration-cleanup
+
+eks-integration-setup: build kind test-setup ## Setup the integration test using EKS clusters
+	@./integration/eks-test/scripts/eks-setup.sh
+
+eks-integration-run: ## Run the integration test controller
+	@./integration/eks-test/scripts/eks-run-tests.sh
+
+eks-integration-cleanup: kind  ## Cleanup integration test resources in Cloud Map and EKS cluster
+	@./integration/eks-test/scripts/eks-cleanup.sh
+	@./integration/scripts/cleanup-cloudmap.sh ./integration/eks-test/scripts/eks-common.sh
 
 ##@ Build
 

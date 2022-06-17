@@ -8,7 +8,7 @@ $KUBECTL_BIN apply -f "$CONFIGS/e2e-deployment.yaml"
 $KUBECTL_BIN apply -f "$CONFIGS/e2e-service.yaml"
 $KUBECTL_BIN apply -f "$CONFIGS/e2e-export.yaml"
 
-if ! endpts=$(./integration/scripts/poll-endpoints.sh "$EXPECTED_ENDPOINT_COUNT") ; then
+if ! endpts=$(./integration/scripts/poll-endpoints.sh "$EXPECTED_ENDPOINT_COUNT" ./integration/scripts/common.sh) ; then
   exit $?
 fi
 
@@ -21,7 +21,7 @@ go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $ENDPT_PORT $SERVICE_PORT "
 exit_code=$?
 
 if [ "$exit_code" -eq 0 ] ; then
-  ./integration/scripts/test-import.sh "$EXPECTED_ENDPOINT_COUNT" "$endpts"
+  ./integration/scripts/test-import.sh "$EXPECTED_ENDPOINT_COUNT" "$endpts" ./integration/scripts/common.sh
   exit_code=$?
 fi
 
@@ -35,7 +35,7 @@ $KUBECTL_BIN scale deployment/"$deployment" --replicas="$UPDATED_ENDPOINT_COUNT"
 exit_code=$?
 
 if [ "$exit_code" -eq 0 ] ; then
-  if ! updated_endpoints=$(./integration/scripts/poll-endpoints.sh "$UPDATED_ENDPOINT_COUNT") ; then
+  if ! updated_endpoints=$(./integration/scripts/poll-endpoints.sh "$UPDATED_ENDPOINT_COUNT" ./integration/scripts/common.sh) ; then
     exit $?
   fi
 
@@ -43,7 +43,7 @@ if [ "$exit_code" -eq 0 ] ; then
   exit_code=$?
 
   if [ "$exit_code" -eq 0 ] ; then
-    ./integration/scripts/test-import.sh "$UPDATED_ENDPOINT_COUNT" "$updated_endpoints"
+    ./integration/scripts/test-import.sh "$UPDATED_ENDPOINT_COUNT" "$updated_endpoints" ./integration/scripts/common.sh
     exit_code=$?
   fi
 fi
