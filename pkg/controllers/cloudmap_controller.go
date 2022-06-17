@@ -35,19 +35,24 @@ type CloudMapReconciler struct {
 
 // Start implements manager.Runnable
 func (r *CloudMapReconciler) Start(ctx context.Context) error {
+	r.Log.Info("This is a Matthew Goodman special!")
 	ticker := time.NewTicker(syncPeriod)
 	defer ticker.Stop()
 	for {
+		start := time.Now()
 		if err := r.Reconcile(ctx); err != nil {
 			// just log the error and continue running
 			r.Log.Error(err, "Cloud Map reconciliation error")
 		}
+		r.Log.Debug("Recon complete!", "duration", time.Since(start))
+
 		select {
 		case <-ticker.C:
 		case <-ctx.Done():
 			r.Log.Info("terminating CloudMapReconciler")
 			return nil
 		}
+
 	}
 }
 
@@ -205,7 +210,11 @@ func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport
 		ServiceImportName: svcImport.Name,
 	}
 
+	// CHANGES HERE!
+	start := time.Now()
 	changes := plan.CalculateChanges()
+	elapsed := time.Since(start)
+	r.Log.Info("CalculateChanges", "elapsed", elapsed)
 
 	for _, sliceToUpdate := range changes.Update {
 		r.Log.Debug("updating EndpointSlice", "namespace", sliceToUpdate.Namespace, "name", sliceToUpdate.Name)
