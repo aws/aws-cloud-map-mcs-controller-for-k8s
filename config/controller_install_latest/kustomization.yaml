@@ -3,5 +3,5 @@ bases:
 
 images:
 - name: controller
-  newName: ghcr.io/aws/aws-cloud-map-mcs-controller-for-k8s
+  newName: ghcr.io/matthewgoodman13/aws-cloud-map-mcs-controller-for-k8s
   newTag: latest
