@@ -19,6 +19,11 @@ if [ "$exit_code" -eq 0 ] ; then
   $KUBECTL_BIN config use-context $CLUSTER_2
   ./integration/scripts/test-import.sh "$EXPECTED_ENDPOINT_COUNT" "$endpts" ./integration/eks-test/scripts/eks-common.sh
   exit_code=$?
+  
+  if [ "$exit_code" -eq 0 ] ; then
+    ./integration/eks-test/scripts/eks-DNS-test.sh ./integration/eks-test/scripts/eks-common.sh
+    exit_code=$?
+  fi
 fi
 
 echo "sleeping..."
@@ -44,6 +49,11 @@ if [ "$exit_code" -eq 0 ] ; then
     $KUBECTL_BIN config use-context $CLUSTER_2
     ./integration/scripts/test-import.sh "$UPDATED_ENDPOINT_COUNT" "$updated_endpoints" ./integration/eks-test/scripts/eks-common.sh
     exit_code=$?
+    
+    if [ "$exit_code" -eq 0 ] ; then
+      ./integration/eks-test/scripts/eks-DNS-test.sh ./integration/eks-test/scripts/eks-common.sh
+      exit_code=$?
+    fi
   fi
 fi
 

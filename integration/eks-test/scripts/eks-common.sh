@@ -8,6 +8,7 @@ SCENARIOS='./integration/scenarios'
 NAMESPACE='demo'
 CM_NAMESPACE='cloud-map-mcs-system'
 SERVICE='nginx-hello'
+POD='client-hello'
 ENDPT_PORT=80
 SERVICE_PORT=80 # from nginx-service.yaml
 CLUSTER_1='cls1'

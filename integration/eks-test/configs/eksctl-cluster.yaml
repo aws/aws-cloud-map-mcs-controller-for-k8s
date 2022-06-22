@@ -3,7 +3,7 @@ kind: ClusterConfig
 metadata:
   name: $CLUSTER_NAME
   region: $AWS_REGION
-  version: "1.21"
+  version: "1.22"
 vpc:
   cidr: $VPC_CIDR
   autoAllocateIPv6: false
@@ -12,7 +12,7 @@ vpc:
     privateAccess: true
 managedNodeGroups:
 - name: $NODEGROUP_NAME
-  instanceType: t2.small
+  instanceType: t3.small
   minSize: 1
   maxSize: 10
   desiredCapacity: 1
