@@ -60,6 +60,7 @@ if [ "$exit_code" -eq 0 ] ; then
 fi
 
 # dump logs
+mkdir -p "$LOGS"
 $KUBECTL_BIN config use-context $CLUSTER_1
 $KUBECTL_BIN logs -l control-plane=controller-manager -c manager --namespace cloud-map-mcs-system &> "$LOGS/ctl-1.log" 
 $KUBECTL_BIN config use-context $CLUSTER_2

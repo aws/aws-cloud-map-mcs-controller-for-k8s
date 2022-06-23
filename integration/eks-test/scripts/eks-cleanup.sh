@@ -16,7 +16,7 @@ $KUBECTL_BIN delete pod $POD -n $NAMESPACE
 $KUBECTL_BIN delete namespaces $NAMESPACE
 
 # $KUBECTL_BIN config use-context $CLUSTER_1
-# kubectl delete -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_latest"
+kubectl delete -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_latest"
 # $KUBECTL_BIN config use-context $CLUSTER_2
-# kubectl delete -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_latest"
+kubectl delete -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_latest"
 

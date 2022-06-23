@@ -25,4 +25,5 @@ $KUBECTL_BIN apply -f "$CONFIGS/nginx-serviceexport.yaml"
 # Create client-hello pod
 $KUBECTL_BIN config use-context $CLUSTER_2
 $KUBECTL_BIN apply -f "$CONFIGS/client-hello.yaml"
+sleep 30s
 $KUBECTL_BIN exec $POD -n $NAMESPACE /bin/sh -- apk add curl ## install curl
