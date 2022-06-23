@@ -30,29 +30,31 @@ echo "sleeping..."
 sleep 2s
 
 # Scaling and verifying deployment
-$KUBECTL_BIN config use-context $CLUSTER_1
-deployment=$($KUBECTL_BIN get deployment --namespace "$NAMESPACE" -o json | jq -r '.items[0].metadata.name')
-
-echo "scaling the deployment $deployment to $UPDATED_ENDPOINT_COUNT"
-$KUBECTL_BIN scale deployment/"$deployment" --replicas="$UPDATED_ENDPOINT_COUNT" --namespace "$NAMESPACE"
-exit_code=$?
-
 if [ "$exit_code" -eq 0 ] ; then
-  if ! updated_endpoints=$(./integration/scripts/poll-endpoints.sh "$UPDATED_ENDPOINT_COUNT" ./integration/eks-test/scripts/eks-common.sh) ; then
-    exit $?
-  fi
+  $KUBECTL_BIN config use-context $CLUSTER_1
+  deployment=$($KUBECTL_BIN get deployment --namespace "$NAMESPACE" -o json | jq -r '.items[0].metadata.name')
 
-  go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $ENDPT_PORT $SERVICE_PORT "$updated_endpoints"
+  echo "scaling the deployment $deployment to $UPDATED_ENDPOINT_COUNT"
+  $KUBECTL_BIN scale deployment/"$deployment" --replicas="$UPDATED_ENDPOINT_COUNT" --namespace "$NAMESPACE"
   exit_code=$?
 
   if [ "$exit_code" -eq 0 ] ; then
-    $KUBECTL_BIN config use-context $CLUSTER_2
-    ./integration/scripts/test-import.sh "$UPDATED_ENDPOINT_COUNT" "$updated_endpoints" ./integration/eks-test/scripts/eks-common.sh
+    if ! updated_endpoints=$(./integration/scripts/poll-endpoints.sh "$UPDATED_ENDPOINT_COUNT" ./integration/eks-test/scripts/eks-common.sh) ; then
+      exit $?
+    fi
+
+    go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $ENDPT_PORT $SERVICE_PORT "$updated_endpoints"
     exit_code=$?
-    
+
     if [ "$exit_code" -eq 0 ] ; then
-      ./integration/eks-test/scripts/eks-DNS-test.sh ./integration/eks-test/scripts/eks-common.sh
+      $KUBECTL_BIN config use-context $CLUSTER_2
+      ./integration/scripts/test-import.sh "$UPDATED_ENDPOINT_COUNT" "$updated_endpoints" ./integration/eks-test/scripts/eks-common.sh
       exit_code=$?
+      
+      if [ "$exit_code" -eq 0 ] ; then
+        ./integration/eks-test/scripts/eks-DNS-test.sh ./integration/eks-test/scripts/eks-common.sh
+        exit_code=$?
+      fi
     fi
   fi
 fi
@@ -64,3 +66,4 @@ $KUBECTL_BIN config use-context $CLUSTER_2
 $KUBECTL_BIN logs -l control-plane=controller-manager -c manager --namespace cloud-map-mcs-system &> "$LOGS/ctl-2.log" 
 echo "dumped logs"
 
+exit $exit_code
