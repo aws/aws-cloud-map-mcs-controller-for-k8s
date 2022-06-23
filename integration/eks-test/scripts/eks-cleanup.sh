@@ -12,6 +12,7 @@ $KUBECTL_BIN delete namespaces $NAMESPACE
 sleep 60s
 
 $KUBECTL_BIN config use-context $CLUSTER_2
+$KUBECTL_BIN delete pod $POD -n $NAMESPACE
 $KUBECTL_BIN delete namespaces $NAMESPACE
 
 # $KUBECTL_BIN config use-context $CLUSTER_1
