@@ -2,7 +2,7 @@
 
 source ./integration/eks-test/scripts/eks-common.sh
 
-# Adding IAMService
+# Adding IAM service accounts
 $KUBECTL_BIN config use-context $CLUSTER_1
 kubectl create namespace cloud-map-mcs-system
 eksctl create iamserviceaccount \
