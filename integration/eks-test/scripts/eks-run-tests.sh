@@ -6,7 +6,7 @@ source ./integration/eks-test/scripts/eks-common.sh
 
 # Checking expected endpoints number in Cluster 1
 $KUBECTL_BIN config use-context $CLUSTER_1
-if ! endpts=$(./integration/scripts/poll-endpoints.sh "$EXPECTED_ENDPOINT_COUNT" ./integration/eks-test/scripts/eks-common.sh); then
+if ! endpts=$(./integration/shared/scripts/poll-endpoints.sh "$EXPECTED_ENDPOINT_COUNT" ./integration/eks-test/scripts/eks-common.sh); then
     exit $?
 fi
 
@@ -17,7 +17,7 @@ exit_code=$?
 # Check imported endpoints
 if [ "$exit_code" -eq 0 ] ; then
   $KUBECTL_BIN config use-context $CLUSTER_2
-  ./integration/scripts/test-import.sh "$EXPECTED_ENDPOINT_COUNT" "$endpts" ./integration/eks-test/scripts/eks-common.sh
+  ./integration/shared/scripts/test-import.sh "$EXPECTED_ENDPOINT_COUNT" "$endpts" ./integration/eks-test/scripts/eks-common.sh
   exit_code=$?
   
   if [ "$exit_code" -eq 0 ] ; then
@@ -39,7 +39,7 @@ if [ "$exit_code" -eq 0 ] ; then
   exit_code=$?
 
   if [ "$exit_code" -eq 0 ] ; then
-    if ! updated_endpoints=$(./integration/scripts/poll-endpoints.sh "$UPDATED_ENDPOINT_COUNT" ./integration/eks-test/scripts/eks-common.sh) ; then
+    if ! updated_endpoints=$(./integration/shared/scripts/poll-endpoints.sh "$UPDATED_ENDPOINT_COUNT" ./integration/eks-test/scripts/eks-common.sh) ; then
       exit $?
     fi
 
@@ -48,7 +48,7 @@ if [ "$exit_code" -eq 0 ] ; then
 
     if [ "$exit_code" -eq 0 ] ; then
       $KUBECTL_BIN config use-context $CLUSTER_2
-      ./integration/scripts/test-import.sh "$UPDATED_ENDPOINT_COUNT" "$updated_endpoints" ./integration/eks-test/scripts/eks-common.sh
+      ./integration/shared/scripts/test-import.sh "$UPDATED_ENDPOINT_COUNT" "$updated_endpoints" ./integration/eks-test/scripts/eks-common.sh
       exit_code=$?
       
       if [ "$exit_code" -eq 0 ] ; then

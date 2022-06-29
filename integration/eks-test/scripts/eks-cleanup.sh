@@ -7,8 +7,11 @@ source ./integration/eks-test/scripts/eks-common.sh
 # Delete service and namespace from cluster 1 & 2
 $KUBECTL_BIN config use-context $CLUSTER_1
 $KUBECTL_BIN delete svc $SERVICE -n $NAMESPACE
-$KUBECTL_BIN get -n demo "$CRD_IMPORT" -o name | xargs -I {} $KUBECTL_BIN patch {} --type merge -p '{"metadata":{"finalizers": [null]}}'
-$KUBECTL_BIN get -n demo "$CRD_EXPORT" -o name | xargs -I {} $KUBECTL_BIN patch {} --type merge -p '{"metadata":{"finalizers": [null]}}'
+
+for CRD in $($KUBECTL_BIN get crd -n $NAMESPACE | grep multicluster | cut -d " " -f 1 | xargs); do 
+    $KUBECTL_BIN patch crd -n $NAMESPACE $CRD --type merge -p '{"metadata":{"finalizers": [null]}}'; 
+done
+
 $KUBECTL_BIN delete namespaces $NAMESPACE
 eksctl delete iamserviceaccount \
     --name cloud-map-mcs-controller-manager \
