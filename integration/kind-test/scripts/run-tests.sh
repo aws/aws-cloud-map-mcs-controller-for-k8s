@@ -2,13 +2,13 @@
 
 # Runs the AWS Cloud Map MCS Controller for K8s as a background process and tests services have been exported
 
-source ./integration/scripts/common.sh
+source ./integration/kind-test/scripts/common.sh
 
 $KUBECTL_BIN apply -f "$CONFIGS/e2e-deployment.yaml"
 $KUBECTL_BIN apply -f "$CONFIGS/e2e-service.yaml"
 $KUBECTL_BIN apply -f "$CONFIGS/e2e-export.yaml"
 
-if ! endpts=$(./integration/scripts/poll-endpoints.sh "$EXPECTED_ENDPOINT_COUNT") ; then
+if ! endpts=$(./integration/shared/scripts/poll-endpoints.sh "$EXPECTED_ENDPOINT_COUNT" ./integration/kind-test/scripts/common.sh) ; then
   exit $?
 fi
 
@@ -21,7 +21,7 @@ go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $ENDPT_PORT $SERVICE_PORT "
 exit_code=$?
 
 if [ "$exit_code" -eq 0 ] ; then
-  ./integration/scripts/test-import.sh "$EXPECTED_ENDPOINT_COUNT" "$endpts"
+  ./integration/shared/scripts/test-import.sh "$EXPECTED_ENDPOINT_COUNT" "$endpts" ./integration/kind-test/scripts/common.sh
   exit_code=$?
 fi
 
@@ -35,7 +35,7 @@ $KUBECTL_BIN scale deployment/"$deployment" --replicas="$UPDATED_ENDPOINT_COUNT"
 exit_code=$?
 
 if [ "$exit_code" -eq 0 ] ; then
-  if ! updated_endpoints=$(./integration/scripts/poll-endpoints.sh "$UPDATED_ENDPOINT_COUNT") ; then
+  if ! updated_endpoints=$(./integration/shared/scripts/poll-endpoints.sh "$UPDATED_ENDPOINT_COUNT" ./integration/kind-test/scripts/common.sh) ; then
     exit $?
   fi
 
@@ -43,7 +43,7 @@ if [ "$exit_code" -eq 0 ] ; then
   exit_code=$?
 
   if [ "$exit_code" -eq 0 ] ; then
-    ./integration/scripts/test-import.sh "$UPDATED_ENDPOINT_COUNT" "$updated_endpoints"
+    ./integration/shared/scripts/test-import.sh "$UPDATED_ENDPOINT_COUNT" "$updated_endpoints" ./integration/kind-test/scripts/common.sh
     exit_code=$?
   fi
 fi

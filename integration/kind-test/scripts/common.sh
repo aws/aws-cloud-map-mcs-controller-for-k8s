@@ -2,9 +2,9 @@
 
 KIND_BIN='./bin/kind'
 KUBECTL_BIN='./testbin/bin/kubectl'
-LOGS='./integration/testlog'
-CONFIGS='./integration/configs'
-SCENARIOS='./integration/scenarios'
+LOGS='./integration/kind-test/testlog'
+CONFIGS='./integration/kind-test/configs'
+SCENARIOS='./integration/shared/scenarios'
 NAMESPACE='aws-cloud-map-mcs-e2e'
 SERVICE='e2e-service'
 ENDPT_PORT=80

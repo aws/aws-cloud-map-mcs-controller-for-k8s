@@ -4,10 +4,10 @@
 
 set -e
 
-source ./integration/scripts/common.sh
+source $3
 
-if [ "$#" -ne 2 ]; then
-    echo "test script expects \"expected number of endpoints\" and endpoints IP list as arguments"
+if [ "$#" -ne 3 ]; then
+    echo "test script expects \"expected number of endpoints\", endpoints IP list, and common.sh as arguments"
     exit 1
 fi
 
