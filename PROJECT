@@ -3,6 +3,7 @@ layout:
 - go.kubebuilder.io/v3
 projectName: aws-cloud-map-mcs-controller-for-k8s
 repo: github.com/aws/aws-cloud-map-mcs-controller-for-k8s
+multigroup: true
 resources:
 - api:
     crdVersion: v1
