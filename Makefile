@@ -79,18 +79,18 @@ test-setup: ## setup test environment
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.3/hack/setup-envtest.sh
 	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR)
 
-integration-suite: ## Provision and run integration tests with cleanup
-	make integration-setup && \
-	make integration-run && \
-	make integration-cleanup
+kind-integration-suite: ## Provision and run integration tests with cleanup
+	make kind-integration-setup && \
+	make kind-integration-run && \
+	make kind-integration-cleanup
 
-integration-setup: build kind test-setup ## Setup the integration test using kind clusters
+kind-integration-setup: build kind test-setup ## Setup the integration test using kind clusters
 	@./integration/kind-test/scripts/setup-kind.sh
 
-integration-run: ## Run the integration test controller
+kind-integration-run: ## Run the integration test controller
 	@./integration/kind-test/scripts/run-tests.sh
 
-integration-cleanup: kind  ## Cleanup integration test resources in Cloud Map and local kind cluster
+kind-integration-cleanup: kind  ## Cleanup integration test resources in Cloud Map and local kind cluster
 	@./integration/shared/scripts/cleanup-cloudmap.sh ./integration/kind-test/scripts/common.sh
 	@./integration/kind-test/scripts/cleanup-kind.sh
 

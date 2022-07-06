@@ -1,7 +1,0 @@
-bases:
-- ../default
-
-images:
-- name: controller
-  newName: ghcr.io/aws/aws-cloud-map-mcs-controller-for-k8s # update this to whatever image i want
-  newTag: latest
