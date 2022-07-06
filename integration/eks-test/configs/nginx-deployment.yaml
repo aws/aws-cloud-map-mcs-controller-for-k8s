@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: demo
+  namespace: aws-cloud-map-mcs-eks-e2e
   name: nginx-demo
   labels:
     app: nginx

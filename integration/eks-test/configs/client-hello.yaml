@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: client-hello
-  namespace: demo
+  namespace: aws-cloud-map-mcs-eks-e2e
 spec:
   containers:
     - command:

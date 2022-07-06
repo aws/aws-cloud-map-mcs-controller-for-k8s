@@ -1,7 +1,7 @@
 kind: Service
 apiVersion: v1
 metadata:
-  namespace: demo
+  namespace: aws-cloud-map-mcs-eks-e2e
   name: nginx-hello
 spec:
   selector:
