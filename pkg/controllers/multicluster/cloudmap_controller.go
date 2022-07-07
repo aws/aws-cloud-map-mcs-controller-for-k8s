@@ -186,6 +186,7 @@ func (r *CloudMapReconciler) createAndGetServiceImport(ctx context.Context, name
 }
 
 func (r *CloudMapReconciler) getDerivedService(ctx context.Context, namespace string, name string) (*v1.Service, error) {
+	r.Log.Debug("fetching derived service", "namespace", namespace, "name", name)
 	existingService := &v1.Service{}
 	err := r.Client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, existingService)
 	return existingService, err

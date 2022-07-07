@@ -89,7 +89,9 @@ func PortToEndpointPort(port model.Port) discovery.EndpointPort {
 func ExtractServicePorts(endpoints []*model.Endpoint) (servicePorts []*model.Port) {
 	uniquePorts := make(map[string]model.Port)
 	for _, ep := range endpoints {
-		uniquePorts[ep.ServicePort.GetID()] = ep.ServicePort
+		servicePort := ep.ServicePort
+		servicePort.Attributes = ep.Attributes
+		uniquePorts[ep.ServicePort.GetID()] = servicePort
 	}
 	for _, servicePort := range uniquePorts {
 		portRef := servicePort
