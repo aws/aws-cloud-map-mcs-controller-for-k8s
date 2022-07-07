@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
+	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
@@ -77,13 +77,13 @@ func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceNa
 		return err
 	}
 
-	serviceImports := v1alpha1.ServiceImportList{}
+	serviceImports := multiclusterv1alpha1.ServiceImportList{}
 	if err = r.Client.List(ctx, &serviceImports, client.InNamespace(namespaceName)); err != nil {
 		r.Log.Error(err, "failed to reconcile namespace", "namespace", namespaceName)
 		return nil
 	}
 
-	existingImportsMap := make(map[string]v1alpha1.ServiceImport)
+	existingImportsMap := make(map[string]multiclusterv1alpha1.ServiceImport)
 	for _, svc := range serviceImports.Items {
 		existingImportsMap[svc.Namespace+"/"+svc.Name] = svc
 	}
@@ -154,13 +154,13 @@ func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Se
 	return r.updateEndpointSlices(ctx, svcImport, svc.Endpoints, derivedService)
 }
 
-func (r *CloudMapReconciler) getServiceImport(ctx context.Context, namespace string, name string) (*v1alpha1.ServiceImport, error) {
-	existingServiceImport := &v1alpha1.ServiceImport{}
+func (r *CloudMapReconciler) getServiceImport(ctx context.Context, namespace string, name string) (*multiclusterv1alpha1.ServiceImport, error) {
+	existingServiceImport := &multiclusterv1alpha1.ServiceImport{}
 	err := r.Client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, existingServiceImport)
 	return existingServiceImport, err
 }
 
-func (r *CloudMapReconciler) createAndGetServiceImport(ctx context.Context, namespace string, name string, servicePorts []*model.Port) (*v1alpha1.ServiceImport, error) {
+func (r *CloudMapReconciler) createAndGetServiceImport(ctx context.Context, namespace string, name string, servicePorts []*model.Port) (*multiclusterv1alpha1.ServiceImport, error) {
 	toCreate := CreateServiceImportStruct(namespace, name, servicePorts)
 	if err := r.Client.Create(ctx, toCreate); err != nil {
 		return nil, err
@@ -176,7 +176,7 @@ func (r *CloudMapReconciler) getDerivedService(ctx context.Context, namespace st
 	return existingService, err
 }
 
-func (r *CloudMapReconciler) createAndGetDerivedService(ctx context.Context, svcImport *v1alpha1.ServiceImport, svcPorts []*model.Port) (*v1.Service, error) {
+func (r *CloudMapReconciler) createAndGetDerivedService(ctx context.Context, svcImport *multiclusterv1alpha1.ServiceImport, svcPorts []*model.Port) (*v1.Service, error) {
 	toCreate := CreateDerivedServiceStruct(svcImport, svcPorts)
 	if err := r.Client.Create(ctx, toCreate); err != nil {
 		return nil, err
@@ -186,7 +186,7 @@ func (r *CloudMapReconciler) createAndGetDerivedService(ctx context.Context, svc
 	return r.getDerivedService(ctx, toCreate.Namespace, svcImport.Annotations[DerivedServiceAnnotation])
 }
 
-func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport *v1alpha1.ServiceImport, desiredEndpoints []*model.Endpoint, svc *v1.Service) error {
+func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport *multiclusterv1alpha1.ServiceImport, desiredEndpoints []*model.Endpoint, svc *v1.Service) error {
 	existingSlicesList := discovery.EndpointSliceList{}
 	if err := r.Client.List(ctx, &existingSlicesList,
 		client.InNamespace(svc.Namespace), client.MatchingLabels{discovery.LabelServiceName: svc.Name}); err != nil {
@@ -231,7 +231,7 @@ func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport
 	return nil
 }
 
-func (r *CloudMapReconciler) updateServiceImport(ctx context.Context, svcImport *v1alpha1.ServiceImport, svc *v1.Service, importedSvcPorts []*model.Port) error {
+func (r *CloudMapReconciler) updateServiceImport(ctx context.Context, svcImport *multiclusterv1alpha1.ServiceImport, svc *v1.Service, importedSvcPorts []*model.Port) error {
 	updateRequired := false
 	if len(svcImport.Spec.IPs) != 1 || svcImport.Spec.IPs[0] != svc.Spec.ClusterIP {
 		r.Log.Debug("ServiceImport IP need update", "ServiceImport IPs", svcImport.Spec.IPs, "cluster IP", svc.Spec.ClusterIP)
@@ -257,7 +257,7 @@ func (r *CloudMapReconciler) updateServiceImport(ctx context.Context, svcImport 
 
 	if !PortsEqualIgnoreOrder(svcImportPorts, simplifiedSvcPorts) {
 		r.Log.Debug("ServiceImport ports need update", "ServiceImport Ports", svcImport.Spec.Ports, "imported ports", importedSvcPorts)
-		serviceImportPorts := make([]v1alpha1.ServicePort, 0)
+		serviceImportPorts := make([]multiclusterv1alpha1.ServicePort, 0)
 		for _, port := range importedSvcPorts {
 			serviceImportPorts = append(serviceImportPorts, PortToServiceImportPort(*port))
 		}

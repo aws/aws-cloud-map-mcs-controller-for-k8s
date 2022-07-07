@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	cloudmapMock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
+	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
@@ -27,7 +27,7 @@ func TestCloudMapReconciler_Reconcile(t *testing.T) {
 	objs := []runtime.Object{k8sNamespaceForTest()}
 
 	s := scheme.Scheme
-	s.AddKnownTypes(v1alpha1.GroupVersion, &v1alpha1.ServiceImportList{}, &v1alpha1.ServiceImport{})
+	s.AddKnownTypes(multiclusterv1alpha1.GroupVersion, &multiclusterv1alpha1.ServiceImportList{}, &multiclusterv1alpha1.ServiceImport{})
 
 	fakeClient := fake.NewClientBuilder().WithRuntimeObjects(objs...).Build()
 
@@ -48,7 +48,7 @@ func TestCloudMapReconciler_Reconcile(t *testing.T) {
 	}
 
 	// assert service import object
-	serviceImport := &v1alpha1.ServiceImport{}
+	serviceImport := &multiclusterv1alpha1.ServiceImport{}
 	err = fakeClient.Get(context.TODO(), types.NamespacedName{Namespace: test.HttpNsName, Name: test.SvcName}, serviceImport)
 	assert.NoError(t, err)
 	assert.Equal(t, test.SvcName, serviceImport.Name, "Service imported")

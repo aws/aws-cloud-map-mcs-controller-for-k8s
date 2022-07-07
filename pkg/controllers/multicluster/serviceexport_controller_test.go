@@ -4,7 +4,7 @@ import (
 	"context"
 
 	cloudmapMock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
+	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
@@ -65,7 +65,7 @@ func TestServiceExportReconciler_Reconcile_NewServiceExport(t *testing.T) {
 	}
 	assert.Equal(t, ctrl.Result{}, got, "Result should be empty")
 
-	serviceExport := &v1alpha1.ServiceExport{}
+	serviceExport := &multiclusterv1alpha1.ServiceExport{}
 	err = fakeClient.Get(context.TODO(), types.NamespacedName{Namespace: test.HttpNsName, Name: test.SvcName}, serviceExport)
 	assert.NoError(t, err)
 	assert.Contains(t, serviceExport.Finalizers, ServiceExportFinalizer, "Finalizer added to the service export")
@@ -109,7 +109,7 @@ func TestServiceExportReconciler_Reconcile_ExistingServiceExport(t *testing.T) {
 	}
 	assert.Equal(t, ctrl.Result{}, got, "Result should be empty")
 
-	serviceExport := &v1alpha1.ServiceExport{}
+	serviceExport := &multiclusterv1alpha1.ServiceExport{}
 	err = fakeClient.Get(context.TODO(), types.NamespacedName{Namespace: test.HttpNsName, Name: test.SvcName}, serviceExport)
 	assert.NoError(t, err)
 	assert.Contains(t, serviceExport.Finalizers, ServiceExportFinalizer, "Finalizer added to the service export")
@@ -153,7 +153,7 @@ func TestServiceExportReconciler_Reconcile_DeleteExistingService(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, ctrl.Result{}, got, "Result should be empty")
 
-	serviceExport := &v1alpha1.ServiceExport{}
+	serviceExport := &multiclusterv1alpha1.ServiceExport{}
 	err = fakeClient.Get(context.TODO(), types.NamespacedName{Namespace: test.HttpNsName, Name: test.SvcName}, serviceExport)
 	assert.NoError(t, err)
 	assert.Empty(t, serviceExport.Finalizers, "Finalizer removed from the service export")
@@ -161,7 +161,7 @@ func TestServiceExportReconciler_Reconcile_DeleteExistingService(t *testing.T) {
 
 func getServiceExportScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
-	scheme.AddKnownTypes(v1alpha1.GroupVersion, &v1alpha1.ServiceExport{})
+	scheme.AddKnownTypes(multiclusterv1alpha1.GroupVersion, &multiclusterv1alpha1.ServiceExport{})
 	scheme.AddKnownTypes(v1.SchemeGroupVersion, &v1.Service{})
 	scheme.AddKnownTypes(discovery.SchemeGroupVersion, &discovery.EndpointSlice{}, &discovery.EndpointSliceList{})
 	return scheme
