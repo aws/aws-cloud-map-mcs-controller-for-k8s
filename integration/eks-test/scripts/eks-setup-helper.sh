@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-source ./integration/eks-test/scripts/eks-common.sh
-
 # Adding IAM service accounts
 $KUBECTL_BIN config use-context $1
 kubectl create namespace $MCS_NAMESPACE

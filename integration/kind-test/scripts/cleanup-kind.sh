@@ -6,3 +6,5 @@ set -eo pipefail
 source ./integration/kind-test/scripts/common.sh
 
 $KIND_BIN delete cluster --name "$KIND_SHORT"
+
+./integration/shared/scripts/cleanup-cloudmap.sh

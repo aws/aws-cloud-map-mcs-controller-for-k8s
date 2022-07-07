@@ -3,7 +3,6 @@
 # Poll for endpoints to become active
 
 set -e
-source $2
 
 endpt_count=0
 poll_count=0

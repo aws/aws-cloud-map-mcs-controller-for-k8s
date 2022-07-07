@@ -10,7 +10,8 @@ $KUBECTL_BIN delete svc $SERVICE -n $NAMESPACE
 
 # Verfication to check if there are hanging ServiceExport or ServiceImport CRDs and clears the finalizers to allow cleanup process to continue
 for CRD in $($KUBECTL_BIN get crd -n $NAMESPACE | grep multicluster | cut -d " " -f 1 | xargs); do 
-    $KUBECTL_BIN patch crd -n $NAMESPACE $CRD --type merge -p '{"metadata":{"finalizers": [null]}}'; 
+    $KUBECTL_BIN patch crd -n $NAMESPACE $CRD --type merge -p '{"metadata":{"finalizers": [null]}}';
+    $KUBECTL_BIN delete crd $CRD -n $NAMESPACE
 done
 
 $KUBECTL_BIN delete namespaces $NAMESPACE
@@ -35,4 +36,6 @@ $KUBECTL_BIN config use-context $IMPORT_CLS
 kubectl delete -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_latest"
 
 echo "EKS clusters cleaned!"
+
+./integration/shared/scripts/cleanup-cloudmap.sh
 

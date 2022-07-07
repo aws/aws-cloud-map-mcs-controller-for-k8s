@@ -2,8 +2,6 @@
 
 # Testing service consumption with client-hello pod
 
-source $1
-
 echo "verifying cross-cluster service consumption..."
 
 $KUBECTL_BIN exec $CLIENT_POD -n $NAMESPACE /bin/sh -- curl --version &>/dev/null

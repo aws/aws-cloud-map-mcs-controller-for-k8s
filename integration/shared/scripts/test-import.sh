@@ -4,13 +4,6 @@
 
 set -e
 
-source $3
-
-if [ "$#" -ne 3 ]; then
-    echo "test script expects \"expected number of endpoints\", endpoints IP list, and common.sh as arguments"
-    exit 1
-fi
-
 expected_endpoint_count=$1
 endpoints=$2
 echo "checking service imports..."
