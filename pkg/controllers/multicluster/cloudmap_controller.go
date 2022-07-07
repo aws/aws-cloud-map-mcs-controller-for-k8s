@@ -117,6 +117,18 @@ func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Se
 
 	importedSvcPorts := ExtractServicePorts(svc.Endpoints)
 
+	r.Log.Debug("service ports", "ports", importedSvcPorts)
+
+	// service ports: {"ports": [{"Name":"","Port":80,"TargetPort":"80","Protocol":"TCP","Attributes":{"CLUSTER_ID":"matthew-cluster-1","K8S_CONTROLLER":"aws-cloud-map-mcs-controller-for-k8s 0.2.3-21-gfe47782-dirty (fe47782-dirty)"}}]}
+
+	// separate importedSvcPorts by unique ClusterID
+	importedSvcPortsByClusterID := make(map[string][]model.Port)
+	for _, p := range importedSvcPorts {
+		importedSvcPortsByClusterID[p.Attributes["CLUSTER_ID"]] = append(importedSvcPortsByClusterID[p.Attributes["CLUSTER_ID"]], *p)
+	}
+
+	r.Log.Debug("service ports by cluster ID", "ports", importedSvcPortsByClusterID)
+
 	svcImport, err := r.getServiceImport(ctx, svc.Namespace, svc.Name)
 	if err != nil {
 		if !errors.IsNotFound(err) {

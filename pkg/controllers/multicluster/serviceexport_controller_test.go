@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	discovery "k8s.io/api/discovery/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -27,7 +28,7 @@ func TestServiceExportReconciler_Reconcile_NewServiceExport(t *testing.T) {
 	// create a fake controller client and add some objects
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(getServiceExportScheme()).
-		WithObjects(k8sServiceForTest(), serviceExportForTest()).
+		WithObjects(k8sServiceForTest(), serviceExportForTest(), clusterIdForTest()).
 		WithLists(&discovery.EndpointSliceList{
 			Items: []discovery.EndpointSlice{*endpointSliceForTest()},
 		}).
@@ -47,7 +48,7 @@ func TestServiceExportReconciler_Reconcile_NewServiceExport(t *testing.T) {
 	gomock.InOrder(first, second)
 	mock.EXPECT().CreateService(gomock.Any(), test.HttpNsName, test.SvcName).Return(nil).Times(1)
 	mock.EXPECT().RegisterEndpoints(gomock.Any(), test.HttpNsName, test.SvcName,
-		[]*model.Endpoint{test.GetTestEndpoint1()}).Return(nil).Times(1)
+		[]*model.Endpoint{test.GetTestEndpoint1WithAttr()}).Return(nil).Times(1)
 
 	reconciler := getServiceExportReconciler(t, mock, fakeClient)
 
@@ -164,6 +165,7 @@ func getServiceExportScheme() *runtime.Scheme {
 	scheme.AddKnownTypes(multiclusterv1alpha1.GroupVersion, &multiclusterv1alpha1.ServiceExport{})
 	scheme.AddKnownTypes(v1.SchemeGroupVersion, &v1.Service{})
 	scheme.AddKnownTypes(discovery.SchemeGroupVersion, &discovery.EndpointSlice{}, &discovery.EndpointSliceList{})
+	scheme.AddKnownTypes(aboutv1alpha1.GroupVersion, &aboutv1alpha1.ClusterProperty{})
 	return scheme
 }
 
@@ -173,5 +175,16 @@ func getServiceExportReconciler(t *testing.T, mockClient *cloudmapMock.MockServi
 		Log:      common.NewLoggerWithLogr(testr.New(t)),
 		Scheme:   client.Scheme(),
 		CloudMap: mockClient,
+	}
+}
+
+func clusterIdForTest() *aboutv1alpha1.ClusterProperty {
+	return &aboutv1alpha1.ClusterProperty{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: ClusterIdName,
+		},
+		Spec: aboutv1alpha1.ClusterPropertySpec{
+			Value: "test_clusterid",
+		},
 	}
 }
