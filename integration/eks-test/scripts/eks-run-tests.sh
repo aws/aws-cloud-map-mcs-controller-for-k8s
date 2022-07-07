@@ -4,23 +4,24 @@
 
 source ./integration/eks-test/scripts/eks-common.sh
 
-# Checking expected endpoints number in Cluster 1
+# Checking expected endpoints number in exporting cluster
 $KUBECTL_BIN config use-context $EXPORT_CLS
 if ! endpts=$(./integration/shared/scripts/poll-endpoints.sh "$EXPECTED_ENDPOINT_COUNT"); then
     exit $?
 fi
 
-# Runner
+# Runner to verify expected endpoints are exported to Cloud Map
 go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $ENDPT_PORT $SERVICE_PORT "$endpts"
 exit_code=$?
 
-# Check imported endpoints
+# Check imported endpoints in importing cluster
 if [ "$exit_code" -eq 0 ] ; then
   $KUBECTL_BIN config use-context $IMPORT_CLS
   ./integration/shared/scripts/test-import.sh "$EXPECTED_ENDPOINT_COUNT" "$endpts"
   exit_code=$?
 fi
   
+# Verifying that importing cluster is properly consuming services
 if [ "$exit_code" -eq 0 ] ; then
   ./integration/eks-test/scripts/eks-DNS-test.sh
   exit_code=$?
@@ -60,7 +61,7 @@ if [ "$exit_code" -eq 0 ] ; then
 fi
 
 
-# dump logs
+# Dump logs
 mkdir -p "$LOGS"
 $KUBECTL_BIN config use-context $EXPORT_CLS
 $KUBECTL_BIN logs -l control-plane=controller-manager -c manager --namespace $MCS_NAMESPACE &> "$LOGS/ctl-1.log" 

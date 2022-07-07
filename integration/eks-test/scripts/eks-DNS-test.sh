@@ -7,12 +7,12 @@ echo "verifying cross-cluster service consumption..."
 $KUBECTL_BIN exec $CLIENT_POD -n $NAMESPACE /bin/sh -- curl --version &>/dev/null
 exit_code=$?
 
-# install curl if not installed
+# Install curl if not installed
 if [ "$exit_code" -eq 126 ]; then
     $KUBECTL_BIN exec $CLIENT_POD -n $NAMESPACE /bin/sh -- apk add curl
 fi
 
-
+# Call to DNS server, if unable to reach, importing cluster is not able to properly consume service
 $KUBECTL_BIN exec $CLIENT_POD -n $NAMESPACE /bin/sh -- curl -s $SERVICE.$NAMESPACE.svc.clusterset.local
 exit_code=$?
 
