@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
@@ -28,6 +29,8 @@ import (
 )
 
 const (
+	ClusterIdName             = "id.k8s.io"
+	ClusterIdAttr             = "CLUSTER_ID"
 	K8sVersionAttr            = "K8S_CONTROLLER"
 	ServiceExportFinalizer    = "multicluster.k8s.aws/service-export-finalizer"
 	EndpointSliceServiceLabel = "kubernetes.io/service-name"
@@ -225,6 +228,12 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 		return nil, err
 	}
 
+	clusterId := &aboutv1alpha1.ClusterProperty{}
+	err = r.Client.Get(ctx, client.ObjectKey{Name: ClusterIdName}, clusterId)
+	if err != nil {
+		r.Log.Error(err, "error fetching ClusterId")
+	}
+
 	servicePortMap := make(map[string]model.Port)
 	for _, svcPort := range svc.Spec.Ports {
 		servicePortMap[svcPort.Name] = ServicePortToPort(svcPort)
@@ -241,6 +250,12 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 					if version.GetVersion() != "" {
 						attributes[K8sVersionAttr] = version.PackageName + " " + version.GetVersion()
 					}
+
+					// Apply clusterID as endpoint attribute if it exists
+					if clusterId.Spec.Value != "" {
+						attributes[ClusterIdAttr] = clusterId.Spec.Value
+					}
+
 					// TODO extract attributes - pod, node and other useful details if possible
 
 					port := EndpointPortToPort(endpointPort)
@@ -270,6 +285,12 @@ func (r *ServiceExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.endpointSliceEventHandler()),
 			builder.WithPredicates(r.endpointSliceFilter()),
 		).
+		// Watch for changes to ClusterProperty objects. If a ClusterProperty object is
+		// created, updated or deleted, the controller will reconcile all service exports
+		Watches(
+			&source.Kind{Type: &aboutv1alpha1.ClusterProperty{}},
+			handler.EnqueueRequestsFromMapFunc(r.clusterPropertyEventHandler()),
+		).
 		Complete(r)
 }
 
@@ -283,6 +304,26 @@ func (r *ServiceExportReconciler) endpointSliceEventHandler() handler.MapFunc {
 				Namespace: object.GetNamespace(),
 			}},
 		}
+	}
+}
+
+func (r *ServiceExportReconciler) clusterPropertyEventHandler() handler.MapFunc {
+	// Return reconcile requests for all services
+	return func(object client.Object) []reconcile.Request {
+		services := &v1.ServiceList{}
+		if err := r.Client.List(context.TODO(), services); err != nil {
+			r.Log.Error(err, "error listing services")
+			return nil
+		}
+
+		result := make([]reconcile.Request, 0)
+		for _, service := range services.Items {
+			result = append(result, reconcile.Request{NamespacedName: types.NamespacedName{
+				Name:      service.Name,
+				Namespace: service.Namespace,
+			}})
+		}
+		return result
 	}
 }
 
