@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
@@ -24,10 +25,12 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
+	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
 )
 
 const (
+	ClusterIdName             = "id.k8s.io"
+	ClusterIdAttr             = "CLUSTER_ID"
 	K8sVersionAttr            = "K8S_CONTROLLER"
 	ServiceExportFinalizer    = "multicluster.k8s.aws/service-export-finalizer"
 	EndpointSliceServiceLabel = "kubernetes.io/service-name"
@@ -54,7 +57,7 @@ func (r *ServiceExportReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	name := req.NamespacedName
 	r.Log.Debug("reconciling ServiceExport", "Namespace", namespace, "Name", name)
 
-	serviceExport := v1alpha1.ServiceExport{}
+	serviceExport := multiclusterv1alpha1.ServiceExport{}
 	if err := r.Client.Get(ctx, name, &serviceExport); err != nil {
 		if errors.IsNotFound(err) {
 			r.Log.Debug("no ServiceExport found",
@@ -92,7 +95,7 @@ func (r *ServiceExportReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	return r.handleUpdate(ctx, &serviceExport, &service)
 }
 
-func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, serviceExport *v1alpha1.ServiceExport, service *v1.Service) (ctrl.Result, error) {
+func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, serviceExport *multiclusterv1alpha1.ServiceExport, service *v1.Service) (ctrl.Result, error) {
 	// Add the finalizer to the service export if not present, ensures the ServiceExport won't be deleted
 	if !controllerutil.ContainsFinalizer(serviceExport, ServiceExportFinalizer) {
 		controllerutil.AddFinalizer(serviceExport, ServiceExportFinalizer)
@@ -185,7 +188,7 @@ func (r *ServiceExportReconciler) createOrGetCloudMapService(ctx context.Context
 	return cmService, nil
 }
 
-func (r *ServiceExportReconciler) handleDelete(ctx context.Context, serviceExport *v1alpha1.ServiceExport) (ctrl.Result, error) {
+func (r *ServiceExportReconciler) handleDelete(ctx context.Context, serviceExport *multiclusterv1alpha1.ServiceExport) (ctrl.Result, error) {
 	if controllerutil.ContainsFinalizer(serviceExport, ServiceExportFinalizer) {
 		r.Log.Info("removing service export", "namespace", serviceExport.Namespace, "name", serviceExport.Name)
 
@@ -225,6 +228,12 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 		return nil, err
 	}
 
+	clusterId := &aboutv1alpha1.ClusterProperty{}
+	err = r.Client.Get(ctx, client.ObjectKey{Name: ClusterIdName}, clusterId)
+	if err != nil {
+		r.Log.Error(err, "error fetching ClusterId")
+	}
+
 	servicePortMap := make(map[string]model.Port)
 	for _, svcPort := range svc.Spec.Ports {
 		servicePortMap[svcPort.Name] = ServicePortToPort(svcPort)
@@ -241,6 +250,12 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 					if version.GetVersion() != "" {
 						attributes[K8sVersionAttr] = version.PackageName + " " + version.GetVersion()
 					}
+
+					// Apply clusterID as endpoint attribute if it exists
+					if clusterId.Spec.Value != "" {
+						attributes[ClusterIdAttr] = clusterId.Spec.Value
+					}
+
 					// TODO extract attributes - pod, node and other useful details if possible
 
 					port := EndpointPortToPort(endpointPort)
@@ -261,7 +276,7 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 
 func (r *ServiceExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.ServiceExport{}).
+		For(&multiclusterv1alpha1.ServiceExport{}).
 		// Watch for the changes to the EndpointSlice object. This object is bound to be
 		// updated when Service or Deployment are updated. There is also a filtering logic
 		// to enqueue those EndpointSlice event which have corresponding ServiceExport
@@ -269,6 +284,12 @@ func (r *ServiceExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			&source.Kind{Type: &discovery.EndpointSlice{}},
 			handler.EnqueueRequestsFromMapFunc(r.endpointSliceEventHandler()),
 			builder.WithPredicates(r.endpointSliceFilter()),
+		).
+		// Watch for changes to ClusterProperty objects. If a ClusterProperty object is
+		// created, updated or deleted, the controller will reconcile all service exports
+		Watches(
+			&source.Kind{Type: &aboutv1alpha1.ClusterProperty{}},
+			handler.EnqueueRequestsFromMapFunc(r.clusterPropertyEventHandler()),
 		).
 		Complete(r)
 }
@@ -283,6 +304,26 @@ func (r *ServiceExportReconciler) endpointSliceEventHandler() handler.MapFunc {
 				Namespace: object.GetNamespace(),
 			}},
 		}
+	}
+}
+
+func (r *ServiceExportReconciler) clusterPropertyEventHandler() handler.MapFunc {
+	// Return reconcile requests for all services
+	return func(object client.Object) []reconcile.Request {
+		services := &v1.ServiceList{}
+		if err := r.Client.List(context.TODO(), services); err != nil {
+			r.Log.Error(err, "error listing services")
+			return nil
+		}
+
+		result := make([]reconcile.Request, 0)
+		for _, service := range services.Items {
+			result = append(result, reconcile.Request{NamespacedName: types.NamespacedName{
+				Name:      service.Name,
+				Namespace: service.Namespace,
+			}})
+		}
+		return result
 	}
 }
 
@@ -310,7 +351,7 @@ func (r *ServiceExportReconciler) doesEndpointSliceHaveServiceExport(object clie
 		Name:      serviceName,
 		Namespace: object.GetNamespace(),
 	}
-	svcExport := v1alpha1.ServiceExport{}
+	svcExport := multiclusterv1alpha1.ServiceExport{}
 	if err := r.Client.Get(context.TODO(), ns, &svcExport); err != nil {
 		return false
 	}

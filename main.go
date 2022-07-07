@@ -22,8 +22,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
 	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
-	controllers "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/controllers/multicluster"
+	multiclustercontrollers "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/controllers/multicluster"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -36,6 +37,8 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(multiclusterv1alpha1.AddToScheme(scheme))
+
+	utilruntime.Must(aboutv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -85,7 +88,7 @@ func main() {
 	log.Info("Running with AWS region", "AWS_REGION", awsCfg.Region)
 
 	serviceDiscoveryClient := cloudmap.NewDefaultServiceDiscoveryClient(&awsCfg)
-	if err = (&controllers.ServiceExportReconciler{
+	if err = (&multiclustercontrollers.ServiceExportReconciler{
 		Client:   mgr.GetClient(),
 		Log:      common.NewLogger("controllers", "ServiceExport"),
 		Scheme:   mgr.GetScheme(),
@@ -95,7 +98,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	cloudMapReconciler := &controllers.CloudMapReconciler{
+	cloudMapReconciler := &multiclustercontrollers.CloudMapReconciler{
 		Client:   mgr.GetClient(),
 		Cloudmap: serviceDiscoveryClient,
 		Log:      common.NewLogger("controllers", "Cloudmap"),
