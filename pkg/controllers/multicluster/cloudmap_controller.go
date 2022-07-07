@@ -129,6 +129,9 @@ func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Se
 		}
 	}
 
+	// For each port in importedSvcPortsByClusterID, create derived services
+	// importedSvcPortsByClusterID =  {"ports": {"matthew-cluster-1":[{"Name":"","Port":80,"TargetPort":"80","Protocol":"TCP","Attributes":{"CLUSTER_ID":"matthew-cluster-1","K8S_CONTROLLER":"aws-cloud-map-mcs-controller-for-k8s 0.2.3-21-gfe47782-dirty (fe47782-dirty)"}}]}}
+
 	derivedService, err := r.getDerivedService(ctx, svc.Namespace, svcImport.Annotations[DerivedServiceAnnotation])
 	if err != nil {
 		if !errors.IsNotFound(err) {
