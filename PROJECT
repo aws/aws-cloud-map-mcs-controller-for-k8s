@@ -3,6 +3,7 @@ layout:
 - go.kubebuilder.io/v3
 projectName: aws-cloud-map-mcs-controller-for-k8s
 repo: github.com/aws/aws-cloud-map-mcs-controller-for-k8s
+multigroup: true
 resources:
 - api:
     crdVersion: v1
@@ -11,7 +12,7 @@ resources:
   domain: x-k8s.io
   group: multicluster
   kind: ServiceExport
-  path: github.com/aws/aws-cloud-map-mcs-controller-for-k8s/api/v1alpha1
+  path: github.com/aws/aws-cloud-map-mcs-controller-for-k8s/apis/multicluster/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
@@ -20,6 +21,6 @@ resources:
   domain: x-k8s.io
   group: multicluster
   kind: ServiceImport
-  path: github.com/aws/aws-cloud-map-mcs-controller-for-k8s/api/v1alpha1
+  path: github.com/aws/aws-cloud-map-mcs-controller-for-k8s/apis/multicluster/v1alpha1
   version: v1alpha1
 version: "3"
