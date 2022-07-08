@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/api/v1alpha1"
+	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	v1 "k8s.io/api/core/v1"
@@ -54,7 +54,7 @@ func TestServicePortToPort(t *testing.T) {
 
 func TestServiceImportPortToPort(t *testing.T) {
 	type args struct {
-		svcImportPort v1alpha1.ServicePort
+		svcImportPort multiclusterv1alpha1.ServicePort
 	}
 	tests := []struct {
 		name string
@@ -64,7 +64,7 @@ func TestServiceImportPortToPort(t *testing.T) {
 		{
 			name: "happy case",
 			args: args{
-				svcImportPort: v1alpha1.ServicePort{
+				svcImportPort: multiclusterv1alpha1.ServicePort{
 					Name:     test.PortName1,
 					Protocol: v1.ProtocolTCP,
 					Port:     80,
@@ -190,7 +190,7 @@ func TestPortToServiceImportPort(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want v1alpha1.ServicePort
+		want multiclusterv1alpha1.ServicePort
 	}{
 		{
 			name: "happy case",
@@ -202,7 +202,7 @@ func TestPortToServiceImportPort(t *testing.T) {
 					Protocol:   test.Protocol1,
 				},
 			},
-			want: v1alpha1.ServicePort{
+			want: multiclusterv1alpha1.ServicePort{
 				Name:     test.PortName1,
 				Protocol: v1.ProtocolTCP,
 				Port:     test.Port1,
@@ -454,7 +454,7 @@ func TestCreateServiceImportStruct(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want v1alpha1.ServiceImport
+		want multiclusterv1alpha1.ServiceImport
 	}{
 		{
 			name: "happy case",
@@ -464,16 +464,16 @@ func TestCreateServiceImportStruct(t *testing.T) {
 					{Name: test.PortName2, Protocol: test.Protocol1, Port: test.Port2},
 				},
 			},
-			want: v1alpha1.ServiceImport{
+			want: multiclusterv1alpha1.ServiceImport{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace:   test.HttpNsName,
 					Name:        test.SvcName,
 					Annotations: map[string]string{DerivedServiceAnnotation: DerivedName(test.HttpNsName, test.SvcName)},
 				},
-				Spec: v1alpha1.ServiceImportSpec{
+				Spec: multiclusterv1alpha1.ServiceImportSpec{
 					IPs:  []string{},
-					Type: v1alpha1.ClusterSetIP,
-					Ports: []v1alpha1.ServicePort{
+					Type: multiclusterv1alpha1.ClusterSetIP,
+					Ports: []multiclusterv1alpha1.ServicePort{
 						{Name: test.PortName1, Protocol: v1.ProtocolTCP, Port: test.Port1},
 						{Name: test.PortName2, Protocol: v1.ProtocolTCP, Port: test.Port2},
 					},
