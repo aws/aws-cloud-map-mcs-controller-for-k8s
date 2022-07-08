@@ -32,4 +32,4 @@ run:
   skip:
     - .*_mock.go
     - mocks/
-    - pkg/api/
+    - pkg/apis/

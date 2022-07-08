@@ -5,7 +5,7 @@ import (
 	"encoding/base32"
 	"strings"
 
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/api/v1alpha1"
+	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	v1 "k8s.io/api/core/v1"
 	discovery "k8s.io/api/discovery/v1beta1"
@@ -39,7 +39,7 @@ func ServicePortToPort(svcPort v1.ServicePort) model.Port {
 }
 
 // ServiceImportPortToPort converts a service import port to an internal model port
-func ServiceImportPortToPort(svcPort v1alpha1.ServicePort) model.Port {
+func ServiceImportPortToPort(svcPort multiclusterv1alpha1.ServicePort) model.Port {
 	return model.Port{
 		Name:     svcPort.Name,
 		Port:     svcPort.Port,
@@ -67,8 +67,8 @@ func PortToServicePort(port model.Port) v1.ServicePort {
 }
 
 // PortToServiceImportPort converts an internal model port to a service import port
-func PortToServiceImportPort(port model.Port) v1alpha1.ServicePort {
-	return v1alpha1.ServicePort{
+func PortToServiceImportPort(port model.Port) multiclusterv1alpha1.ServicePort {
+	return multiclusterv1alpha1.ServicePort{
 		Name:     port.Name,
 		Protocol: v1.Protocol(port.Protocol),
 		Port:     port.Port,
@@ -142,28 +142,28 @@ func DerivedName(namespace string, name string) string {
 }
 
 // CreateServiceImportStruct creates struct representation of a ServiceImport
-func CreateServiceImportStruct(namespace string, name string, servicePorts []*model.Port) *v1alpha1.ServiceImport {
-	serviceImportPorts := make([]v1alpha1.ServicePort, 0)
+func CreateServiceImportStruct(namespace string, name string, servicePorts []*model.Port) *multiclusterv1alpha1.ServiceImport {
+	serviceImportPorts := make([]multiclusterv1alpha1.ServicePort, 0)
 	for _, port := range servicePorts {
 		serviceImportPorts = append(serviceImportPorts, PortToServiceImportPort(*port))
 	}
 
-	return &v1alpha1.ServiceImport{
+	return &multiclusterv1alpha1.ServiceImport{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:   namespace,
 			Name:        name,
 			Annotations: map[string]string{DerivedServiceAnnotation: DerivedName(namespace, name)},
 		},
-		Spec: v1alpha1.ServiceImportSpec{
+		Spec: multiclusterv1alpha1.ServiceImportSpec{
 			IPs:   []string{},
-			Type:  v1alpha1.ClusterSetIP,
+			Type:  multiclusterv1alpha1.ClusterSetIP,
 			Ports: serviceImportPorts,
 		},
 	}
 }
 
 // CreateDerivedServiceStruct creates struct representation of a derived service
-func CreateDerivedServiceStruct(svcImport *v1alpha1.ServiceImport, importedSvcPorts []*model.Port) *v1.Service {
+func CreateDerivedServiceStruct(svcImport *multiclusterv1alpha1.ServiceImport, importedSvcPorts []*model.Port) *v1.Service {
 	ownerRef := metav1.NewControllerRef(svcImport, schema.GroupVersionKind{
 		Version: svcImport.TypeMeta.APIVersion,
 		Kind:    svcImport.TypeMeta.Kind,
