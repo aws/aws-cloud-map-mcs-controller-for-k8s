@@ -5,7 +5,7 @@
 source ./integration/eks-test/scripts/eks-common.sh
 
 # Checking expected endpoints number in exporting cluster
-$KUBECTL_BIN config use-context $EXPORT_CLS
+kubectl config use-context $EXPORT_CLS
 if ! endpts=$(./integration/shared/scripts/poll-endpoints.sh "$EXPECTED_ENDPOINT_COUNT"); then
     exit $?
 fi
@@ -16,7 +16,7 @@ exit_code=$?
 
 # Check imported endpoints in importing cluster
 if [ "$exit_code" -eq 0 ] ; then
-  $KUBECTL_BIN config use-context $IMPORT_CLS
+  kubectl config use-context $IMPORT_CLS
   ./integration/shared/scripts/test-import.sh "$EXPECTED_ENDPOINT_COUNT" "$endpts"
   exit_code=$?
 fi
@@ -32,11 +32,11 @@ sleep 2s
 
 # Scaling and verifying deployment
 if [ "$exit_code" -eq 0 ] ; then
-  $KUBECTL_BIN config use-context $EXPORT_CLS
-  deployment=$($KUBECTL_BIN get deployment --namespace "$NAMESPACE" -o json | jq -r '.items[0].metadata.name')
+  kubectl config use-context $EXPORT_CLS
+  deployment=$(kubectl get deployment --namespace "$NAMESPACE" -o json | jq -r '.items[0].metadata.name')
 
   echo "scaling the deployment $deployment to $UPDATED_ENDPOINT_COUNT"
-  $KUBECTL_BIN scale deployment/"$deployment" --replicas="$UPDATED_ENDPOINT_COUNT" --namespace "$NAMESPACE"
+  kubectl scale deployment/"$deployment" --replicas="$UPDATED_ENDPOINT_COUNT" --namespace "$NAMESPACE"
   exit_code=$?
 fi
 
@@ -46,11 +46,13 @@ if [ "$exit_code" -eq 0 ] ; then
   fi
 fi
 
-go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $ENDPT_PORT $SERVICE_PORT "$updated_endpoints"
-exit_code=$?
+if [ "$exit_code" -eq 0 ] ; then
+  go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $ENDPT_PORT $SERVICE_PORT "$updated_endpoints"
+  exit_code=$?
+fi
 
 if [ "$exit_code" -eq 0 ] ; then
-  $KUBECTL_BIN config use-context $IMPORT_CLS
+  kubectl config use-context $IMPORT_CLS
   ./integration/shared/scripts/test-import.sh "$UPDATED_ENDPOINT_COUNT" "$updated_endpoints"
   exit_code=$?
 fi
@@ -63,10 +65,10 @@ fi
 
 # Dump logs
 mkdir -p "$LOGS"
-$KUBECTL_BIN config use-context $EXPORT_CLS
-$KUBECTL_BIN logs -l control-plane=controller-manager -c manager --namespace $MCS_NAMESPACE &> "$LOGS/ctl-1.log" 
-$KUBECTL_BIN config use-context $IMPORT_CLS
-$KUBECTL_BIN logs -l control-plane=controller-manager -c manager --namespace $MCS_NAMESPACE &> "$LOGS/ctl-2.log" 
+kubectl config use-context $EXPORT_CLS
+kubectl logs -l control-plane=controller-manager -c manager --namespace $MCS_NAMESPACE &> "$LOGS/ctl-1.log" 
+kubectl config use-context $IMPORT_CLS
+kubectl logs -l control-plane=controller-manager -c manager --namespace $MCS_NAMESPACE &> "$LOGS/ctl-2.log" 
 echo "dumped logs"
 
 exit $exit_code

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Adding IAM service accounts
-$KUBECTL_BIN config use-context $1
+kubectl config use-context $1
 kubectl create namespace $MCS_NAMESPACE
 eksctl create iamserviceaccount \
 --cluster $1 \
@@ -12,6 +12,6 @@ eksctl create iamserviceaccount \
 --approve
 
 # Installing controller
-$KUBECTL_BIN config use-context $1
+kubectl config use-context $1
 kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_latest"
 

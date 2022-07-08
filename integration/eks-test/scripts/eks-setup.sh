@@ -7,20 +7,20 @@ source ./integration/eks-test/scripts/eks-common.sh
 ./integration/eks-test/scripts/eks-setup-helper.sh $IMPORT_CLS
 
 # Installing service
-$KUBECTL_BIN config use-context $EXPORT_CLS
-$KUBECTL_BIN create namespace $NAMESPACE
-$KUBECTL_BIN apply -f "$CONFIGS/nginx-deployment.yaml"
-$KUBECTL_BIN apply -f "$CONFIGS/nginx-service.yaml"
+kubectl config use-context $EXPORT_CLS
+kubectl create namespace $NAMESPACE
+kubectl apply -f "$CONFIGS/nginx-deployment.yaml"
+kubectl apply -f "$CONFIGS/nginx-service.yaml"
 
-$KUBECTL_BIN config use-context $IMPORT_CLS
-$KUBECTL_BIN create namespace $NAMESPACE
+kubectl config use-context $IMPORT_CLS
+kubectl create namespace $NAMESPACE
 
 # Creating service export
-$KUBECTL_BIN config use-context $EXPORT_CLS
-$KUBECTL_BIN apply -f "$CONFIGS/nginx-serviceexport.yaml"
+kubectl config use-context $EXPORT_CLS
+kubectl apply -f "$CONFIGS/nginx-serviceexport.yaml"
 
 # Create client-hello pod
-$KUBECTL_BIN config use-context $IMPORT_CLS
-$KUBECTL_BIN apply -f "$CONFIGS/client-hello.yaml"
+kubectl config use-context $IMPORT_CLS
+kubectl apply -f "$CONFIGS/client-hello.yaml"
 sleep 15s
-$KUBECTL_BIN exec $CLIENT_POD -n $NAMESPACE /bin/sh -- apk add curl ## install curl
+kubectl exec $CLIENT_POD -n $NAMESPACE /bin/sh -- apk add curl ## install curl
