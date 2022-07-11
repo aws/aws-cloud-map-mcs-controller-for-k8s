@@ -5,9 +5,9 @@
 
 set -e
 
-source ./integration/scripts/common.sh
+source ./integration/kind-test/scripts/common.sh
 
-./integration/scripts/ensure-jq.sh
+./integration/kind-test/scripts/ensure-jq.sh
 
 $KIND_BIN create cluster --name "$KIND_SHORT" --image "$IMAGE"
 $KUBECTL_BIN config use-context "$CLUSTER"

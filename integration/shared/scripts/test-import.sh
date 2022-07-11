@@ -4,13 +4,6 @@
 
 set -e
 
-source ./integration/scripts/common.sh
-
-if [ "$#" -ne 2 ]; then
-    echo "test script expects \"expected number of endpoints\" and endpoints IP list as arguments"
-    exit 1
-fi
-
 expected_endpoint_count=$1
 endpoints=$2
 echo "checking service imports..."

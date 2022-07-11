@@ -26,10 +26,10 @@ jobs:
       - name: Set up env
         run: source ~/.bashrc
       - name: Start clean
-        run: make integration-cleanup
+        run: make kind-integration-cleanup
       - name: Set up cluster
-        run: make integration-setup
+        run: make kind-integration-setup
       - name: Run tests
-        run: make integration-run
+        run: make kind-integration-run
       - name: Clean up clusters
-        run: make integration-cleanup
+        run: make kind-integration-cleanup
