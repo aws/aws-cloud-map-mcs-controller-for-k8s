@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 export KIND_BIN='./bin/kind'
-export KUBECTL_BIN='./testbin/bin/kubectl'
+export KUBECTL_BIN='kubectl'
 export LOGS='./integration/eks-test/testlog'
 export CONFIGS='./integration/eks-test/configs'
 export SCENARIOS='./integration/shared/scenarios'
