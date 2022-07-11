@@ -173,15 +173,15 @@ You must first push a Docker image containing the changes to a Docker repository
 If you are deploying to cluster using kustomize templates from the `config` directory, you will need to override the image URI away from `ghcr.io/aws/aws-cloud-map-mcs-controller-for-k8s` in order to use your own docker images.
 
 
-## Integration testing
+## Local integration testing
 The end-to-end integration test suite can be run locally to validate controller core functionality. This will provision a local Kind cluster and build and run the AWS Cloud Map MCS Controller for K8s. The test will verify service endpoints sync with AWS Cloud Map. If successful, the suite will then de-provision the local test cluster and delete AWS Cloud Map namespace `aws-cloud-map-mcs-e2e` along with test service and service instance resources:
 ```sh
-make integration-suite
+make kind-integration-suite
 ```
 
 If integration test suite fails for some reason, you can perform a cleanup:
 ```sh
-make integration-cleanup
+make kind-integration-cleanup
 ```
 
 ## Build and push docker image to ECR

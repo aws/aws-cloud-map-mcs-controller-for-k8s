@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/integration/scenarios"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/integration/shared/scenarios"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 )

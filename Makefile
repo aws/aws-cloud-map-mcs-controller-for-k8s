@@ -79,20 +79,36 @@ test-setup: ## setup test environment
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.3/hack/setup-envtest.sh
 	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR)
 
-integration-suite: ## Provision and run integration tests with cleanup
-	make integration-setup && \
-	make integration-run && \
-	make integration-cleanup
+kind-integration-suite: ## Provision and run integration tests with cleanup
+	make kind-integration-setup && \
+	make kind-integration-run && \
+	make kind-integration-cleanup
 
-integration-setup: build kind test-setup ## Setup the integration test using kind clusters
-	@./integration/scripts/setup-kind.sh
+kind-integration-setup: build kind test-setup ## Setup the integration test using kind clusters
+	@./integration/kind-test/scripts/setup-kind.sh
 
-integration-run: ## Run the integration test controller
-	@./integration/scripts/run-tests.sh
+kind-integration-run: ## Run the integration test controller
+	@./integration/kind-test/scripts/run-tests.sh
 
-integration-cleanup: kind  ## Cleanup integration test resources in Cloud Map and local kind cluster
-	@./integration/scripts/cleanup-cloudmap.sh
-	@./integration/scripts/cleanup-kind.sh
+kind-integration-cleanup: kind  ## Cleanup integration test resources in Cloud Map and local kind cluster
+	@./integration/kind-test/scripts/cleanup-kind.sh
+
+eks-integration-suite: ## Provision and run EKS integration tests with cleanup
+	make eks-integration-setup && \
+	make eks-integration-run && \
+	make eks-integration-cleanup
+
+eks-integration-setup: build test-setup ## Setup the integration test using EKS clusters
+	@./integration/eks-test/scripts/eks-setup.sh
+
+eks-integration-run: ## Run the integration test controller
+	@./integration/eks-test/scripts/eks-run-tests.sh
+
+eks-integration-cleanup:  ## Cleanup integration test resources in Cloud Map and EKS cluster
+	@./integration/eks-test/scripts/eks-cleanup.sh
+
+eks-test:
+	@./integration/eks-test/scripts/eks-test.sh
 
 ##@ Build
 
