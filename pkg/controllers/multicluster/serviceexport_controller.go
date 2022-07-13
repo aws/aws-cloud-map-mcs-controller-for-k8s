@@ -72,6 +72,15 @@ func (r *ServiceExportReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// Mark ServiceExport to be deleted, which is indicated by the deletion timestamp being set.
 	isServiceExportMarkedForDelete := serviceExport.GetDeletionTimestamp() != nil
 
+	clusterId := &aboutv1alpha1.ClusterProperty{}
+	err := r.Client.Get(ctx, client.ObjectKey{Name: ClusterIdName}, clusterId)
+	if err != nil {
+		r.Log.Error(err, "error fetching ClusterId")
+		return ctrl.Result{}, err
+	} else {
+		r.Log.Info("ClusterID found", "ClusterID", clusterId)
+	}
+
 	service := v1.Service{}
 	namespacedName := types.NamespacedName{Namespace: serviceExport.Namespace, Name: serviceExport.Name}
 	if err := r.Client.Get(ctx, namespacedName, &service); err != nil {

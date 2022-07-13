@@ -6,4 +6,4 @@ kind: ClusterProperty
 metadata:
   name: id.k8s.io
 spec:
-  value: matthew-cluster-1
+  value: sample-mcs-clusterid
