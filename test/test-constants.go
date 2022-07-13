@@ -13,8 +13,6 @@ const (
 	DnsNsId         = "dns-ns-id"
 	SvcName         = "svc-name"
 	SvcId           = "svc-id"
-	ClusterIdName   = "CLUSTER_ID"
-	ClusterIdValue  = "test_clusterid"
 	EndptId1        = "tcp-192_168_0_1-1"
 	EndptId2        = "tcp-192_168_0_2-2"
 	EndptIp1        = "192.168.0.1"
@@ -103,27 +101,6 @@ func GetTestEndpoint2() *model.Endpoint {
 			Protocol:   Protocol2,
 		},
 		Attributes: make(map[string]string),
-	}
-}
-
-func GetTestEndpoint1WithAttr() *model.Endpoint {
-	return &model.Endpoint{
-		Id: EndptId1,
-		IP: EndptIp1,
-		EndpointPort: model.Port{
-			Name:     PortName1,
-			Port:     Port1,
-			Protocol: Protocol1,
-		},
-		ServicePort: model.Port{
-			Name:       PortName1,
-			Port:       ServicePort1,
-			TargetPort: PortStr1,
-			Protocol:   Protocol1,
-		},
-		Attributes: map[string]string{
-			ClusterIdName: ClusterIdValue,
-		},
 	}
 }
 

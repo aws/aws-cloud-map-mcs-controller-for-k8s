@@ -47,7 +47,6 @@ type Port struct {
 	Port       int32
 	TargetPort string
 	Protocol   string // TCP, UDP, SCTP
-	Attributes map[string]string
 }
 
 // Cloudmap Instances IP and Port is supposed to be AWS_INSTANCE_IPV4 and AWS_INSTANCE_PORT
