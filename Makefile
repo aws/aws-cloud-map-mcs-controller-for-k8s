@@ -74,14 +74,15 @@ goimports: ## run goimports updating files in place
 	goimports -w .
 
 ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
-test: manifests generate generate-mocks fmt vet setup-envtest test-setup ## Run tests
-	KUBEBUILDER_ASSETS="$(shell $(SETUP_ENVTEST) use -i -p path 1.24.x)" go test ./... -coverprofile cover.out -covermode=atomic
+KUBEBUILDER_ASSETS?="$(shell $(ENVTEST) use -i $(ENVTEST_KUBERNETES_VERSION) --bin-dir=$(ENVTEST_ASSETS_DIR) -p path)"
+test: manifests generate generate-mocks fmt vet test-setup ## Run tests
+	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) go test ./... -coverprofile cover.out -covermode=atomic
 
-test-setup: ## Ensure test environment has been downloaded
+test-setup: setup-envtest ## Ensure test environment has been downloaded
 ifneq ($(shell test -d $(ENVTEST_ASSETS_DIR); echo $$?), 0)
 	@echo Setting up K8s test environment...
 	mkdir -p ${ENVTEST_ASSETS_DIR}
-	$(SETUP_ENVTEST) use 1.24.x --bin-dir $(ENVTEST_ASSETS_DIR)
+	$(ENVTEST) use 1.24.x --bin-dir $(ENVTEST_ASSETS_DIR)
 endif
 
 kind-integration-suite: ## Provision and run integration tests with cleanup
@@ -174,9 +175,9 @@ KUSTOMIZE = $(shell pwd)/bin/kustomize
 kustomize: ## Download kustomize locally if necessary.
 	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@v4.5.5)
 
-SETUP_ENVTEST = $(shell pwd)/bin/setup-envtest
+ENVTEST = $(shell pwd)/bin/setup-envtest
 setup-envtest: ## Download setup-envtest
-	$(call go-get-tool,$(SETUP_ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
+	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
 
 MOCKGEN = $(shell pwd)/bin/mockgen
 mockgen: ## Download mockgen
