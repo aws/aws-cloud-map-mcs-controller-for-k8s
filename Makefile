@@ -57,22 +57,32 @@ mod:
 tidy:
 	go mod tidy
 
+GOLANGCI_LINT=$(shell pwd)/bin/golangci-lint
 golangci-lint: ## Download golangci-lint
+ifneq ($(shell test -f $(GOLANGCI_LINT); echo $$?), 0)
+	@echo Getting golangci-lint...
 	@mkdir -p $(shell pwd)/bin
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell pwd)/bin v1.46.2
+endif
 
 .PHONY: lint
 lint: golangci-lint ## Run linter
-	$(shell pwd)/bin/golangci-lint run
+	$(GOLANGCI_LINT) run
 
 .PHONY: goimports
 goimports: ## run goimports updating files in place
 	goimports -w .
 
 ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
-test: manifests generate generate-mocks fmt vet setup-envtest ## Run tests.
+test: manifests generate generate-mocks fmt vet setup-envtest test-setup ## Run tests
+	KUBEBUILDER_ASSETS="$(shell $(SETUP_ENVTEST) use -i -p path 1.24.x)" go test ./... -coverprofile cover.out -covermode=atomic
+
+test-setup: ## Ensure test environment has been downloaded
+ifneq ($(shell test -d $(ENVTEST_ASSETS_DIR); echo $$?), 0)
+	@echo Setting up K8s test environment...
 	mkdir -p ${ENVTEST_ASSETS_DIR}
-	KUBEBUILDER_ASSETS="$(shell $(SETUP_ENVTEST) use 1.24.x --bin-dir $(ENVTEST_ASSETS_DIR) -p path)" go test ./... -coverprofile cover.out -covermode=atomic
+	$(SETUP_ENVTEST) use 1.24.x --bin-dir $(ENVTEST_ASSETS_DIR)
+endif
 
 kind-integration-suite: ## Provision and run integration tests with cleanup
 	make kind-integration-setup && \
@@ -124,7 +134,7 @@ docker-push: ## Push docker image with the manager.
 clean:
 	@echo Cleaning...
 	go clean
-	chmod -R +w $(ENVTEST_ASSETS_DIR)
+	if test -d $(ENVTEST_ASSETS_DIR) ; then chmod -R +w $(ENVTEST_ASSETS_DIR) ; fi
 	rm -rf $(MOCKS_DESTINATION)/ bin/ $(ENVTEST_ASSETS_DIR)/ cover.out
 
 ##@ Deployment
@@ -144,6 +154,8 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 
 MOCKS_DESTINATION=mocks
 generate-mocks: mockgen
+ifneq ($(shell test -d $(MOCKS_DESTINATION); echo $$?), 0)
+	@echo Generating mocks...
 	$(MOCKGEN) --source pkg/cloudmap/client.go --destination $(MOCKS_DESTINATION)/pkg/cloudmap/client_mock.go --package cloudmap_mock
 	$(MOCKGEN) --source pkg/cloudmap/cache.go --destination $(MOCKS_DESTINATION)/pkg/cloudmap/cache_mock.go --package cloudmap_mock
 	$(MOCKGEN) --source pkg/cloudmap/operation_poller.go --destination $(MOCKS_DESTINATION)/pkg/cloudmap/operation_poller_mock.go --package cloudmap_mock
@@ -152,7 +164,7 @@ generate-mocks: mockgen
 	$(MOCKGEN) --source pkg/cloudmap/aws_facade.go --destination $(MOCKS_DESTINATION)/pkg/cloudmap/aws_facade_mock.go --package cloudmap_mock
 	$(MOCKGEN) --source integration/janitor/api.go --destination $(MOCKS_DESTINATION)/integration/janitor/api_mock.go --package janitor_mock
 	$(MOCKGEN) --source integration/janitor/aws_facade.go --destination $(MOCKS_DESTINATION)/integration/janitor/aws_facade_mock.go --package janitor_mock
-
+endif
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
