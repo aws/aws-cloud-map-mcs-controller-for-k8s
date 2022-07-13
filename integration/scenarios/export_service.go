@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
-	controllers "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/controllers/multicluster"
+	multiclustercontrollers "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/controllers/multicluster"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v1 "k8s.io/api/core/v1"
@@ -107,7 +107,7 @@ func (e *exportServiceScenario) compareEndpoints(cmEndpoints []*model.Endpoint) 
 		match := false
 		for _, actual := range cmEndpoints {
 			// Ignore K8S instance attribute for the purpose of this test.
-			delete(actual.Attributes, controllers.K8sVersionAttr)
+			delete(actual.Attributes, multiclustercontrollers.K8sVersionAttr)
 			if expected.Equals(actual) {
 				match = true
 				break
