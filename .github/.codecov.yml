@@ -22,7 +22,7 @@ comment:
 
 ignore:
   - "config/**/*"
-  - "pkg/api/**/*"
+  - "pkg/apis/**/*"
   - "mocks/**/*"
-  - "integration/scenarios/**/*"
+  - "integration/shared/scenarios/**/*"
   - "pkg/common/logger.go"
