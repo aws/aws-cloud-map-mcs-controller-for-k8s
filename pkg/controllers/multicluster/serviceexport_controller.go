@@ -76,7 +76,6 @@ func (r *ServiceExportReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	err := r.Client.Get(ctx, client.ObjectKey{Name: ClusterIdName}, clusterId)
 	if err != nil {
 		r.Log.Error(err, "error fetching ClusterId")
-		return ctrl.Result{}, err
 	} else {
 		r.Log.Info("ClusterID found", "ClusterID", clusterId)
 	}
