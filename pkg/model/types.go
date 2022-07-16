@@ -56,6 +56,7 @@ const (
 	EndpointPortAttr      = "AWS_INSTANCE_PORT"
 	EndpointPortNameAttr  = "ENDPOINT_PORT_NAME"
 	EndpointProtocolAttr  = "ENDPOINT_PROTOCOL"
+	ClusterIdAttrName     = "CLUSTER_ID"
 	ServicePortNameAttr   = "SERVICE_PORT_NAME"
 	ServicePortAttr       = "SERVICE_PORT"
 	ServiceTargetPortAttr = "SERVICE_TARGET_PORT"

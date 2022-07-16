@@ -76,8 +76,9 @@ func (r *ServiceExportReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	err := r.Client.Get(ctx, client.ObjectKey{Name: ClusterIdName}, clusterId)
 	if err != nil {
 		r.Log.Error(err, "error fetching ClusterId")
+		return ctrl.Result{}, err
 	} else {
-		r.Log.Info("ClusterID found", "ClusterID", clusterId)
+		r.Log.Debug("ClusterID found", "ClusterID", clusterId)
 	}
 
 	service := v1.Service{}
@@ -100,10 +101,10 @@ func (r *ServiceExportReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return r.handleDelete(ctx, &serviceExport)
 	}
 
-	return r.handleUpdate(ctx, &serviceExport, &service)
+	return r.handleUpdate(ctx, &serviceExport, &service, clusterId)
 }
 
-func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, serviceExport *multiclusterv1alpha1.ServiceExport, service *v1.Service) (ctrl.Result, error) {
+func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, serviceExport *multiclusterv1alpha1.ServiceExport, service *v1.Service, clusterId *aboutv1alpha1.ClusterProperty) (ctrl.Result, error) {
 	// Add the finalizer to the service export if not present, ensures the ServiceExport won't be deleted
 	if !controllerutil.ContainsFinalizer(serviceExport, ServiceExportFinalizer) {
 		controllerutil.AddFinalizer(serviceExport, ServiceExportFinalizer)
@@ -134,7 +135,7 @@ func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, serviceExpor
 		return ctrl.Result{}, err
 	}
 
-	endpoints, err := r.extractEndpoints(ctx, service)
+	endpoints, err := r.extractEndpoints(ctx, service, clusterId)
 	if err != nil {
 		r.Log.Error(err, "error extracting Endpoints",
 			"namespace", serviceExport.Namespace, "name", serviceExport.Name)
@@ -225,7 +226,7 @@ func (r *ServiceExportReconciler) handleDelete(ctx context.Context, serviceExpor
 	return ctrl.Result{}, nil
 }
 
-func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.Service) ([]*model.Endpoint, error) {
+func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.Service, clusterId *aboutv1alpha1.ClusterProperty) ([]*model.Endpoint, error) {
 	result := make([]*model.Endpoint, 0)
 
 	endpointSlices := discovery.EndpointSliceList{}
@@ -234,12 +235,6 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 
 	if err != nil {
 		return nil, err
-	}
-
-	clusterId := &aboutv1alpha1.ClusterProperty{}
-	err = r.Client.Get(ctx, client.ObjectKey{Name: ClusterIdName}, clusterId)
-	if err != nil {
-		r.Log.Error(err, "error fetching ClusterId")
 	}
 
 	servicePortMap := make(map[string]model.Port)
