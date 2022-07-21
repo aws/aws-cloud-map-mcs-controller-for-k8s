@@ -27,7 +27,7 @@ type ServiceDiscoveryApi interface {
 	GetServiceIdMap(ctx context.Context, namespaceId string) (serviceIdMap map[string]string, err error)
 
 	// DiscoverInstances returns a list of service instances registered to a given service.
-	DiscoverInstances(ctx context.Context, nsName string, svcName string) (insts []types.HttpInstanceSummary, err error)
+	DiscoverInstances(ctx context.Context, nsName string, svcName string, clustersetId string) (insts []types.HttpInstanceSummary, err error)
 
 	// ListOperations returns a map of operations to their status matching a list of filters.
 	ListOperations(ctx context.Context, opFilters []types.OperationFilter) (operationStatusMap map[string]types.OperationStatus, err error)
@@ -113,12 +113,15 @@ func (sdApi *serviceDiscoveryApi) GetServiceIdMap(ctx context.Context, nsId stri
 	return serviceIdMap, nil
 }
 
-func (sdApi *serviceDiscoveryApi) DiscoverInstances(ctx context.Context, nsName string, svcName string) (insts []types.HttpInstanceSummary, err error) {
+func (sdApi *serviceDiscoveryApi) DiscoverInstances(ctx context.Context, nsName string, svcName string, clustersetId string) (insts []types.HttpInstanceSummary, err error) {
 	out, err := sdApi.awsFacade.DiscoverInstances(ctx, &sd.DiscoverInstancesInput{
 		NamespaceName: aws.String(nsName),
 		ServiceName:   aws.String(svcName),
 		HealthStatus:  types.HealthStatusFilterAll,
 		MaxResults:    aws.Int32(1000),
+		QueryParameters: map[string]string{
+			model.ClustersetIdAttr: clustersetId,
+		},
 	})
 
 	if err != nil {

@@ -13,7 +13,7 @@ import (
 // CloudMapJanitor handles AWS Cloud Map resource cleanup during integration tests.
 type CloudMapJanitor interface {
 	// Cleanup removes all instances, services and the namespace from AWS Cloud Map for a given namespace name.
-	Cleanup(ctx context.Context, nsName string)
+	Cleanup(ctx context.Context, nsName string, clustersetId string)
 }
 
 type cloudMapJanitor struct {
@@ -36,7 +36,7 @@ func NewDefaultJanitor() CloudMapJanitor {
 	}
 }
 
-func (j *cloudMapJanitor) Cleanup(ctx context.Context, nsName string) {
+func (j *cloudMapJanitor) Cleanup(ctx context.Context, nsName string, clustersetId string) {
 	fmt.Printf("Cleaning up all test resources in Cloud Map for namespace : %s\n", nsName)
 
 	nsMap, err := j.sdApi.GetNamespaceMap(ctx)
@@ -57,7 +57,7 @@ func (j *cloudMapJanitor) Cleanup(ctx context.Context, nsName string) {
 
 	for svcName, svcId := range svcIdMap {
 		fmt.Printf("found service to clean: %s\n", svcId)
-		j.deregisterInstances(ctx, nsName, svcName, svcId)
+		j.deregisterInstances(ctx, nsName, svcName, svcId, clustersetId)
 
 		delSvcErr := j.sdApi.DeleteService(ctx, svcId)
 		j.checkOrFail(delSvcErr, "service deleted", "could not cleanup service")
@@ -71,8 +71,8 @@ func (j *cloudMapJanitor) Cleanup(ctx context.Context, nsName string) {
 	j.checkOrFail(err, "clean up successful", "could not cleanup namespace")
 }
 
-func (j *cloudMapJanitor) deregisterInstances(ctx context.Context, nsName string, svcName string, svcId string) {
-	insts, err := j.sdApi.DiscoverInstances(ctx, nsName, svcName)
+func (j *cloudMapJanitor) deregisterInstances(ctx context.Context, nsName string, svcName string, svcId string, clustersetId string) {
+	insts, err := j.sdApi.DiscoverInstances(ctx, nsName, svcName, clustersetId)
 	j.checkOrFail(err,
 		fmt.Sprintf("service has %d instances to clean", len(insts)),
 		"could not list instances to cleanup")

@@ -85,13 +85,24 @@ func endpointSliceWithIpsAndPortsForTest(ips []string, ports []discovery.Endpoin
 	return slice
 }
 
-func clusterPropertyWithIdForTest() *aboutv1alpha1.ClusterProperty {
+func clusterIdForTest() *aboutv1alpha1.ClusterProperty {
 	return &aboutv1alpha1.ClusterProperty{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: ClusterIdName,
 		},
 		Spec: aboutv1alpha1.ClusterPropertySpec{
-			Value: "test_clusterid",
+			Value: test.ClusterId,
+		},
+	}
+}
+
+func clustersetIdForTest() *aboutv1alpha1.ClusterProperty {
+	return &aboutv1alpha1.ClusterProperty{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: ClustersetIdName,
+		},
+		Spec: aboutv1alpha1.ClusterPropertySpec{
+			Value: test.ClustersetId,
 		},
 	}
 }

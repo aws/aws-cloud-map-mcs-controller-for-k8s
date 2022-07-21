@@ -29,7 +29,7 @@ func TestServiceExportReconciler_Reconcile_NewServiceExport(t *testing.T) {
 	// create a fake controller client and add some objects
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(getServiceExportScheme()).
-		WithObjects(k8sServiceForTest(), serviceExportForTest(), clusterPropertyWithIdForTest()).
+		WithObjects(k8sServiceForTest(), serviceExportForTest(), clusterIdForTest(), clustersetIdForTest()).
 		WithLists(&discovery.EndpointSliceList{
 			Items: []discovery.EndpointSlice{*endpointSliceForTest()},
 		}).
@@ -43,8 +43,8 @@ func TestServiceExportReconciler_Reconcile_NewServiceExport(t *testing.T) {
 	// expected interactions with the Cloud Map client
 	// The first get call is expected to return nil, then second call after the creation of service is
 	// supposed to return the value
-	first := mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName).Return(nil, nil)
-	second := mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName).
+	first := mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName, test.ClustersetId).Return(nil, nil)
+	second := mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName, test.ClustersetId).
 		Return(&model.Service{Namespace: test.HttpNsName, Name: test.SvcName}, nil)
 	gomock.InOrder(first, second)
 	mock.EXPECT().CreateService(gomock.Any(), test.HttpNsName, test.SvcName).Return(nil).Times(1)
@@ -77,7 +77,7 @@ func TestServiceExportReconciler_Reconcile_ExistingServiceExport(t *testing.T) {
 	// create a fake controller client and add some objects
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(getServiceExportScheme()).
-		WithObjects(k8sServiceForTest(), serviceExportForTest(), clusterPropertyWithIdForTest()).
+		WithObjects(k8sServiceForTest(), serviceExportForTest(), clusterIdForTest(), clustersetIdForTest()).
 		WithLists(&discovery.EndpointSliceList{
 			Items: []discovery.EndpointSlice{*endpointSliceForTest()},
 		}).
@@ -89,7 +89,7 @@ func TestServiceExportReconciler_Reconcile_ExistingServiceExport(t *testing.T) {
 	mock := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
 
 	// GetService from Cloudmap returns endpoint1 and endpoint2
-	mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName).
+	mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName, test.ClustersetId).
 		Return(test.GetTestService(), nil)
 	// call to delete the endpoint not present in the k8s cluster
 	mock.EXPECT().DeleteEndpoints(gomock.Any(), test.HttpNsName, test.SvcName,
@@ -124,7 +124,7 @@ func TestServiceExportReconciler_Reconcile_DeleteExistingService(t *testing.T) {
 	serviceExportObj.Finalizers = []string{ServiceExportFinalizer}
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(getServiceExportScheme()).
-		WithObjects(serviceExportObj, clusterPropertyWithIdForTest()).
+		WithObjects(serviceExportObj, clusterIdForTest(), clustersetIdForTest()).
 		WithLists(&discovery.EndpointSliceList{
 			Items: []discovery.EndpointSlice{*endpointSliceForTest()},
 		}).
@@ -136,7 +136,7 @@ func TestServiceExportReconciler_Reconcile_DeleteExistingService(t *testing.T) {
 	mock := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
 
 	// GetService from Cloudmap returns endpoint1 and endpoint2
-	mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName).
+	mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName, test.ClustersetId).
 		Return(test.GetTestService(), nil)
 	// call to delete the endpoint in the cloudmap
 	mock.EXPECT().DeleteEndpoints(gomock.Any(), test.HttpNsName, test.SvcName,

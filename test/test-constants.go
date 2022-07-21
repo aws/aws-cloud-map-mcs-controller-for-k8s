@@ -13,8 +13,8 @@ const (
 	DnsNsId         = "dns-ns-id"
 	SvcName         = "svc-name"
 	SvcId           = "svc-id"
-	ClusterIdName   = "CLUSTER_ID"
-	ClusterIdValue  = "test_clusterid"
+	ClusterId       = "test-mcs-clusterId"
+	ClustersetId    = "test-mcs-clustersetId"
 	EndptId1        = "tcp-192_168_0_1-1"
 	EndptId2        = "tcp-192_168_0_2-2"
 	EndptIp1        = "192.168.0.1"
@@ -83,9 +83,9 @@ func GetTestEndpoint1() *model.Endpoint {
 			TargetPort: PortStr1,
 			Protocol:   Protocol1,
 		},
-		Attributes: map[string]string{
-			ClusterIdName: ClusterIdValue,
-		},
+		ClusterId:    ClusterId,
+		ClustersetId: ClustersetId,
+		Attributes:   make(map[string]string),
 	}
 }
 
@@ -104,9 +104,9 @@ func GetTestEndpoint2() *model.Endpoint {
 			TargetPort: PortStr2,
 			Protocol:   Protocol2,
 		},
-		Attributes: map[string]string{
-			ClusterIdName: ClusterIdValue,
-		},
+		ClusterId:    ClusterId,
+		ClustersetId: ClustersetId,
+		Attributes:   make(map[string]string),
 	}
 }
 
@@ -114,6 +114,7 @@ func GetTestEndpoints(count int) (endpts []*model.Endpoint) {
 	// use +3 offset go avoid collision with test endpoint 1 and 2
 	for i := 3; i < count+3; i++ {
 		e := GetTestEndpoint1()
+		e.ClusterId = ClusterId
 		e.Id = fmt.Sprintf("tcp-192_168_0_%d-1", i)
 		e.IP = fmt.Sprintf("192.168.0.%d", i)
 		endpts = append(endpts, e)

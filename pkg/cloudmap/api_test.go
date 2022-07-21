@@ -8,6 +8,7 @@ import (
 
 	cloudmapMock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
@@ -101,6 +102,9 @@ func TestServiceDiscoveryApi_DiscoverInstances_HappyCase(t *testing.T) {
 			ServiceName:   aws.String(test.SvcName),
 			HealthStatus:  types.HealthStatusFilterAll,
 			MaxResults:    aws.Int32(1000),
+			QueryParameters: map[string]string{
+				model.ClustersetIdAttr: test.ClustersetId,
+			},
 		}).
 		Return(&sd.DiscoverInstancesOutput{
 			Instances: []types.HttpInstanceSummary{
@@ -109,7 +113,7 @@ func TestServiceDiscoveryApi_DiscoverInstances_HappyCase(t *testing.T) {
 			},
 		}, nil)
 
-	insts, err := sdApi.DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName)
+	insts, err := sdApi.DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, test.ClustersetId)
 	assert.Nil(t, err, "No error for happy case")
 	assert.True(t, len(insts) == 2)
 	assert.Equal(t, test.EndptId1, *insts[0].InstanceId)

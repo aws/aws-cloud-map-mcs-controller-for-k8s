@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	cloudmapMock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
+	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
 	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
@@ -28,8 +29,9 @@ func TestCloudMapReconciler_Reconcile(t *testing.T) {
 
 	s := scheme.Scheme
 	s.AddKnownTypes(multiclusterv1alpha1.GroupVersion, &multiclusterv1alpha1.ServiceImportList{}, &multiclusterv1alpha1.ServiceImport{})
+	s.AddKnownTypes(aboutv1alpha1.GroupVersion, &aboutv1alpha1.ClusterProperty{})
 
-	fakeClient := fake.NewClientBuilder().WithRuntimeObjects(objs...).Build()
+	fakeClient := fake.NewClientBuilder().WithRuntimeObjects(objs...).WithObjects(clusterIdForTest(), clustersetIdForTest()).Build()
 
 	// create a mock cloudmap service discovery client
 	mockController := gomock.NewController(t)
@@ -37,7 +39,7 @@ func TestCloudMapReconciler_Reconcile(t *testing.T) {
 
 	mockSDClient := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
 	// The service model in the Cloudmap
-	mockSDClient.EXPECT().ListServices(context.TODO(), test.HttpNsName).
+	mockSDClient.EXPECT().ListServices(context.TODO(), test.HttpNsName, test.ClustersetId).
 		Return([]*model.Service{test.GetTestServiceWithEndpoint([]*model.Endpoint{test.GetTestEndpoint1()})}, nil)
 
 	reconciler := getReconciler(t, mockSDClient, fakeClient)

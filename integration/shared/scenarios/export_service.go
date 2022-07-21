@@ -82,7 +82,7 @@ func (e *exportServiceScenario) Run() error {
 
 	return wait.Poll(defaultScenarioPollInterval, defaultScenarioPollTimeout, func() (done bool, err error) {
 		fmt.Println("Polling service...")
-		cmSvc, err := e.sdClient.GetService(context.TODO(), e.expectedSvc.Namespace, e.expectedSvc.Name)
+		cmSvc, err := e.sdClient.GetService(context.TODO(), e.expectedSvc.Namespace, e.expectedSvc.Name, "")
 		if err != nil {
 			return true, err
 		}

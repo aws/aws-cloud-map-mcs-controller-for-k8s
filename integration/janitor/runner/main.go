@@ -9,12 +9,13 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Println("Expected single namespace name argument")
+	if len(os.Args) != 3 {
+		fmt.Println("Expected single namespace name and clustersetId arguments")
 		os.Exit(1)
 	}
 
 	j := janitor.NewDefaultJanitor()
 	nsName := os.Args[1]
-	j.Cleanup(context.TODO(), nsName)
+	clustersetId := os.Args[2]
+	j.Cleanup(context.TODO(), nsName, clustersetId)
 }

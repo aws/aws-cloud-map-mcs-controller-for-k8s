@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
 	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
@@ -53,6 +54,14 @@ func (r *CloudMapReconciler) Start(ctx context.Context) error {
 
 // Reconcile triggers a single reconciliation round
 func (r *CloudMapReconciler) Reconcile(ctx context.Context) error {
+	clusterPropertyForClustersetId := &aboutv1alpha1.ClusterProperty{}
+	err := r.Client.Get(ctx, client.ObjectKey{Name: ClustersetIdName}, clusterPropertyForClustersetId)
+	if err != nil {
+		r.Log.Error(err, "error getting ClusterProperty for clustersetId")
+		return err
+	}
+	clustersetId := clusterPropertyForClustersetId.Spec.Value
+
 	namespaces := v1.NamespaceList{}
 	if err := r.Client.List(ctx, &namespaces); err != nil {
 		r.Log.Error(err, "unable to list cluster namespaces")
@@ -60,7 +69,7 @@ func (r *CloudMapReconciler) Reconcile(ctx context.Context) error {
 	}
 
 	for _, ns := range namespaces.Items {
-		if err := r.reconcileNamespace(ctx, ns.Name); err != nil {
+		if err := r.reconcileNamespace(ctx, ns.Name, clustersetId); err != nil {
 			return err
 		}
 	}
@@ -68,10 +77,10 @@ func (r *CloudMapReconciler) Reconcile(ctx context.Context) error {
 	return nil
 }
 
-func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceName string) error {
+func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceName string, clustersetId string) error {
 	r.Log.Debug("syncing namespace", "namespace", namespaceName)
 
-	desiredServices, err := r.Cloudmap.ListServices(ctx, namespaceName)
+	desiredServices, err := r.Cloudmap.ListServices(ctx, namespaceName, clustersetId)
 	if err != nil {
 		r.Log.Error(err, "failed to fetch the list Services")
 		return err

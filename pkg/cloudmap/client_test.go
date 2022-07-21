@@ -42,12 +42,12 @@ func TestServiceDiscoveryClient_ListServices_HappyCase(t *testing.T) {
 	tc.mockCache.EXPECT().CacheServiceIdMap(test.HttpNsName, getServiceIdMapForTest())
 
 	tc.mockCache.EXPECT().GetEndpoints(test.HttpNsName, test.SvcName).Return(nil, false)
-	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName).
+	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, test.ClustersetId).
 		Return(getHttpInstanceSummaryForTest(), nil)
 	tc.mockCache.EXPECT().CacheEndpoints(test.HttpNsName, test.SvcName,
 		[]*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()})
 
-	svcs, err := tc.client.ListServices(context.TODO(), test.HttpNsName)
+	svcs, err := tc.client.ListServices(context.TODO(), test.HttpNsName, test.ClustersetId)
 	assert.Equal(t, []*model.Service{test.GetTestService()}, svcs)
 	assert.Nil(t, err, "No error for happy case")
 }
@@ -64,7 +64,7 @@ func TestServiceDiscoveryClient_ListServices_HappyCaseCachedResults(t *testing.T
 	tc.mockCache.EXPECT().GetEndpoints(test.DnsNsName, test.SvcName).
 		Return([]*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()}, true)
 
-	svcs, err := tc.client.ListServices(context.TODO(), test.DnsNsName)
+	svcs, err := tc.client.ListServices(context.TODO(), test.DnsNsName, test.ClustersetId)
 	assert.Equal(t, []*model.Service{dnsService}, svcs)
 	assert.Nil(t, err, "No error for happy case")
 }
@@ -79,7 +79,7 @@ func TestServiceDiscoveryClient_ListServices_NamespaceError(t *testing.T) {
 	tc.mockCache.EXPECT().GetNamespaceMap().Return(nil, false)
 	tc.mockApi.EXPECT().GetNamespaceMap(context.TODO()).Return(nil, nsErr)
 
-	svcs, err := tc.client.ListServices(context.TODO(), test.HttpNsName)
+	svcs, err := tc.client.ListServices(context.TODO(), test.HttpNsName, test.ClustersetId)
 	assert.Equal(t, nsErr, err)
 	assert.Empty(t, svcs)
 }
@@ -96,7 +96,7 @@ func TestServiceDiscoveryClient_ListServices_ServiceError(t *testing.T) {
 	tc.mockApi.EXPECT().GetServiceIdMap(context.TODO(), test.HttpNsId).
 		Return(nil, svcErr)
 
-	svcs, err := tc.client.ListServices(context.TODO(), test.HttpNsName)
+	svcs, err := tc.client.ListServices(context.TODO(), test.HttpNsName, test.ClustersetId)
 	assert.Equal(t, svcErr, err)
 	assert.Empty(t, svcs)
 }
@@ -109,10 +109,10 @@ func TestServiceDiscoveryClient_ListServices_InstanceError(t *testing.T) {
 
 	endptErr := errors.New("error listing endpoints")
 	tc.mockCache.EXPECT().GetEndpoints(test.HttpNsName, test.SvcName).Return(nil, false)
-	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName).
+	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, test.ClustersetId).
 		Return([]types.HttpInstanceSummary{}, endptErr)
 
-	svcs, err := tc.client.ListServices(context.TODO(), test.HttpNsName)
+	svcs, err := tc.client.ListServices(context.TODO(), test.HttpNsName, test.ClustersetId)
 	assert.Equal(t, endptErr, err)
 	assert.Empty(t, svcs)
 }
@@ -124,7 +124,7 @@ func TestServiceDiscoveryClient_ListServices_NamespaceNotFound(t *testing.T) {
 	tc.mockCache.EXPECT().GetServiceIdMap(test.HttpNsName).Return(nil, false)
 	tc.mockCache.EXPECT().GetNamespaceMap().Return(nil, true)
 
-	svcs, err := tc.client.ListServices(context.TODO(), test.HttpNsName)
+	svcs, err := tc.client.ListServices(context.TODO(), test.HttpNsName, test.ClustersetId)
 	assert.Empty(t, svcs)
 	assert.Nil(t, err, "No error for namespace not found")
 }
@@ -254,12 +254,12 @@ func TestServiceDiscoveryClient_GetService_HappyCase(t *testing.T) {
 	tc.mockCache.EXPECT().CacheServiceIdMap(test.HttpNsName, getServiceIdMapForTest())
 
 	tc.mockCache.EXPECT().GetEndpoints(test.HttpNsName, test.SvcName).Return([]*model.Endpoint{}, false)
-	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName).
+	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, test.ClustersetId).
 		Return(getHttpInstanceSummaryForTest(), nil)
 	tc.mockCache.EXPECT().CacheEndpoints(test.HttpNsName, test.SvcName,
 		[]*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()})
 
-	svc, err := tc.client.GetService(context.TODO(), test.HttpNsName, test.SvcName)
+	svc, err := tc.client.GetService(context.TODO(), test.HttpNsName, test.SvcName, test.ClustersetId)
 	assert.Nil(t, err)
 	assert.Equal(t, test.GetTestService(), svc)
 }
@@ -271,7 +271,7 @@ func TestServiceDiscoveryClient_GetService_CachedValues(t *testing.T) {
 	tc.mockCache.EXPECT().GetEndpoints(test.HttpNsName, test.SvcName).
 		Return([]*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()}, true)
 
-	svc, err := tc.client.GetService(context.TODO(), test.HttpNsName, test.SvcName)
+	svc, err := tc.client.GetService(context.TODO(), test.HttpNsName, test.SvcName, test.ClustersetId)
 	assert.Nil(t, err)
 	assert.Equal(t, test.GetTestService(), svc)
 }
@@ -283,7 +283,8 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 	tc.mockCache.EXPECT().GetServiceIdMap(test.HttpNsName).Return(getServiceIdMapForTest(), true)
 
 	attrs1 := map[string]string{
-		model.ClusterIdAttrName:     test.ClusterIdValue,
+		model.ClusterIdAttr:         test.ClusterId,
+		model.ClustersetIdAttr:      test.ClustersetId,
 		model.EndpointIpv4Attr:      test.EndptIp1,
 		model.EndpointPortAttr:      test.PortStr1,
 		model.EndpointPortNameAttr:  test.PortName1,
@@ -294,7 +295,8 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 		model.ServiceTargetPortAttr: test.PortStr1,
 	}
 	attrs2 := map[string]string{
-		model.ClusterIdAttrName:     test.ClusterIdValue,
+		model.ClusterIdAttr:         test.ClusterId,
+		model.ClustersetIdAttr:      test.ClustersetId,
 		model.EndpointIpv4Attr:      test.EndptIp2,
 		model.EndpointPortAttr:      test.PortStr2,
 		model.EndpointPortNameAttr:  test.PortName2,
@@ -364,7 +366,8 @@ func getHttpInstanceSummaryForTest() []types.HttpInstanceSummary {
 		{
 			InstanceId: aws.String(test.EndptId1),
 			Attributes: map[string]string{
-				model.ClusterIdAttrName:     test.ClusterIdValue,
+				model.ClusterIdAttr:         test.ClusterId,
+				model.ClustersetIdAttr:      test.ClustersetId,
 				model.EndpointIpv4Attr:      test.EndptIp1,
 				model.EndpointPortAttr:      test.PortStr1,
 				model.EndpointPortNameAttr:  test.PortName1,
@@ -378,7 +381,8 @@ func getHttpInstanceSummaryForTest() []types.HttpInstanceSummary {
 		{
 			InstanceId: aws.String(test.EndptId2),
 			Attributes: map[string]string{
-				model.ClusterIdAttrName:     test.ClusterIdValue,
+				model.ClusterIdAttr:         test.ClusterId,
+				model.ClustersetIdAttr:      test.ClustersetId,
 				model.EndpointIpv4Attr:      test.EndptIp2,
 				model.EndpointPortAttr:      test.PortStr2,
 				model.EndpointPortNameAttr:  test.PortName2,

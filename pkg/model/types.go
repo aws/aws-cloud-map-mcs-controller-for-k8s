@@ -39,6 +39,8 @@ type Endpoint struct {
 	IP           string
 	EndpointPort Port
 	ServicePort  Port
+	ClusterId    string
+	ClustersetId string
 	Attributes   map[string]string
 }
 
@@ -56,7 +58,8 @@ const (
 	EndpointPortAttr      = "AWS_INSTANCE_PORT"
 	EndpointPortNameAttr  = "ENDPOINT_PORT_NAME"
 	EndpointProtocolAttr  = "ENDPOINT_PROTOCOL"
-	ClusterIdAttrName     = "CLUSTER_ID"
+	ClusterIdAttr         = "CLUSTER_ID"
+	ClustersetIdAttr      = "CLUSTERSET_ID"
 	ServicePortNameAttr   = "SERVICE_PORT_NAME"
 	ServicePortAttr       = "SERVICE_PORT"
 	ServiceTargetPortAttr = "SERVICE_TARGET_PORT"
@@ -74,7 +77,7 @@ func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (endpointPtr *Endp
 		attributes[key] = value
 	}
 
-	// Remove and set the IP, Port, Port
+	// Remove and set the IP, Port, Port, ClusterId
 	if endpoint.IP, err = removeStringAttr(attributes, EndpointIpv4Attr); err != nil {
 		return nil, err
 	}
@@ -84,6 +87,14 @@ func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (endpointPtr *Endp
 	}
 
 	if endpoint.ServicePort, err = servicePortFromAttr(attributes); err != nil {
+		return nil, err
+	}
+
+	if endpoint.ClusterId, err = clusterIdFromAttr(attributes); err != nil {
+		return nil, err
+	}
+
+	if endpoint.ClustersetId, err = clustersetIdFromAttr(attributes); err != nil {
 		return nil, err
 	}
 
@@ -124,6 +135,16 @@ func servicePortFromAttr(attributes map[string]string) (port Port, err error) {
 	return port, err
 }
 
+func clusterIdFromAttr(attributes map[string]string) (clusterId string, err error) {
+	clusterId, err = removeStringAttr(attributes, ClusterIdAttr)
+	return clusterId, err
+}
+
+func clustersetIdFromAttr(attributes map[string]string) (clustersetId string, err error) {
+	clustersetId, err = removeStringAttr(attributes, ClustersetIdAttr)
+	return clustersetId, err
+}
+
 func removeStringAttr(attributes map[string]string, attr string) (string, error) {
 	if value, hasValue := attributes[attr]; hasValue {
 		delete(attributes, attr)
@@ -149,6 +170,8 @@ func removeIntAttr(attributes map[string]string, attr string) (int32, error) {
 func (e *Endpoint) GetCloudMapAttributes() map[string]string {
 	attrs := make(map[string]string)
 
+	attrs[ClusterIdAttr] = e.ClusterId
+	attrs[ClustersetIdAttr] = e.ClustersetId
 	attrs[EndpointIpv4Attr] = e.IP
 	attrs[EndpointPortAttr] = strconv.Itoa(int(e.EndpointPort.Port))
 	attrs[EndpointProtocolAttr] = e.EndpointPort.Protocol
