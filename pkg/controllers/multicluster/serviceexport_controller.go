@@ -225,6 +225,14 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 		return nil, err
 	}
 
+	// TODO: make const or enum?
+	var serviceType string
+	if svc.Spec.ClusterIP == "None" {
+		serviceType = "Headless"
+	} else {
+		serviceType = "ClusterIP"
+	}
+
 	servicePortMap := make(map[string]model.Port)
 	for _, svcPort := range svc.Spec.Ports {
 		servicePortMap[svcPort.Name] = ServicePortToPort(svcPort)
@@ -249,6 +257,7 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 						IP:           IP,
 						EndpointPort: port,
 						ServicePort:  servicePortMap[*endpointPort.Name],
+						ServiceType:  serviceType,
 						Attributes:   attributes,
 					})
 				}

@@ -39,6 +39,7 @@ type Endpoint struct {
 	IP           string
 	EndpointPort Port
 	ServicePort  Port
+	ServiceType  string
 	Attributes   map[string]string
 }
 
@@ -60,6 +61,7 @@ const (
 	ServicePortAttr       = "SERVICE_PORT"
 	ServiceTargetPortAttr = "SERVICE_TARGET_PORT"
 	ServiceProtocolAttr   = "SERVICE_PROTOCOL"
+	ServiceTypeAttr       = "SERVICE_TYPE"
 )
 
 // NewEndpointFromInstance converts a Cloud Map HttpInstanceSummary to an endpoint.
@@ -73,7 +75,7 @@ func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (endpointPtr *Endp
 		attributes[key] = value
 	}
 
-	// Remove and set the IP, Port, Port
+	// Remove and set the IP, Port, Port, ServiceType
 	if endpoint.IP, err = removeStringAttr(attributes, EndpointIpv4Attr); err != nil {
 		return nil, err
 	}
@@ -83,6 +85,10 @@ func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (endpointPtr *Endp
 	}
 
 	if endpoint.ServicePort, err = servicePortFromAttr(attributes); err != nil {
+		return nil, err
+	}
+
+	if endpoint.ServiceType, err = removeStringAttr(attributes, ServiceTypeAttr); err != nil {
 		return nil, err
 	}
 
@@ -156,6 +162,7 @@ func (e *Endpoint) GetCloudMapAttributes() map[string]string {
 	attrs[ServicePortAttr] = strconv.Itoa(int(e.ServicePort.Port))
 	attrs[ServiceTargetPortAttr] = e.ServicePort.TargetPort
 	attrs[ServiceProtocolAttr] = e.ServicePort.Protocol
+	attrs[ServiceTypeAttr] = e.ServiceType
 
 	for key, val := range e.Attributes {
 		attrs[key] = val
