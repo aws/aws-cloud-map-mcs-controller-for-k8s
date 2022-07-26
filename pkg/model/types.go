@@ -35,7 +35,7 @@ type Service struct {
 
 const (
 	HeadlessType  ServiceType = "Headless"
-	ClusterIPType ServiceType = "ClusterIP"
+	ClusterIPType ServiceType = "ClusterSetIP"
 )
 
 type ServiceType string
@@ -211,16 +211,7 @@ func EndpointIdFromIPAddressAndPort(address string, port Port) string {
 
 // Gives string representation for ServiceType
 func (serviceType ServiceType) String() string {
-	serviceTypes := [...]string{"Headless", "ClusterIP"}
-	// returning string representation
-	x := string(serviceType)
-	for _, v := range serviceTypes {
-		if v == x {
-			return x
-		}
-	}
-
-	return "" // empty string if unknown
+	return string(serviceType)
 }
 
 func ConvertNamespaceType(nsType types.NamespaceType) (namespaceType NamespaceType) {

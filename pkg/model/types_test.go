@@ -9,7 +9,7 @@ import (
 
 var instId = "my-instance"
 var ip = "192.168.0.1"
-var serviceType = "ClusterIP"
+var serviceType = "ClusterSetIP"
 
 func TestNewEndpointFromInstance(t *testing.T) {
 	tests := []struct {
