@@ -35,6 +35,10 @@ func TestServiceExportReconciler_Reconcile_NewServiceExport(t *testing.T) {
 		}).
 		Build()
 
+	// set global variables
+	ClusterId = test.ClusterId
+	ClustersetId = test.ClustersetId
+
 	// create a mock cloudmap service discovery client
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
@@ -83,6 +87,10 @@ func TestServiceExportReconciler_Reconcile_ExistingServiceExport(t *testing.T) {
 		}).
 		Build()
 
+	// set global variables
+	ClusterId = test.ClusterId
+	ClustersetId = test.ClustersetId
+
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
@@ -130,6 +138,10 @@ func TestServiceExportReconciler_Reconcile_DeleteExistingService(t *testing.T) {
 		}).
 		Build()
 
+	// set global variables
+	ClusterId = test.ClusterId
+	ClustersetId = test.ClustersetId
+
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
@@ -171,6 +183,9 @@ func TestServiceExportReconciler_Reconcile_NoClusterId(t *testing.T) {
 		}).
 		Build()
 
+	ClusterId = ""
+	ClustersetId = ""
+
 	// create a mock cloudmap service discovery client
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
@@ -188,7 +203,7 @@ func TestServiceExportReconciler_Reconcile_NoClusterId(t *testing.T) {
 
 	// Reconciling should throw an error
 	got, err := reconciler.Reconcile(context.Background(), request)
-	expectedError := fmt.Errorf("clusterproperties.about.k8s.io \"id.k8s.io\" not found")
+	expectedError := fmt.Errorf("ClusterProperty id.k8s.io not found")
 	assert.ErrorContains(t, err, expectedError.Error())
 	assert.Equal(t, ctrl.Result{}, got, "Result should be empty")
 }

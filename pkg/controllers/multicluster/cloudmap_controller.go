@@ -22,6 +22,12 @@ const (
 	syncPeriod = 2 * time.Second
 )
 
+var (
+	ClusterId                    string
+	ClustersetId                 string
+	ClusterPropertiesNeedRefresh = false
+)
+
 // CloudMapReconciler reconciles state of Cloud Map services with local ServiceImport objects
 type CloudMapReconciler struct {
 	Client   client.Client
@@ -54,13 +60,13 @@ func (r *CloudMapReconciler) Start(ctx context.Context) error {
 
 // Reconcile triggers a single reconciliation round
 func (r *CloudMapReconciler) Reconcile(ctx context.Context) error {
-	clusterPropertyForClustersetId := &aboutv1alpha1.ClusterProperty{}
-	err := r.Client.Get(ctx, client.ObjectKey{Name: ClustersetIdName}, clusterPropertyForClustersetId)
-	if err != nil {
-		r.Log.Error(err, "error getting ClusterProperty for clustersetId")
-		return err
+	if ClusterPropertiesNeedRefresh || ClusterId == "" || ClustersetId == "" {
+		err := r.setClusterPropertyGlobalVariables(ctx)
+		if err != nil {
+			r.Log.Error(err, "failed to set cluster properties")
+			return err
+		}
 	}
-	clustersetId := clusterPropertyForClustersetId.Spec.Value
 
 	namespaces := v1.NamespaceList{}
 	if err := r.Client.List(ctx, &namespaces); err != nil {
@@ -69,7 +75,7 @@ func (r *CloudMapReconciler) Reconcile(ctx context.Context) error {
 	}
 
 	for _, ns := range namespaces.Items {
-		if err := r.reconcileNamespace(ctx, ns.Name, clustersetId); err != nil {
+		if err := r.reconcileNamespace(ctx, ns.Name); err != nil {
 			return err
 		}
 	}
@@ -77,10 +83,10 @@ func (r *CloudMapReconciler) Reconcile(ctx context.Context) error {
 	return nil
 }
 
-func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceName string, clustersetId string) error {
+func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceName string) error {
 	r.Log.Debug("syncing namespace", "namespace", namespaceName)
 
-	desiredServices, err := r.Cloudmap.ListServices(ctx, namespaceName, clustersetId)
+	desiredServices, err := r.Cloudmap.ListServices(ctx, namespaceName, ClustersetId)
 	if err != nil {
 		r.Log.Error(err, "failed to fetch the list Services")
 		return err
@@ -309,4 +315,39 @@ func (r *CloudMapReconciler) updateDerivedService(ctx context.Context, svc *v1.S
 	}
 
 	return nil
+}
+
+func (r *CloudMapReconciler) setClusterPropertyGlobalVariables(ctx context.Context) error {
+	var err error
+	ClusterId, err = r.getClusterId(ctx)
+	if err != nil {
+		return err
+	}
+	ClustersetId, err = r.getClustersetId(ctx)
+	if err != nil {
+		return err
+	}
+	ClusterPropertiesNeedRefresh = false
+	r.Log.Debug("ClusterProperties set", "ClusterId", ClusterId, "ClustersetId", ClustersetId)
+	return nil
+}
+
+func (r *CloudMapReconciler) getClusterId(ctx context.Context) (string, error) {
+	clusterPropertyForClusterId := &aboutv1alpha1.ClusterProperty{}
+	err := r.Client.Get(ctx, client.ObjectKey{Name: ClusterIdName}, clusterPropertyForClusterId)
+	if err != nil {
+		r.Log.Error(err, "error getting ClusterProperty for clusterId")
+		return "", err
+	}
+	return clusterPropertyForClusterId.Spec.Value, nil
+}
+
+func (r *CloudMapReconciler) getClustersetId(ctx context.Context) (string, error) {
+	clusterPropertyForClustersetId := &aboutv1alpha1.ClusterProperty{}
+	err := r.Client.Get(ctx, client.ObjectKey{Name: ClustersetIdName}, clusterPropertyForClustersetId)
+	if err != nil {
+		r.Log.Error(err, "error getting ClusterProperty for clustersetId")
+		return "", err
+	}
+	return clusterPropertyForClustersetId.Spec.Value, nil
 }
