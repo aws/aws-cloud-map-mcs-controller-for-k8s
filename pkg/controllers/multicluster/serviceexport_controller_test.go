@@ -2,8 +2,10 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	cloudmapMock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
+	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
 	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
@@ -27,11 +29,15 @@ func TestServiceExportReconciler_Reconcile_NewServiceExport(t *testing.T) {
 	// create a fake controller client and add some objects
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(getServiceExportScheme()).
-		WithObjects(k8sServiceForTest(), serviceExportForTest()).
+		WithObjects(k8sServiceForTest(), serviceExportForTest(), clusterIdForTest(), clustersetIdForTest()).
 		WithLists(&discovery.EndpointSliceList{
 			Items: []discovery.EndpointSlice{*endpointSliceForTest()},
 		}).
 		Build()
+
+	// set global variables
+	ClusterId = test.ClusterId
+	ClustersetId = test.ClustersetId
 
 	// create a mock cloudmap service discovery client
 	mockController := gomock.NewController(t)
@@ -41,8 +47,8 @@ func TestServiceExportReconciler_Reconcile_NewServiceExport(t *testing.T) {
 	// expected interactions with the Cloud Map client
 	// The first get call is expected to return nil, then second call after the creation of service is
 	// supposed to return the value
-	first := mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName).Return(nil, nil)
-	second := mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName).
+	first := mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName, test.ClustersetId).Return(nil, nil)
+	second := mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName, test.ClustersetId).
 		Return(&model.Service{Namespace: test.HttpNsName, Name: test.SvcName}, nil)
 	gomock.InOrder(first, second)
 	mock.EXPECT().CreateService(gomock.Any(), test.HttpNsName, test.SvcName).Return(nil).Times(1)
@@ -75,11 +81,15 @@ func TestServiceExportReconciler_Reconcile_ExistingServiceExport(t *testing.T) {
 	// create a fake controller client and add some objects
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(getServiceExportScheme()).
-		WithObjects(k8sServiceForTest(), serviceExportForTest()).
+		WithObjects(k8sServiceForTest(), serviceExportForTest(), clusterIdForTest(), clustersetIdForTest()).
 		WithLists(&discovery.EndpointSliceList{
 			Items: []discovery.EndpointSlice{*endpointSliceForTest()},
 		}).
 		Build()
+
+	// set global variables
+	ClusterId = test.ClusterId
+	ClustersetId = test.ClustersetId
 
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
@@ -87,7 +97,7 @@ func TestServiceExportReconciler_Reconcile_ExistingServiceExport(t *testing.T) {
 	mock := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
 
 	// GetService from Cloudmap returns endpoint1 and endpoint2
-	mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName).
+	mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName, test.ClustersetId).
 		Return(test.GetTestService(), nil)
 	// call to delete the endpoint not present in the k8s cluster
 	mock.EXPECT().DeleteEndpoints(gomock.Any(), test.HttpNsName, test.SvcName,
@@ -122,11 +132,15 @@ func TestServiceExportReconciler_Reconcile_DeleteExistingService(t *testing.T) {
 	serviceExportObj.Finalizers = []string{ServiceExportFinalizer}
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(getServiceExportScheme()).
-		WithObjects(serviceExportObj).
+		WithObjects(serviceExportObj, clusterIdForTest(), clustersetIdForTest()).
 		WithLists(&discovery.EndpointSliceList{
 			Items: []discovery.EndpointSlice{*endpointSliceForTest()},
 		}).
 		Build()
+
+	// set global variables
+	ClusterId = test.ClusterId
+	ClustersetId = test.ClustersetId
 
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
@@ -134,7 +148,7 @@ func TestServiceExportReconciler_Reconcile_DeleteExistingService(t *testing.T) {
 	mock := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
 
 	// GetService from Cloudmap returns endpoint1 and endpoint2
-	mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName).
+	mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName, test.ClustersetId).
 		Return(test.GetTestService(), nil)
 	// call to delete the endpoint in the cloudmap
 	mock.EXPECT().DeleteEndpoints(gomock.Any(), test.HttpNsName, test.SvcName,
@@ -159,8 +173,44 @@ func TestServiceExportReconciler_Reconcile_DeleteExistingService(t *testing.T) {
 	assert.Empty(t, serviceExport.Finalizers, "Finalizer removed from the service export")
 }
 
+func TestServiceExportReconciler_Reconcile_NoClusterId(t *testing.T) {
+	// create a fake controller client and add some objects
+	fakeClient := fake.NewClientBuilder().
+		WithScheme(getServiceExportScheme()).
+		WithObjects(k8sServiceForTest(), serviceExportForTest()).
+		WithLists(&discovery.EndpointSliceList{
+			Items: []discovery.EndpointSlice{*endpointSliceForTest()},
+		}).
+		Build()
+
+	ClusterId = ""
+	ClustersetId = ""
+
+	// create a mock cloudmap service discovery client
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	mock := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
+
+	reconciler := getServiceExportReconciler(t, mock, fakeClient)
+
+	request := ctrl.Request{
+		NamespacedName: types.NamespacedName{
+			Namespace: test.HttpNsName,
+			Name:      test.SvcName,
+		},
+	}
+
+	// Reconciling should throw an error
+	got, err := reconciler.Reconcile(context.Background(), request)
+	expectedError := fmt.Errorf("ClusterProperty id.k8s.io not found")
+	assert.ErrorContains(t, err, expectedError.Error())
+	assert.Equal(t, ctrl.Result{}, got, "Result should be empty")
+}
+
 func getServiceExportScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
+	scheme.AddKnownTypes(aboutv1alpha1.GroupVersion, &aboutv1alpha1.ClusterProperty{})
 	scheme.AddKnownTypes(multiclusterv1alpha1.GroupVersion, &multiclusterv1alpha1.ServiceExport{})
 	scheme.AddKnownTypes(v1.SchemeGroupVersion, &v1.Service{})
 	scheme.AddKnownTypes(discovery.SchemeGroupVersion, &discovery.EndpointSlice{}, &discovery.EndpointSliceList{})

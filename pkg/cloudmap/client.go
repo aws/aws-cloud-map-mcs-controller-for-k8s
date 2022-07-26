@@ -14,13 +14,13 @@ import (
 // multi-cluster service discovery for Kubernetes controller. It maintains local caches for all AWS Cloud Map resources.
 type ServiceDiscoveryClient interface {
 	// ListServices returns all services and their endpoints for a given namespace.
-	ListServices(ctx context.Context, namespaceName string) ([]*model.Service, error)
+	ListServices(ctx context.Context, namespaceName string, clustersetId string) ([]*model.Service, error)
 
 	// CreateService creates a Cloud Map service resource, and namespace if necessary.
 	CreateService(ctx context.Context, namespaceName string, serviceName string) error
 
 	// GetService returns a service resource fetched from AWS Cloud Map or nil if not found.
-	GetService(ctx context.Context, namespaceName string, serviceName string) (*model.Service, error)
+	GetService(ctx context.Context, namespaceName string, serviceName string, clustersetId string) (*model.Service, error)
 
 	// RegisterEndpoints registers all endpoints for given service.
 	RegisterEndpoints(ctx context.Context, namespaceName string, serviceName string, endpoints []*model.Endpoint) error
@@ -53,14 +53,14 @@ func NewServiceDiscoveryClientWithCustomCache(cfg *aws.Config, cacheConfig *SdCa
 	}
 }
 
-func (sdc *serviceDiscoveryClient) ListServices(ctx context.Context, nsName string) (svcs []*model.Service, err error) {
+func (sdc *serviceDiscoveryClient) ListServices(ctx context.Context, nsName string, clustersetId string) (svcs []*model.Service, err error) {
 	svcIdMap, err := sdc.getServiceIds(ctx, nsName)
 	if err != nil {
 		return svcs, err
 	}
 
 	for svcName := range svcIdMap {
-		endpts, endptsErr := sdc.getEndpoints(ctx, nsName, svcName)
+		endpts, endptsErr := sdc.getEndpoints(ctx, nsName, svcName, clustersetId)
 		if endptsErr != nil {
 			return svcs, endptsErr
 		}
@@ -102,7 +102,7 @@ func (sdc *serviceDiscoveryClient) CreateService(ctx context.Context, nsName str
 	return nil
 }
 
-func (sdc *serviceDiscoveryClient) GetService(ctx context.Context, nsName string, svcName string) (svc *model.Service, err error) {
+func (sdc *serviceDiscoveryClient) GetService(ctx context.Context, nsName string, svcName string, clustersetId string) (svc *model.Service, err error) {
 	sdc.log.Info("fetching a service", "namespace", nsName, "name", svcName)
 	endpts, cacheHit := sdc.cache.GetEndpoints(nsName, svcName)
 
@@ -123,7 +123,7 @@ func (sdc *serviceDiscoveryClient) GetService(ctx context.Context, nsName string
 		return nil, nil
 	}
 
-	endpts, err = sdc.getEndpoints(ctx, nsName, svcName)
+	endpts, err = sdc.getEndpoints(ctx, nsName, svcName, clustersetId)
 
 	if err != nil {
 		return nil, err
@@ -221,13 +221,13 @@ func (sdc *serviceDiscoveryClient) DeleteEndpoints(ctx context.Context, nsName s
 	return nil
 }
 
-func (sdc *serviceDiscoveryClient) getEndpoints(ctx context.Context, nsName string, svcName string) (endpts []*model.Endpoint, err error) {
+func (sdc *serviceDiscoveryClient) getEndpoints(ctx context.Context, nsName string, svcName string, clustersetId string) (endpts []*model.Endpoint, err error) {
 	endpts, cacheHit := sdc.cache.GetEndpoints(nsName, svcName)
 	if cacheHit {
 		return endpts, nil
 	}
 
-	insts, err := sdc.sdApi.DiscoverInstances(ctx, nsName, svcName)
+	insts, err := sdc.sdApi.DiscoverInstances(ctx, nsName, svcName, clustersetId)
 	if err != nil {
 		return nil, err
 	}

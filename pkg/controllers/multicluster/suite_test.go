@@ -37,8 +37,14 @@ var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
 	By("bootstrapping test environment")
+
+	crds := []string{
+		filepath.Join("..", "..", "..", "config", "crd", "bases", "multicluster.x-k8s.io_serviceexports.yaml"),
+		filepath.Join("..", "..", "..", "config", "crd", "bases", "multicluster.x-k8s.io_serviceimports.yaml"),
+	}
+
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
+		CRDDirectoryPaths:     crds,
 		ErrorIfCRDPathMissing: true,
 	}
 

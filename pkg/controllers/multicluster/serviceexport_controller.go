@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
@@ -28,6 +29,8 @@ import (
 )
 
 const (
+	ClusterIdName             = "id.k8s.io"
+	ClustersetIdName          = "clusterset.k8s.io"
 	K8sVersionAttr            = "K8S_CONTROLLER"
 	ServiceExportFinalizer    = "multicluster.k8s.aws/service-export-finalizer"
 	EndpointSliceServiceLabel = "kubernetes.io/service-name"
@@ -68,6 +71,15 @@ func (r *ServiceExportReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	// Mark ServiceExport to be deleted, which is indicated by the deletion timestamp being set.
 	isServiceExportMarkedForDelete := serviceExport.GetDeletionTimestamp() != nil
+
+	if !isServiceExportMarkedForDelete {
+		if ClusterId == "" {
+			return ctrl.Result{}, fmt.Errorf("ClusterProperty %s not found", ClusterIdName)
+		}
+		if ClustersetId == "" {
+			return ctrl.Result{}, fmt.Errorf("ClusterProperty %s not found", ClustersetIdName)
+		}
+	}
 
 	service := v1.Service{}
 	namespacedName := types.NamespacedName{Namespace: serviceExport.Namespace, Name: serviceExport.Name}
@@ -165,7 +177,7 @@ func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, serviceExpor
 }
 
 func (r *ServiceExportReconciler) createOrGetCloudMapService(ctx context.Context, service *v1.Service) (*model.Service, error) {
-	cmService, err := r.CloudMap.GetService(ctx, service.Namespace, service.Name)
+	cmService, err := r.CloudMap.GetService(ctx, service.Namespace, service.Name, ClustersetId)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +189,7 @@ func (r *ServiceExportReconciler) createOrGetCloudMapService(ctx context.Context
 				"namespace", service.Namespace, "name", service.Name)
 			return nil, err
 		}
-		if cmService, err = r.CloudMap.GetService(ctx, service.Namespace, service.Name); err != nil {
+		if cmService, err = r.CloudMap.GetService(ctx, service.Namespace, service.Name, ClustersetId); err != nil {
 			return nil, err
 		}
 	}
@@ -189,7 +201,7 @@ func (r *ServiceExportReconciler) handleDelete(ctx context.Context, serviceExpor
 	if controllerutil.ContainsFinalizer(serviceExport, ServiceExportFinalizer) {
 		r.Log.Info("removing service export", "namespace", serviceExport.Namespace, "name", serviceExport.Name)
 
-		cmService, err := r.CloudMap.GetService(ctx, serviceExport.Namespace, serviceExport.Name)
+		cmService, err := r.CloudMap.GetService(ctx, serviceExport.Namespace, serviceExport.Name, ClustersetId)
 		if err != nil {
 			r.Log.Error(err, "error fetching Service from Cloud Map",
 				"namespace", serviceExport.Namespace, "name", serviceExport.Name)
@@ -241,6 +253,7 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 					if version.GetVersion() != "" {
 						attributes[K8sVersionAttr] = version.PackageName + " " + version.GetVersion()
 					}
+
 					// TODO extract attributes - pod, node and other useful details if possible
 
 					port := EndpointPortToPort(endpointPort)
@@ -249,6 +262,8 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 						IP:           IP,
 						EndpointPort: port,
 						ServicePort:  servicePortMap[*endpointPort.Name],
+						ClusterId:    ClusterId,
+						ClustersetId: ClustersetId,
 						Attributes:   attributes,
 					})
 				}
@@ -270,6 +285,12 @@ func (r *ServiceExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.endpointSliceEventHandler()),
 			builder.WithPredicates(r.endpointSliceFilter()),
 		).
+		// Watch for changes to ClusterProperty objects. If a ClusterProperty object is
+		// created, updated or deleted, the controller will reconcile all service exports
+		Watches(
+			&source.Kind{Type: &aboutv1alpha1.ClusterProperty{}},
+			handler.EnqueueRequestsFromMapFunc(r.clusterPropertyEventHandler()),
+		).
 		Complete(r)
 }
 
@@ -283,6 +304,27 @@ func (r *ServiceExportReconciler) endpointSliceEventHandler() handler.MapFunc {
 				Namespace: object.GetNamespace(),
 			}},
 		}
+	}
+}
+
+func (r *ServiceExportReconciler) clusterPropertyEventHandler() handler.MapFunc {
+	// Return reconcile requests for all service exports
+	return func(object client.Object) []reconcile.Request {
+		serviceExports := &multiclusterv1alpha1.ServiceExportList{}
+		if err := r.Client.List(context.TODO(), serviceExports); err != nil {
+			r.Log.Error(err, "error listing services")
+			return nil
+		}
+
+		result := make([]reconcile.Request, 0)
+		for _, serviceExport := range serviceExports.Items {
+			result = append(result, reconcile.Request{NamespacedName: types.NamespacedName{
+				Name:      serviceExport.Name,
+				Namespace: serviceExport.Namespace,
+			}})
+		}
+		ClusterPropertiesNeedRefresh = true
+		return result
 	}
 }
 
