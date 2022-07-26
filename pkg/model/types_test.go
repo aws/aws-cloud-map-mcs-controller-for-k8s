@@ -49,7 +49,7 @@ func TestNewEndpointFromInstance(t *testing.T) {
 					TargetPort: "80",
 					Protocol:   "TCP",
 				},
-				ServiceType: serviceType,
+				ServiceType: ServiceType(serviceType),
 				Attributes: map[string]string{
 					"custom-attr": "custom-val",
 				},
@@ -135,7 +135,7 @@ func TestEndpoint_GetAttributes(t *testing.T) {
 		IP           string
 		EndpointPort Port
 		ServicePort  Port
-		ServiceType  string
+		ServiceType  ServiceType
 		Attributes   map[string]string
 	}
 	tests := []struct {
@@ -158,7 +158,7 @@ func TestEndpoint_GetAttributes(t *testing.T) {
 					TargetPort: "80",
 					Protocol:   "TCP",
 				},
-				ServiceType: serviceType,
+				ServiceType: ServiceType(serviceType),
 				Attributes: map[string]string{
 					"custom-attr": "custom-val",
 				},

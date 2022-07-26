@@ -33,13 +33,20 @@ type Service struct {
 	Endpoints []*Endpoint
 }
 
+const (
+	HeadlessType  ServiceType = "Headless"
+	ClusterIPType ServiceType = "ClusterIP"
+)
+
+type ServiceType string
+
 // Endpoint holds basic values and attributes for an endpoint.
 type Endpoint struct {
 	Id           string
 	IP           string
 	EndpointPort Port
 	ServicePort  Port
-	ServiceType  string
+	ServiceType  ServiceType
 	Attributes   map[string]string
 }
 
@@ -88,7 +95,7 @@ func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (endpointPtr *Endp
 		return nil, err
 	}
 
-	if endpoint.ServiceType, err = removeStringAttr(attributes, ServiceTypeAttr); err != nil {
+	if endpoint.ServiceType, err = serviceTypeFromAttr(attributes); err != nil {
 		return nil, err
 	}
 
@@ -96,6 +103,15 @@ func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (endpointPtr *Endp
 	endpoint.Attributes = attributes
 
 	return &endpoint, err
+}
+
+func serviceTypeFromAttr(attributes map[string]string) (serviceType ServiceType, err error) {
+	var serviceTypeStr string
+	if serviceTypeStr, err = removeStringAttr(attributes, ServiceTypeAttr); err != nil {
+		return serviceType, err
+	}
+	serviceType = ServiceType(serviceTypeStr)
+	return serviceType, err
 }
 
 func endpointPortFromAttr(attributes map[string]string) (port Port, err error) {
@@ -162,7 +178,7 @@ func (e *Endpoint) GetCloudMapAttributes() map[string]string {
 	attrs[ServicePortAttr] = strconv.Itoa(int(e.ServicePort.Port))
 	attrs[ServiceTargetPortAttr] = e.ServicePort.TargetPort
 	attrs[ServiceProtocolAttr] = e.ServicePort.Protocol
-	attrs[ServiceTypeAttr] = e.ServiceType
+	attrs[ServiceTypeAttr] = e.ServiceType.String()
 
 	for key, val := range e.Attributes {
 		attrs[key] = val
@@ -191,6 +207,20 @@ func EndpointIdFromIPAddressAndPort(address string, port Port) string {
 	address = strings.ReplaceAll(address, ".", "_")
 	address = strings.ReplaceAll(address, ":", "_")
 	return fmt.Sprintf("%s-%s-%d", strings.ToLower(port.Protocol), address, port.Port)
+}
+
+// Gives string representation for ServiceType
+func (serviceType ServiceType) String() string {
+	serviceTypes := [...]string{"Headless", "ClusterIP"}
+	// returning string representation
+	x := string(serviceType)
+	for _, v := range serviceTypes {
+		if v == x {
+			return x
+		}
+	}
+
+	return "" // empty string if unknown
 }
 
 func ConvertNamespaceType(nsType types.NamespaceType) (namespaceType NamespaceType) {

@@ -82,7 +82,7 @@ func GetTestEndpoint1() *model.Endpoint {
 			TargetPort: PortStr1,
 			Protocol:   Protocol1,
 		},
-		ServiceType: SvcType,
+		ServiceType: model.ClusterIPType,
 		Attributes:  make(map[string]string),
 	}
 }
@@ -102,7 +102,7 @@ func GetTestEndpoint2() *model.Endpoint {
 			TargetPort: PortStr2,
 			Protocol:   Protocol2,
 		},
-		ServiceType: SvcType,
+		ServiceType: model.ClusterIPType,
 		Attributes:  make(map[string]string),
 	}
 }
