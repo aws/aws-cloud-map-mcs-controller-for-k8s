@@ -229,12 +229,9 @@ func CreateEndpointSliceStruct(svc *v1.Service, svcImportName string) *discovery
 
 // ExtractServiceType finds the ServiceType of a given service as Headless/ClusterSetIP
 func ExtractServiceType(svc *v1.Service) model.ServiceType {
-	var serviceType model.ServiceType
 	if svc.Spec.ClusterIP == "None" {
-		serviceType = model.HeadlessType
-	} else {
-		serviceType = model.ClusterIPType
+		return model.HeadlessType
 	}
 
-	return serviceType
+	return model.ClusterIPType
 }

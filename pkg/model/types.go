@@ -35,7 +35,7 @@ type Service struct {
 
 const (
 	HeadlessType  ServiceType = "Headless"
-	ClusterIPType ServiceType = "ClusterSetIP"
+	ClusterIPType ServiceType = "ClusterIP"
 )
 
 type ServiceType string
@@ -82,7 +82,7 @@ func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (endpointPtr *Endp
 		attributes[key] = value
 	}
 
-	// Remove and set the IP, Port, Port, ServiceType
+	// Remove and set the IP, Port, Service Port, ServiceType
 	if endpoint.IP, err = removeStringAttr(attributes, EndpointIpv4Attr); err != nil {
 		return nil, err
 	}

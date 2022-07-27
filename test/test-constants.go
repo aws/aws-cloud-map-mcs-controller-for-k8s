@@ -32,7 +32,7 @@ const (
 	OpId1           = "operation-id-1"
 	OpId2           = "operation-id-2"
 	OpStart         = 1
-	SvcType         = "ClusterSetIP"
+	SvcType         = "ClusterIP"
 )
 
 func GetTestHttpNamespace() *model.Namespace {
