@@ -95,23 +95,16 @@ func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (endpointPtr *Endp
 		return nil, err
 	}
 
-	if endpoint.ServiceType, err = serviceTypeFromAttr(attributes); err != nil {
+	var serviceTypeStr string
+	if serviceTypeStr, err = removeStringAttr(attributes, ServiceTypeAttr); err != nil {
 		return nil, err
 	}
+	endpoint.ServiceType = ServiceType(serviceTypeStr)
 
 	// Add the remaining attributes
 	endpoint.Attributes = attributes
 
 	return &endpoint, err
-}
-
-func serviceTypeFromAttr(attributes map[string]string) (serviceType ServiceType, err error) {
-	var serviceTypeStr string
-	if serviceTypeStr, err = removeStringAttr(attributes, ServiceTypeAttr); err != nil {
-		return serviceType, err
-	}
-	serviceType = ServiceType(serviceTypeStr)
-	return serviceType, err
 }
 
 func endpointPortFromAttr(attributes map[string]string) (port Port, err error) {
