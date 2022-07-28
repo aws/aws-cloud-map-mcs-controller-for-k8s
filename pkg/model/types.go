@@ -101,11 +101,11 @@ func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (*Endpoint, error)
 	}
 	endpoint.ServicePort = servicePort
 
-	if serviceTypeStr, err := removeStringAttr(attributes, ServiceTypeAttr); err == nil {
-		endpoint.ServiceType = ServiceType(serviceTypeStr)
-	} else {
+	serviceTypeStr, err := removeStringAttr(attributes, ServiceTypeAttr)
+	if err != nil {
 		return nil, err
 	}
+	endpoint.ServiceType = ServiceType(serviceTypeStr)
 
 	// Add the remaining attributes
 	endpoint.Attributes = attributes
