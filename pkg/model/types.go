@@ -34,8 +34,8 @@ type Service struct {
 }
 
 const (
-	HeadlessType  ServiceType = "Headless"
-	ClusterIPType ServiceType = "ClusterIP"
+	HeadlessType     ServiceType = "Headless"
+	ClusterSetIPType ServiceType = "ClusterSetIP"
 )
 
 type ServiceType string
@@ -72,7 +72,7 @@ const (
 )
 
 // NewEndpointFromInstance converts a Cloud Map HttpInstanceSummary to an endpoint.
-func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (endpointPtr *Endpoint, err error) {
+func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (*Endpoint, error) {
 	endpoint := Endpoint{
 		Id:         *inst.InstanceId,
 		Attributes: make(map[string]string),
@@ -83,17 +83,23 @@ func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (endpointPtr *Endp
 	}
 
 	// Remove and set the IP, Port, Service Port, ServiceType
-	if endpoint.IP, err = removeStringAttr(attributes, EndpointIpv4Attr); err != nil {
+	ip, err := removeStringAttr(attributes, EndpointIpv4Attr)
+	if err != nil {
 		return nil, err
 	}
+	endpoint.IP = ip
 
-	if endpoint.EndpointPort, err = endpointPortFromAttr(attributes); err != nil {
+	endpointPort, err := endpointPortFromAttr(attributes)
+	if err != nil {
 		return nil, err
 	}
+	endpoint.EndpointPort = endpointPort
 
-	if endpoint.ServicePort, err = servicePortFromAttr(attributes); err != nil {
+	servicePort, err := servicePortFromAttr(attributes)
+	if err != nil {
 		return nil, err
 	}
+	endpoint.ServicePort = servicePort
 
 	if serviceTypeStr, err := removeStringAttr(attributes, ServiceTypeAttr); err == nil {
 		endpoint.ServiceType = ServiceType(serviceTypeStr)

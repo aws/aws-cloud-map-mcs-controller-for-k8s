@@ -233,5 +233,5 @@ func ExtractServiceType(svc *v1.Service) model.ServiceType {
 		return model.HeadlessType
 	}
 
-	return model.ClusterIPType
+	return model.ClusterSetIPType
 }

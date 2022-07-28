@@ -58,7 +58,7 @@ func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, po
 				Protocol:   string(v1.ProtocolTCP),
 			},
 			EndpointPort: endpointPort,
-			ServiceType:  model.ClusterIPType, // in scenario, we assume ClusterIP type
+			ServiceType:  model.ClusterSetIPType, // in scenario, we assume ClusterSetIP type
 			Attributes:   make(map[string]string),
 		})
 	}

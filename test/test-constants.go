@@ -32,7 +32,7 @@ const (
 	OpId1           = "operation-id-1"
 	OpId2           = "operation-id-2"
 	OpStart         = 1
-	SvcType         = "ClusterIP"
+	SvcType         = "ClusterSetIP"
 )
 
 func GetTestHttpNamespace() *model.Namespace {
@@ -82,7 +82,7 @@ func GetTestEndpoint1() *model.Endpoint {
 			TargetPort: PortStr1,
 			Protocol:   Protocol1,
 		},
-		ServiceType: model.ClusterIPType,
+		ServiceType: model.ClusterSetIPType,
 		Attributes:  make(map[string]string),
 	}
 }
@@ -102,7 +102,7 @@ func GetTestEndpoint2() *model.Endpoint {
 			TargetPort: PortStr2,
 			Protocol:   Protocol2,
 		},
-		ServiceType: model.ClusterIPType,
+		ServiceType: model.ClusterSetIPType,
 		Attributes:  make(map[string]string),
 	}
 }
