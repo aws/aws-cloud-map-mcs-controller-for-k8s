@@ -1,0 +1,11 @@
+kind: Service
+apiVersion: v1
+metadata:
+  namespace: example
+  name: my-service
+spec:
+  clusterIP: None
+  selector:
+    app: nginx
+  ports:
+    - port: 80
