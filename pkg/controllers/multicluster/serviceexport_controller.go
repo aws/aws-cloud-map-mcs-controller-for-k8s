@@ -225,6 +225,8 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 		return nil, err
 	}
 
+	serviceType := ExtractServiceType(svc)
+
 	servicePortMap := make(map[string]model.Port)
 	for _, svcPort := range svc.Spec.Ports {
 		servicePortMap[svcPort.Name] = ServicePortToPort(svcPort)
@@ -249,6 +251,7 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 						IP:           IP,
 						EndpointPort: port,
 						ServicePort:  servicePortMap[*endpointPort.Name],
+						ServiceType:  serviceType,
 						Attributes:   attributes,
 					})
 				}
