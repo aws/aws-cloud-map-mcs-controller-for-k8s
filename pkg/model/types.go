@@ -40,7 +40,7 @@ type Endpoint struct {
 	EndpointPort Port
 	ServicePort  Port
 	ClusterId    string
-	ClustersetId string
+	ClusterSetId string
 	Attributes   map[string]string
 }
 
@@ -59,7 +59,7 @@ const (
 	EndpointPortNameAttr  = "ENDPOINT_PORT_NAME"
 	EndpointProtocolAttr  = "ENDPOINT_PROTOCOL"
 	ClusterIdAttr         = "CLUSTER_ID"
-	ClustersetIdAttr      = "CLUSTERSET_ID"
+	ClusterSetIdAttr      = "CLUSTERSET_ID"
 	ServicePortNameAttr   = "SERVICE_PORT_NAME"
 	ServicePortAttr       = "SERVICE_PORT"
 	ServiceTargetPortAttr = "SERVICE_TARGET_PORT"
@@ -90,11 +90,11 @@ func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (endpointPtr *Endp
 		return nil, err
 	}
 
-	if endpoint.ClusterId, err = clusterIdFromAttr(attributes); err != nil {
+	if endpoint.ClusterId, err = removeStringAttr(attributes, ClusterIdAttr); err != nil {
 		return nil, err
 	}
 
-	if endpoint.ClustersetId, err = clustersetIdFromAttr(attributes); err != nil {
+	if endpoint.ClusterSetId, err = removeStringAttr(attributes, ClusterSetIdAttr); err != nil {
 		return nil, err
 	}
 
@@ -135,16 +135,6 @@ func servicePortFromAttr(attributes map[string]string) (port Port, err error) {
 	return port, err
 }
 
-func clusterIdFromAttr(attributes map[string]string) (clusterId string, err error) {
-	clusterId, err = removeStringAttr(attributes, ClusterIdAttr)
-	return clusterId, err
-}
-
-func clustersetIdFromAttr(attributes map[string]string) (clustersetId string, err error) {
-	clustersetId, err = removeStringAttr(attributes, ClustersetIdAttr)
-	return clustersetId, err
-}
-
 func removeStringAttr(attributes map[string]string, attr string) (string, error) {
 	if value, hasValue := attributes[attr]; hasValue {
 		delete(attributes, attr)
@@ -171,7 +161,7 @@ func (e *Endpoint) GetCloudMapAttributes() map[string]string {
 	attrs := make(map[string]string)
 
 	attrs[ClusterIdAttr] = e.ClusterId
-	attrs[ClustersetIdAttr] = e.ClustersetId
+	attrs[ClusterSetIdAttr] = e.ClusterSetId
 	attrs[EndpointIpv4Attr] = e.IP
 	attrs[EndpointPortAttr] = strconv.Itoa(int(e.EndpointPort.Port))
 	attrs[EndpointProtocolAttr] = e.EndpointPort.Protocol

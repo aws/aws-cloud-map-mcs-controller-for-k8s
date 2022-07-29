@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
 	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -83,26 +82,4 @@ func endpointSliceWithIpsAndPortsForTest(ips []string, ports []discovery.Endpoin
 	slice.Endpoints = testEndpoints
 
 	return slice
-}
-
-func clusterIdForTest() *aboutv1alpha1.ClusterProperty {
-	return &aboutv1alpha1.ClusterProperty{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: ClusterIdName,
-		},
-		Spec: aboutv1alpha1.ClusterPropertySpec{
-			Value: test.ClusterId,
-		},
-	}
-}
-
-func clustersetIdForTest() *aboutv1alpha1.ClusterProperty {
-	return &aboutv1alpha1.ClusterProperty{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: ClustersetIdName,
-		},
-		Spec: aboutv1alpha1.ClusterPropertySpec{
-			Value: test.ClustersetId,
-		},
-	}
 }

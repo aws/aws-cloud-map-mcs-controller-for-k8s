@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	multiclustercontrollers "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/controllers/multicluster"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -68,7 +69,7 @@ func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, po
 				NsTTL:    time.Second,
 				SvcTTL:   time.Second,
 				EndptTTL: time.Second,
-			}),
+			}, common.ClusterUtils{}),
 		expectedSvc: model.Service{
 			Namespace: nsName,
 			Name:      svcName,
@@ -82,7 +83,7 @@ func (e *exportServiceScenario) Run() error {
 
 	return wait.Poll(defaultScenarioPollInterval, defaultScenarioPollTimeout, func() (done bool, err error) {
 		fmt.Println("Polling service...")
-		cmSvc, err := e.sdClient.GetService(context.TODO(), e.expectedSvc.Namespace, e.expectedSvc.Name, "")
+		cmSvc, err := e.sdClient.GetService(context.TODO(), e.expectedSvc.Namespace, e.expectedSvc.Name)
 		if err != nil {
 			return true, err
 		}

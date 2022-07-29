@@ -10,7 +10,7 @@ import (
 var instId = "my-instance"
 var ip = "192.168.0.1"
 var clusterId = "test-mcs-clusterId"
-var clustersetId = "test-mcs-clustersetId"
+var clusterSetId = "test-mcs-clusterSetId"
 
 func TestNewEndpointFromInstance(t *testing.T) {
 	tests := []struct {
@@ -25,7 +25,7 @@ func TestNewEndpointFromInstance(t *testing.T) {
 				InstanceId: &instId,
 				Attributes: map[string]string{
 					ClusterIdAttr:         clusterId,
-					ClustersetIdAttr:      clustersetId,
+					ClusterSetIdAttr:      clusterSetId,
 					EndpointIpv4Attr:      ip,
 					EndpointPortAttr:      "80",
 					EndpointProtocolAttr:  "TCP",
@@ -52,7 +52,7 @@ func TestNewEndpointFromInstance(t *testing.T) {
 					Protocol:   "TCP",
 				},
 				ClusterId:    clusterId,
-				ClustersetId: clustersetId,
+				ClusterSetId: clusterSetId,
 				Attributes: map[string]string{
 					"custom-attr": "custom-val",
 				},
@@ -103,7 +103,7 @@ func TestNewEndpointFromInstance(t *testing.T) {
 			inst: &types.HttpInstanceSummary{
 				InstanceId: &instId,
 				Attributes: map[string]string{
-					ClustersetIdAttr:      clustersetId,
+					ClusterSetIdAttr:      clusterSetId,
 					EndpointIpv4Attr:      ip,
 					EndpointPortAttr:      "80",
 					EndpointProtocolAttr:  "TCP",
@@ -158,7 +158,7 @@ func TestEndpoint_GetAttributes(t *testing.T) {
 		EndpointPort Port
 		ServicePort  Port
 		ClusterId    string
-		ClustersetId string
+		ClusterSetId string
 		Attributes   map[string]string
 	}
 	tests := []struct {
@@ -182,14 +182,14 @@ func TestEndpoint_GetAttributes(t *testing.T) {
 					Protocol:   "TCP",
 				},
 				ClusterId:    clusterId,
-				ClustersetId: clustersetId,
+				ClusterSetId: clusterSetId,
 				Attributes: map[string]string{
 					"custom-attr": "custom-val",
 				},
 			},
 			want: map[string]string{
 				ClusterIdAttr:         clusterId,
-				ClustersetIdAttr:      clustersetId,
+				ClusterSetIdAttr:      clusterSetId,
 				EndpointIpv4Attr:      ip,
 				EndpointPortAttr:      "80",
 				EndpointProtocolAttr:  "TCP",
@@ -210,7 +210,7 @@ func TestEndpoint_GetAttributes(t *testing.T) {
 				EndpointPort: tt.fields.EndpointPort,
 				ServicePort:  tt.fields.ServicePort,
 				ClusterId:    tt.fields.ClusterId,
-				ClustersetId: tt.fields.ClustersetId,
+				ClusterSetId: tt.fields.ClusterSetId,
 				Attributes:   tt.fields.Attributes,
 			}
 			if got := e.GetCloudMapAttributes(); !reflect.DeepEqual(got, tt.want) {

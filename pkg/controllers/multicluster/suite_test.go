@@ -38,6 +38,8 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 
+	// TODO: Add CRDs for about.k8s.io_clusterproperties & add patch
+
 	crds := []string{
 		filepath.Join("..", "..", "..", "config", "crd", "bases", "multicluster.x-k8s.io_serviceexports.yaml"),
 		filepath.Join("..", "..", "..", "config", "crd", "bases", "multicluster.x-k8s.io_serviceimports.yaml"),

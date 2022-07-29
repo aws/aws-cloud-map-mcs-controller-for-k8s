@@ -31,7 +31,7 @@ func TestCloudMapReconciler_Reconcile(t *testing.T) {
 	s.AddKnownTypes(multiclusterv1alpha1.GroupVersion, &multiclusterv1alpha1.ServiceImportList{}, &multiclusterv1alpha1.ServiceImport{})
 	s.AddKnownTypes(aboutv1alpha1.GroupVersion, &aboutv1alpha1.ClusterProperty{})
 
-	fakeClient := fake.NewClientBuilder().WithRuntimeObjects(objs...).WithObjects(clusterIdForTest(), clustersetIdForTest()).Build()
+	fakeClient := fake.NewClientBuilder().WithRuntimeObjects(objs...).WithObjects(test.ClusterIdForTest(), test.ClusterSetIdForTest()).Build()
 
 	// create a mock cloudmap service discovery client
 	mockController := gomock.NewController(t)
@@ -39,7 +39,7 @@ func TestCloudMapReconciler_Reconcile(t *testing.T) {
 
 	mockSDClient := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
 	// The service model in the Cloudmap
-	mockSDClient.EXPECT().ListServices(context.TODO(), test.HttpNsName, test.ClustersetId).
+	mockSDClient.EXPECT().ListServices(context.TODO(), test.HttpNsName).
 		Return([]*model.Service{test.GetTestServiceWithEndpoint([]*model.Endpoint{test.GetTestEndpoint1()})}, nil)
 
 	reconciler := getReconciler(t, mockSDClient, fakeClient)
@@ -77,8 +77,9 @@ func TestCloudMapReconciler_Reconcile(t *testing.T) {
 
 func getReconciler(t *testing.T, mockSDClient *cloudmapMock.MockServiceDiscoveryClient, client client.Client) *CloudMapReconciler {
 	return &CloudMapReconciler{
-		Client:   client,
-		Cloudmap: mockSDClient,
-		Log:      common.NewLoggerWithLogr(testr.New(t)),
+		Client:       client,
+		Cloudmap:     mockSDClient,
+		Log:          common.NewLoggerWithLogr(testr.New(t)),
+		ClusterUtils: common.NewClusterUtils(client),
 	}
 }

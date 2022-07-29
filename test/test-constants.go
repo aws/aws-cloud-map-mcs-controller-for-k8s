@@ -3,6 +3,11 @@ package test
 import (
 	"fmt"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
+
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 )
 
@@ -14,7 +19,7 @@ const (
 	SvcName         = "svc-name"
 	SvcId           = "svc-id"
 	ClusterId       = "test-mcs-clusterId"
-	ClustersetId    = "test-mcs-clustersetId"
+	ClustersetId    = "test-mcs-clusterSetId"
 	EndptId1        = "tcp-192_168_0_1-1"
 	EndptId2        = "tcp-192_168_0_2-2"
 	EndptIp1        = "192.168.0.1"
@@ -84,7 +89,7 @@ func GetTestEndpoint1() *model.Endpoint {
 			Protocol:   Protocol1,
 		},
 		ClusterId:    ClusterId,
-		ClustersetId: ClustersetId,
+		ClusterSetId: ClustersetId,
 		Attributes:   make(map[string]string),
 	}
 }
@@ -105,7 +110,7 @@ func GetTestEndpoint2() *model.Endpoint {
 			Protocol:   Protocol2,
 		},
 		ClusterId:    ClusterId,
-		ClustersetId: ClustersetId,
+		ClusterSetId: ClustersetId,
 		Attributes:   make(map[string]string),
 	}
 }
@@ -120,4 +125,26 @@ func GetTestEndpoints(count int) (endpts []*model.Endpoint) {
 		endpts = append(endpts, e)
 	}
 	return endpts
+}
+
+func ClusterIdForTest() *aboutv1alpha1.ClusterProperty {
+	return &aboutv1alpha1.ClusterProperty{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: common.ClusterIdName,
+		},
+		Spec: aboutv1alpha1.ClusterPropertySpec{
+			Value: ClusterId,
+		},
+	}
+}
+
+func ClusterSetIdForTest() *aboutv1alpha1.ClusterProperty {
+	return &aboutv1alpha1.ClusterProperty{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: common.ClusterSetIdName,
+		},
+		Spec: aboutv1alpha1.ClusterPropertySpec{
+			Value: ClustersetId,
+		},
+	}
 }

@@ -87,21 +87,25 @@ func main() {
 
 	log.Info("Running with AWS region", "AWS_REGION", awsCfg.Region)
 
-	serviceDiscoveryClient := cloudmap.NewDefaultServiceDiscoveryClient(&awsCfg)
+	clusterUtils := common.NewClusterUtils(mgr.GetClient())
+	serviceDiscoveryClient := cloudmap.NewDefaultServiceDiscoveryClient(&awsCfg, clusterUtils)
+
 	if err = (&multiclustercontrollers.ServiceExportReconciler{
-		Client:   mgr.GetClient(),
-		Log:      common.NewLogger("controllers", "ServiceExport"),
-		Scheme:   mgr.GetScheme(),
-		CloudMap: serviceDiscoveryClient,
+		Client:       mgr.GetClient(),
+		Log:          common.NewLogger("controllers", "ServiceExport"),
+		Scheme:       mgr.GetScheme(),
+		CloudMap:     serviceDiscoveryClient,
+		ClusterUtils: clusterUtils,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "ServiceExport")
 		os.Exit(1)
 	}
 
 	cloudMapReconciler := &multiclustercontrollers.CloudMapReconciler{
-		Client:   mgr.GetClient(),
-		Cloudmap: serviceDiscoveryClient,
-		Log:      common.NewLogger("controllers", "Cloudmap"),
+		Client:       mgr.GetClient(),
+		Cloudmap:     serviceDiscoveryClient,
+		Log:          common.NewLogger("controllers", "Cloudmap"),
+		ClusterUtils: clusterUtils,
 	}
 
 	if err = mgr.Add(cloudMapReconciler); err != nil {
