@@ -55,7 +55,7 @@ func TestNewEndpointFromInstance(t *testing.T) {
 				},
 				ClusterId:    clusterId,
 				ClusterSetId: clusterSetId,
-				ServiceType: ServiceType(serviceType),
+				ServiceType:  ServiceType(serviceType),
 				Attributes: map[string]string{
 					"custom-attr": "custom-val",
 				},
@@ -140,7 +140,7 @@ func TestNewEndpointFromInstance(t *testing.T) {
 			},
 			wantErr: true,
 		},
-    {
+		{
 			name: "missing service type",
 			inst: &types.HttpInstanceSummary{
 				InstanceId: &instId,
@@ -208,7 +208,7 @@ func TestEndpoint_GetAttributes(t *testing.T) {
 				},
 				ClusterId:    clusterId,
 				ClusterSetId: clusterSetId,
-				ServiceType: ServiceType(serviceType),
+				ServiceType:  ServiceType(serviceType),
 				Attributes: map[string]string{
 					"custom-attr": "custom-val",
 				},

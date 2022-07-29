@@ -91,9 +91,8 @@ func GetTestEndpoint1() *model.Endpoint {
 		},
 		ClusterId:    ClusterId,
 		ClusterSetId: ClustersetId,
+		ServiceType:  model.ClusterSetIPType,
 		Attributes:   make(map[string]string),
-		ServiceType: model.ClusterSetIPType,
-		Attributes:  make(map[string]string),
 	}
 }
 
@@ -114,9 +113,8 @@ func GetTestEndpoint2() *model.Endpoint {
 		},
 		ClusterId:    ClusterId,
 		ClusterSetId: ClustersetId,
+		ServiceType:  model.ClusterSetIPType,
 		Attributes:   make(map[string]string),
-		ServiceType: model.ClusterSetIPType,
-		Attributes:  make(map[string]string),
 	}
 }
 
