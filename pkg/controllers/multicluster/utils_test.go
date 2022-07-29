@@ -489,3 +489,61 @@ func TestCreateServiceImportStruct(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractServiceType(t *testing.T) {
+	tests := []struct {
+		name string
+		svc  *v1.Service
+		want model.ServiceType
+	}{
+		{
+			name: "cluster ip type",
+			svc: &v1.Service{
+				TypeMeta: metav1.TypeMeta{},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      test.SvcName,
+					Namespace: test.HttpNsName,
+				},
+				Spec: v1.ServiceSpec{
+					Ports: []v1.ServicePort{{
+						Name:       test.PortName1,
+						Protocol:   test.Protocol1,
+						Port:       test.ServicePort1,
+						TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: test.Port1},
+					}},
+					ClusterIP: "10.108.89.43",
+				},
+				Status: v1.ServiceStatus{},
+			},
+			want: model.ClusterSetIPType,
+		},
+		{
+			name: "headless type",
+			svc: &v1.Service{
+				TypeMeta: metav1.TypeMeta{},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      test.SvcName,
+					Namespace: test.HttpNsName,
+				},
+				Spec: v1.ServiceSpec{
+					Ports: []v1.ServicePort{{
+						Name:       test.PortName1,
+						Protocol:   test.Protocol1,
+						Port:       test.ServicePort1,
+						TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: test.Port1},
+					}},
+					ClusterIP: "None",
+				},
+				Status: v1.ServiceStatus{},
+			},
+			want: model.HeadlessType,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ExtractServiceType(tt.svc); got != tt.want {
+				t.Errorf("ExtractServiceType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
