@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	multiclustercontrollers "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/controllers/multicluster"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -69,7 +70,7 @@ func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, po
 				NsTTL:    time.Second,
 				SvcTTL:   time.Second,
 				EndptTTL: time.Second,
-			}),
+			}, common.ClusterUtils{}),
 		expectedSvc: model.Service{
 			Namespace: nsName,
 			Name:      svcName,
