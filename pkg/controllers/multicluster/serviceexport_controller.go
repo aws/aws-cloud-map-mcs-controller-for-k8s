@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
@@ -35,10 +36,11 @@ const (
 
 // ServiceExportReconciler reconciles a ServiceExport object
 type ServiceExportReconciler struct {
-	Client   client.Client
-	Log      common.Logger
-	Scheme   *runtime.Scheme
-	CloudMap cloudmap.ServiceDiscoveryClient
+	Client       client.Client
+	Log          common.Logger
+	Scheme       *runtime.Scheme
+	CloudMap     cloudmap.ServiceDiscoveryClient
+	ClusterUtils common.ClusterUtils
 }
 
 // +kubebuilder:rbac:groups="",resources=services,verbs=get
@@ -53,6 +55,19 @@ func (r *ServiceExportReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	namespace := req.Namespace
 	name := req.NamespacedName
 	r.Log.Debug("reconciling ServiceExport", "Namespace", namespace, "Name", name)
+
+	var err error
+	clusterId, err := r.ClusterUtils.GetClusterId(ctx)
+	if err != nil {
+		r.Log.Error(err, "unable to retrieve clusterId")
+		return ctrl.Result{}, err
+	}
+	clusterSetId, err := r.ClusterUtils.GetClusterSetId(ctx)
+	if err != nil {
+		r.Log.Error(err, "unable to retrieve clusterSetId")
+		return ctrl.Result{}, err
+	}
+	r.Log.Debug("ClusterId and ClusterSetId found", "ClusterId", clusterId, "ClusterSetId", clusterSetId)
 
 	serviceExport := multiclusterv1alpha1.ServiceExport{}
 	if err := r.Client.Get(ctx, name, &serviceExport); err != nil {
@@ -232,6 +247,17 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 		servicePortMap[svcPort.Name] = ServicePortToPort(svcPort)
 	}
 
+	clusterId, err := r.ClusterUtils.GetClusterId(ctx)
+	if err != nil {
+		r.Log.Error(err, "unable to retrieve clusterId")
+		return nil, err
+	}
+	clusterSetId, err := r.ClusterUtils.GetClusterSetId(ctx)
+	if err != nil {
+		r.Log.Error(err, "unable to retrieve clusterSetId")
+		return nil, err
+	}
+
 	for _, slice := range endpointSlices.Items {
 		if slice.AddressType != discovery.AddressTypeIPv4 {
 			return nil, fmt.Errorf("unsupported address type %s for service %s", slice.AddressType, svc.Name)
@@ -243,6 +269,7 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 					if version.GetVersion() != "" {
 						attributes[K8sVersionAttr] = version.PackageName + " " + version.GetVersion()
 					}
+
 					// TODO extract attributes - pod, node and other useful details if possible
 
 					port := EndpointPortToPort(endpointPort)
@@ -251,6 +278,8 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 						IP:           IP,
 						EndpointPort: port,
 						ServicePort:  servicePortMap[*endpointPort.Name],
+						ClusterId:    clusterId,
+						ClusterSetId: clusterSetId,
 						ServiceType:  serviceType,
 						Attributes:   attributes,
 					})
@@ -273,6 +302,12 @@ func (r *ServiceExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.endpointSliceEventHandler()),
 			builder.WithPredicates(r.endpointSliceFilter()),
 		).
+		// Watch for changes to ClusterProperty objects. If a ClusterProperty object is
+		// created, updated or deleted, the controller will reconcile all service exports
+		Watches(
+			&source.Kind{Type: &aboutv1alpha1.ClusterProperty{}},
+			handler.EnqueueRequestsFromMapFunc(r.clusterPropertyEventHandler()),
+		).
 		Complete(r)
 }
 
@@ -286,6 +321,26 @@ func (r *ServiceExportReconciler) endpointSliceEventHandler() handler.MapFunc {
 				Namespace: object.GetNamespace(),
 			}},
 		}
+	}
+}
+
+func (r *ServiceExportReconciler) clusterPropertyEventHandler() handler.MapFunc {
+	// Return reconcile requests for all service exports
+	return func(object client.Object) []reconcile.Request {
+		serviceExports := &multiclusterv1alpha1.ServiceExportList{}
+		if err := r.Client.List(context.TODO(), serviceExports); err != nil {
+			r.Log.Error(err, "error listing services")
+			return nil
+		}
+
+		result := make([]reconcile.Request, 0)
+		for _, serviceExport := range serviceExports.Items {
+			result = append(result, reconcile.Request{NamespacedName: types.NamespacedName{
+				Name:      serviceExport.Name,
+				Namespace: serviceExport.Namespace,
+			}})
+		}
+		return result
 	}
 }
 

@@ -3,6 +3,11 @@ package test
 import (
 	"fmt"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
+
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 )
 
@@ -13,6 +18,8 @@ const (
 	DnsNsId         = "dns-ns-id"
 	SvcName         = "svc-name"
 	SvcId           = "svc-id"
+	ClusterId       = "test-mcs-clusterId"
+	ClustersetId    = "test-mcs-clusterSetId"
 	EndptId1        = "tcp-192_168_0_1-1"
 	EndptId2        = "tcp-192_168_0_2-2"
 	EndptIp1        = "192.168.0.1"
@@ -82,8 +89,10 @@ func GetTestEndpoint1() *model.Endpoint {
 			TargetPort: PortStr1,
 			Protocol:   Protocol1,
 		},
-		ServiceType: model.ClusterSetIPType,
-		Attributes:  make(map[string]string),
+		ClusterId:    ClusterId,
+		ClusterSetId: ClustersetId,
+		ServiceType:  model.ClusterSetIPType,
+		Attributes:   make(map[string]string),
 	}
 }
 
@@ -102,8 +111,10 @@ func GetTestEndpoint2() *model.Endpoint {
 			TargetPort: PortStr2,
 			Protocol:   Protocol2,
 		},
-		ServiceType: model.ClusterSetIPType,
-		Attributes:  make(map[string]string),
+		ClusterId:    ClusterId,
+		ClusterSetId: ClustersetId,
+		ServiceType:  model.ClusterSetIPType,
+		Attributes:   make(map[string]string),
 	}
 }
 
@@ -111,9 +122,32 @@ func GetTestEndpoints(count int) (endpts []*model.Endpoint) {
 	// use +3 offset go avoid collision with test endpoint 1 and 2
 	for i := 3; i < count+3; i++ {
 		e := GetTestEndpoint1()
+		e.ClusterId = ClusterId
 		e.Id = fmt.Sprintf("tcp-192_168_0_%d-1", i)
 		e.IP = fmt.Sprintf("192.168.0.%d", i)
 		endpts = append(endpts, e)
 	}
 	return endpts
+}
+
+func ClusterIdForTest() *aboutv1alpha1.ClusterProperty {
+	return &aboutv1alpha1.ClusterProperty{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: common.ClusterIdName,
+		},
+		Spec: aboutv1alpha1.ClusterPropertySpec{
+			Value: ClusterId,
+		},
+	}
+}
+
+func ClusterSetIdForTest() *aboutv1alpha1.ClusterProperty {
+	return &aboutv1alpha1.ClusterProperty{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: common.ClusterSetIdName,
+		},
+		Spec: aboutv1alpha1.ClusterPropertySpec{
+			Value: ClustersetId,
+		},
+	}
 }
