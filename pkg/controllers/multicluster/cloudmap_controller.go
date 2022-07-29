@@ -55,16 +55,17 @@ func (r *CloudMapReconciler) Start(ctx context.Context) error {
 // Reconcile triggers a single reconciliation round
 func (r *CloudMapReconciler) Reconcile(ctx context.Context) error {
 	var err error
-	clusterId, err = r.ClusterUtils.GetClusterId(ctx)
+	clusterId, err := r.ClusterUtils.GetClusterId(ctx)
 	if err != nil {
 		r.Log.Error(err, "unable to retrieve clusterId")
 		return err
 	}
-	clusterSetId, err = r.ClusterUtils.GetClusterSetId(ctx)
+	clusterSetId, err := r.ClusterUtils.GetClusterSetId(ctx)
 	if err != nil {
 		r.Log.Error(err, "unable to retrieve clusterSetId")
 		return err
 	}
+	r.Log.Debug("ClusterId and ClusterSetId found", "ClusterId", clusterId, "ClusterSetId", clusterSetId)
 
 	namespaces := v1.NamespaceList{}
 	if err := r.Client.List(ctx, &namespaces); err != nil {

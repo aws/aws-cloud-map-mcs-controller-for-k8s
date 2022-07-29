@@ -34,11 +34,6 @@ const (
 	EndpointSliceServiceLabel = "kubernetes.io/service-name"
 )
 
-var (
-	clusterId    string
-	clusterSetId string
-)
-
 // ServiceExportReconciler reconciles a ServiceExport object
 type ServiceExportReconciler struct {
 	Client       client.Client
@@ -62,16 +57,17 @@ func (r *ServiceExportReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	r.Log.Debug("reconciling ServiceExport", "Namespace", namespace, "Name", name)
 
 	var err error
-	clusterId, err = r.ClusterUtils.GetClusterId(ctx)
+	clusterId, err := r.ClusterUtils.GetClusterId(ctx)
 	if err != nil {
 		r.Log.Error(err, "unable to retrieve clusterId")
 		return ctrl.Result{}, err
 	}
-	clusterSetId, err = r.ClusterUtils.GetClusterSetId(ctx)
+	clusterSetId, err := r.ClusterUtils.GetClusterSetId(ctx)
 	if err != nil {
 		r.Log.Error(err, "unable to retrieve clusterSetId")
 		return ctrl.Result{}, err
 	}
+	r.Log.Debug("ClusterId and ClusterSetId found", "ClusterId", clusterId, "ClusterSetId", clusterSetId)
 
 	serviceExport := multiclusterv1alpha1.ServiceExport{}
 	if err := r.Client.Get(ctx, name, &serviceExport); err != nil {
@@ -249,6 +245,17 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 	servicePortMap := make(map[string]model.Port)
 	for _, svcPort := range svc.Spec.Ports {
 		servicePortMap[svcPort.Name] = ServicePortToPort(svcPort)
+	}
+
+	clusterId, err := r.ClusterUtils.GetClusterId(ctx)
+	if err != nil {
+		r.Log.Error(err, "unable to retrieve clusterId")
+		return nil, err
+	}
+	clusterSetId, err := r.ClusterUtils.GetClusterSetId(ctx)
+	if err != nil {
+		r.Log.Error(err, "unable to retrieve clusterSetId")
+		return nil, err
 	}
 
 	for _, slice := range endpointSlices.Items {
