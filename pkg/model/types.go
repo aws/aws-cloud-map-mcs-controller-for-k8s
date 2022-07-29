@@ -33,6 +33,13 @@ type Service struct {
 	Endpoints []*Endpoint
 }
 
+const (
+	HeadlessType     ServiceType = "Headless"
+	ClusterSetIPType ServiceType = "ClusterSetIP"
+)
+
+type ServiceType string
+
 // Endpoint holds basic values and attributes for an endpoint.
 type Endpoint struct {
 	Id           string
@@ -41,6 +48,7 @@ type Endpoint struct {
 	ServicePort  Port
 	ClusterId    string
 	ClusterSetId string
+	ServiceType  ServiceType
 	Attributes   map[string]string
 }
 
@@ -64,10 +72,11 @@ const (
 	ServicePortAttr       = "SERVICE_PORT"
 	ServiceTargetPortAttr = "SERVICE_TARGET_PORT"
 	ServiceProtocolAttr   = "SERVICE_PROTOCOL"
+	ServiceTypeAttr       = "SERVICE_TYPE"
 )
 
 // NewEndpointFromInstance converts a Cloud Map HttpInstanceSummary to an endpoint.
-func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (endpointPtr *Endpoint, err error) {
+func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (*Endpoint, error) {
 	endpoint := Endpoint{
 		Id:         *inst.InstanceId,
 		Attributes: make(map[string]string),
@@ -77,18 +86,30 @@ func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (endpointPtr *Endp
 		attributes[key] = value
 	}
 
-	// Remove and set the IP, Port, Port, ClusterId
-	if endpoint.IP, err = removeStringAttr(attributes, EndpointIpv4Attr); err != nil {
+	// Remove and set the IP, Port, Service Port, ServiceType, ClusterId, ClusterSetId
+	ip, err := removeStringAttr(attributes, EndpointIpv4Attr)
+	if err != nil {
 		return nil, err
 	}
+	endpoint.IP = ip
 
-	if endpoint.EndpointPort, err = endpointPortFromAttr(attributes); err != nil {
+	endpointPort, err := endpointPortFromAttr(attributes)
+	if err != nil {
 		return nil, err
 	}
+	endpoint.EndpointPort = endpointPort
 
-	if endpoint.ServicePort, err = servicePortFromAttr(attributes); err != nil {
+	servicePort, err := servicePortFromAttr(attributes)
+	if err != nil {
 		return nil, err
 	}
+	endpoint.ServicePort = servicePort
+
+	serviceTypeStr, err := removeStringAttr(attributes, ServiceTypeAttr)
+	if err != nil {
+		return nil, err
+	}
+	endpoint.ServiceType = ServiceType(serviceTypeStr)
 
 	if endpoint.ClusterId, err = removeStringAttr(attributes, ClusterIdAttr); err != nil {
 		return nil, err
@@ -170,6 +191,7 @@ func (e *Endpoint) GetCloudMapAttributes() map[string]string {
 	attrs[ServicePortAttr] = strconv.Itoa(int(e.ServicePort.Port))
 	attrs[ServiceTargetPortAttr] = e.ServicePort.TargetPort
 	attrs[ServiceProtocolAttr] = e.ServicePort.Protocol
+	attrs[ServiceTypeAttr] = e.ServiceType.String()
 
 	for key, val := range e.Attributes {
 		attrs[key] = val
@@ -198,6 +220,11 @@ func EndpointIdFromIPAddressAndPort(address string, port Port) string {
 	address = strings.ReplaceAll(address, ".", "_")
 	address = strings.ReplaceAll(address, ":", "_")
 	return fmt.Sprintf("%s-%s-%d", strings.ToLower(port.Protocol), address, port.Port)
+}
+
+// Gives string representation for ServiceType
+func (serviceType ServiceType) String() string {
+	return string(serviceType)
 }
 
 func ConvertNamespaceType(nsType types.NamespaceType) (namespaceType NamespaceType) {

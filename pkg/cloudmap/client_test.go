@@ -293,6 +293,7 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 		model.ServicePortAttr:       test.ServicePortStr1,
 		model.ServiceProtocolAttr:   test.Protocol1,
 		model.ServiceTargetPortAttr: test.PortStr1,
+		model.ServiceTypeAttr:       test.SvcType,
 	}
 	attrs2 := map[string]string{
 		model.ClusterIdAttr:         test.ClusterId,
@@ -305,6 +306,7 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 		model.ServicePortAttr:       test.ServicePortStr2,
 		model.ServiceProtocolAttr:   test.Protocol2,
 		model.ServiceTargetPortAttr: test.PortStr2,
+		model.ServiceTypeAttr:       test.SvcType,
 	}
 
 	tc.mockApi.EXPECT().RegisterInstance(context.TODO(), test.SvcId, test.EndptId1, attrs1).
@@ -376,6 +378,7 @@ func getHttpInstanceSummaryForTest() []types.HttpInstanceSummary {
 				model.ServicePortAttr:       test.ServicePortStr1,
 				model.ServiceProtocolAttr:   test.Protocol1,
 				model.ServiceTargetPortAttr: test.PortStr1,
+				model.ServiceTypeAttr:       test.SvcType,
 			},
 		},
 		{
@@ -391,6 +394,7 @@ func getHttpInstanceSummaryForTest() []types.HttpInstanceSummary {
 				model.ServicePortAttr:       test.ServicePortStr2,
 				model.ServiceProtocolAttr:   test.Protocol2,
 				model.ServiceTargetPortAttr: test.PortStr2,
+				model.ServiceTypeAttr:       test.SvcType,
 			},
 		},
 	}
