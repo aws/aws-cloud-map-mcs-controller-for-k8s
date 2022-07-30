@@ -28,7 +28,7 @@ if [ "$exit_code" -eq 0 ] ; then
 fi
 
 echo "sleeping..."
-sleep 2s
+sleep 2
 
 # Scaling and verifying deployment
 if [ "$exit_code" -eq 0 ] ; then

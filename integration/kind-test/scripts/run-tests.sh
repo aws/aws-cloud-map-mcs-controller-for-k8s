@@ -26,7 +26,7 @@ if [ "$exit_code" -eq 0 ] ; then
 fi
 
 echo "sleeping..."
-sleep 2s
+sleep 2
 
 deployment=$($KUBECTL_BIN get deployment --namespace "$NAMESPACE" -o json | jq -r '.items[0].metadata.name')
 

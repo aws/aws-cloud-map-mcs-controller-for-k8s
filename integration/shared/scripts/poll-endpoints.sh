@@ -13,7 +13,7 @@ do
     exit 1
   fi
 
-  sleep 2s
+  sleep 2
   if ! addresses=$($KUBECTL_BIN get endpointslices -o json --namespace "$NAMESPACE" | \
     jq --arg SERVICE "$SERVICE" '.items[] | select(.metadata.ownerReferences[].name==$SERVICE) | .endpoints[].addresses[0]' 2> /dev/null)
   then
