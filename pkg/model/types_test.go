@@ -9,6 +9,9 @@ import (
 
 var instId = "my-instance"
 var ip = "192.168.0.1"
+var clusterId = "test-mcs-clusterId"
+var clusterSetId = "test-mcs-clusterSetId"
+var serviceType = ClusterSetIPType.String()
 
 func TestNewEndpointFromInstance(t *testing.T) {
 	tests := []struct {
@@ -22,6 +25,8 @@ func TestNewEndpointFromInstance(t *testing.T) {
 			inst: &types.HttpInstanceSummary{
 				InstanceId: &instId,
 				Attributes: map[string]string{
+					ClusterIdAttr:         clusterId,
+					ClusterSetIdAttr:      clusterSetId,
 					EndpointIpv4Attr:      ip,
 					EndpointPortAttr:      "80",
 					EndpointProtocolAttr:  "TCP",
@@ -30,6 +35,7 @@ func TestNewEndpointFromInstance(t *testing.T) {
 					ServiceProtocolAttr:   "TCP",
 					ServicePortAttr:       "65535",
 					ServiceTargetPortAttr: "80",
+					ServiceTypeAttr:       serviceType,
 					"custom-attr":         "custom-val",
 				},
 			},
@@ -47,6 +53,9 @@ func TestNewEndpointFromInstance(t *testing.T) {
 					TargetPort: "80",
 					Protocol:   "TCP",
 				},
+				ClusterId:    clusterId,
+				ClusterSetId: clusterSetId,
+				ServiceType:  ServiceType(serviceType),
 				Attributes: map[string]string{
 					"custom-attr": "custom-val",
 				},
@@ -65,6 +74,7 @@ func TestNewEndpointFromInstance(t *testing.T) {
 					ServiceProtocolAttr:   "TCP",
 					ServicePortAttr:       "99999",
 					ServiceTargetPortAttr: "80",
+					ServiceTypeAttr:       serviceType,
 					"custom-attr":         "custom-val",
 				},
 			},
@@ -92,6 +102,64 @@ func TestNewEndpointFromInstance(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "missing clusterid",
+			inst: &types.HttpInstanceSummary{
+				InstanceId: &instId,
+				Attributes: map[string]string{
+					ClusterSetIdAttr:      clusterSetId,
+					EndpointIpv4Attr:      ip,
+					EndpointPortAttr:      "80",
+					EndpointProtocolAttr:  "TCP",
+					EndpointPortNameAttr:  "http",
+					ServicePortNameAttr:   "http",
+					ServiceProtocolAttr:   "TCP",
+					ServicePortAttr:       "65535",
+					ServiceTargetPortAttr: "80",
+					"custom-attr":         "custom-val",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing clustersetid",
+			inst: &types.HttpInstanceSummary{
+				InstanceId: &instId,
+				Attributes: map[string]string{
+					ClusterIdAttr:         clusterId,
+					EndpointIpv4Attr:      ip,
+					EndpointPortAttr:      "80",
+					EndpointProtocolAttr:  "TCP",
+					EndpointPortNameAttr:  "http",
+					ServicePortNameAttr:   "http",
+					ServiceProtocolAttr:   "TCP",
+					ServicePortAttr:       "65535",
+					ServiceTargetPortAttr: "80",
+					"custom-attr":         "custom-val",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing service type",
+			inst: &types.HttpInstanceSummary{
+				InstanceId: &instId,
+				Attributes: map[string]string{
+					ClusterIdAttr:         clusterId,
+					ClusterSetIdAttr:      clusterSetId,
+					EndpointIpv4Attr:      ip,
+					EndpointPortAttr:      "80",
+					EndpointProtocolAttr:  "TCP",
+					EndpointPortNameAttr:  "http",
+					ServicePortNameAttr:   "http",
+					ServiceProtocolAttr:   "TCP",
+					ServicePortAttr:       "65535",
+					ServiceTargetPortAttr: "80",
+					"custom-attr":         "custom-val",
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -113,6 +181,9 @@ func TestEndpoint_GetAttributes(t *testing.T) {
 		IP           string
 		EndpointPort Port
 		ServicePort  Port
+		ClusterId    string
+		ClusterSetId string
+		ServiceType  ServiceType
 		Attributes   map[string]string
 	}
 	tests := []struct {
@@ -135,11 +206,16 @@ func TestEndpoint_GetAttributes(t *testing.T) {
 					TargetPort: "80",
 					Protocol:   "TCP",
 				},
+				ClusterId:    clusterId,
+				ClusterSetId: clusterSetId,
+				ServiceType:  ServiceType(serviceType),
 				Attributes: map[string]string{
 					"custom-attr": "custom-val",
 				},
 			},
 			want: map[string]string{
+				ClusterIdAttr:         clusterId,
+				ClusterSetIdAttr:      clusterSetId,
 				EndpointIpv4Attr:      ip,
 				EndpointPortAttr:      "80",
 				EndpointProtocolAttr:  "TCP",
@@ -148,6 +224,7 @@ func TestEndpoint_GetAttributes(t *testing.T) {
 				ServiceProtocolAttr:   "TCP",
 				ServicePortAttr:       "30",
 				ServiceTargetPortAttr: "80",
+				ServiceTypeAttr:       serviceType,
 				"custom-attr":         "custom-val",
 			},
 		},
@@ -159,6 +236,9 @@ func TestEndpoint_GetAttributes(t *testing.T) {
 				IP:           tt.fields.IP,
 				EndpointPort: tt.fields.EndpointPort,
 				ServicePort:  tt.fields.ServicePort,
+				ClusterId:    tt.fields.ClusterId,
+				ClusterSetId: tt.fields.ClusterSetId,
+				ServiceType:  tt.fields.ServiceType,
 				Attributes:   tt.fields.Attributes,
 			}
 			if got := e.GetCloudMapAttributes(); !reflect.DeepEqual(got, tt.want) {

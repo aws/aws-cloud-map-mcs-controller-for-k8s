@@ -24,7 +24,7 @@ type testSdClient struct {
 }
 
 func TestNewServiceDiscoveryClient(t *testing.T) {
-	sdc := NewDefaultServiceDiscoveryClient(&aws.Config{})
+	sdc := NewDefaultServiceDiscoveryClient(&aws.Config{}, common.ClusterUtils{})
 	assert.NotNil(t, sdc)
 }
 
@@ -283,6 +283,8 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 	tc.mockCache.EXPECT().GetServiceIdMap(test.HttpNsName).Return(getServiceIdMapForTest(), true)
 
 	attrs1 := map[string]string{
+		model.ClusterIdAttr:         test.ClusterId,
+		model.ClusterSetIdAttr:      test.ClustersetId,
 		model.EndpointIpv4Attr:      test.EndptIp1,
 		model.EndpointPortAttr:      test.PortStr1,
 		model.EndpointPortNameAttr:  test.PortName1,
@@ -291,8 +293,11 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 		model.ServicePortAttr:       test.ServicePortStr1,
 		model.ServiceProtocolAttr:   test.Protocol1,
 		model.ServiceTargetPortAttr: test.PortStr1,
+		model.ServiceTypeAttr:       test.SvcType,
 	}
 	attrs2 := map[string]string{
+		model.ClusterIdAttr:         test.ClusterId,
+		model.ClusterSetIdAttr:      test.ClustersetId,
 		model.EndpointIpv4Attr:      test.EndptIp2,
 		model.EndpointPortAttr:      test.PortStr2,
 		model.EndpointPortNameAttr:  test.PortName2,
@@ -301,6 +306,7 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 		model.ServicePortAttr:       test.ServicePortStr2,
 		model.ServiceProtocolAttr:   test.Protocol2,
 		model.ServiceTargetPortAttr: test.PortStr2,
+		model.ServiceTypeAttr:       test.SvcType,
 	}
 
 	tc.mockApi.EXPECT().RegisterInstance(context.TODO(), test.SvcId, test.EndptId1, attrs1).
@@ -362,6 +368,8 @@ func getHttpInstanceSummaryForTest() []types.HttpInstanceSummary {
 		{
 			InstanceId: aws.String(test.EndptId1),
 			Attributes: map[string]string{
+				model.ClusterIdAttr:         test.ClusterId,
+				model.ClusterSetIdAttr:      test.ClustersetId,
 				model.EndpointIpv4Attr:      test.EndptIp1,
 				model.EndpointPortAttr:      test.PortStr1,
 				model.EndpointPortNameAttr:  test.PortName1,
@@ -370,11 +378,14 @@ func getHttpInstanceSummaryForTest() []types.HttpInstanceSummary {
 				model.ServicePortAttr:       test.ServicePortStr1,
 				model.ServiceProtocolAttr:   test.Protocol1,
 				model.ServiceTargetPortAttr: test.PortStr1,
+				model.ServiceTypeAttr:       test.SvcType,
 			},
 		},
 		{
 			InstanceId: aws.String(test.EndptId2),
 			Attributes: map[string]string{
+				model.ClusterIdAttr:         test.ClusterId,
+				model.ClusterSetIdAttr:      test.ClustersetId,
 				model.EndpointIpv4Attr:      test.EndptIp2,
 				model.EndpointPortAttr:      test.PortStr2,
 				model.EndpointPortNameAttr:  test.PortName2,
@@ -383,6 +394,7 @@ func getHttpInstanceSummaryForTest() []types.HttpInstanceSummary {
 				model.ServicePortAttr:       test.ServicePortStr2,
 				model.ServiceProtocolAttr:   test.Protocol2,
 				model.ServiceTargetPortAttr: test.PortStr2,
+				model.ServiceTypeAttr:       test.SvcType,
 			},
 		},
 	}
