@@ -2,10 +2,8 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 
 	cloudmapMock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
-	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
 	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
@@ -29,7 +27,7 @@ func TestServiceExportReconciler_Reconcile_NewServiceExport(t *testing.T) {
 	// create a fake controller client and add some objects
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(getServiceExportScheme()).
-		WithObjects(k8sServiceForTest(), serviceExportForTest(), test.ClusterIdForTest(), test.ClusterSetIdForTest()).
+		WithObjects(k8sServiceForTest(), serviceExportForTest()).
 		WithLists(&discovery.EndpointSliceList{
 			Items: []discovery.EndpointSlice{*endpointSliceForTest()},
 		}).
@@ -77,7 +75,7 @@ func TestServiceExportReconciler_Reconcile_ExistingServiceExport(t *testing.T) {
 	// create a fake controller client and add some objects
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(getServiceExportScheme()).
-		WithObjects(k8sServiceForTest(), serviceExportForTest(), test.ClusterIdForTest(), test.ClusterSetIdForTest()).
+		WithObjects(k8sServiceForTest(), serviceExportForTest()).
 		WithLists(&discovery.EndpointSliceList{
 			Items: []discovery.EndpointSlice{*endpointSliceForTest()},
 		}).
@@ -124,7 +122,7 @@ func TestServiceExportReconciler_Reconcile_DeleteExistingService(t *testing.T) {
 	serviceExportObj.Finalizers = []string{ServiceExportFinalizer}
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(getServiceExportScheme()).
-		WithObjects(serviceExportObj, test.ClusterIdForTest(), test.ClusterSetIdForTest()).
+		WithObjects(serviceExportObj).
 		WithLists(&discovery.EndpointSliceList{
 			Items: []discovery.EndpointSlice{*endpointSliceForTest()},
 		}).
@@ -161,73 +159,8 @@ func TestServiceExportReconciler_Reconcile_DeleteExistingService(t *testing.T) {
 	assert.Empty(t, serviceExport.Finalizers, "Finalizer removed from the service export")
 }
 
-func TestServiceExportReconciler_Reconcile_NoClusterId(t *testing.T) {
-	// create a fake controller client and add some objects
-	fakeClient := fake.NewClientBuilder().
-		WithScheme(getServiceExportScheme()).
-		WithObjects(k8sServiceForTest(), serviceExportForTest(), test.ClusterSetIdForTest()).
-		WithLists(&discovery.EndpointSliceList{
-			Items: []discovery.EndpointSlice{*endpointSliceForTest()},
-		}).
-		Build()
-
-	// create a mock cloudmap service discovery client
-	mockController := gomock.NewController(t)
-	defer mockController.Finish()
-
-	mock := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
-
-	reconciler := getServiceExportReconciler(t, mock, fakeClient)
-
-	request := ctrl.Request{
-		NamespacedName: types.NamespacedName{
-			Namespace: test.HttpNsName,
-			Name:      test.SvcName,
-		},
-	}
-
-	// Reconciling should throw an error
-	got, err := reconciler.Reconcile(context.Background(), request)
-	expectedError := fmt.Errorf("clusterproperties.about.k8s.io \"id.k8s.io\" not found")
-	assert.ErrorContains(t, err, expectedError.Error())
-	assert.Equal(t, ctrl.Result{}, got, "Result should be empty")
-}
-
-func TestServiceExportReconciler_Reconcile_NoClustersetId(t *testing.T) {
-	// create a fake controller client and add some objects
-	fakeClient := fake.NewClientBuilder().
-		WithScheme(getServiceExportScheme()).
-		WithObjects(k8sServiceForTest(), serviceExportForTest(), test.ClusterIdForTest()).
-		WithLists(&discovery.EndpointSliceList{
-			Items: []discovery.EndpointSlice{*endpointSliceForTest()},
-		}).
-		Build()
-
-	// create a mock cloudmap service discovery client
-	mockController := gomock.NewController(t)
-	defer mockController.Finish()
-
-	mock := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
-
-	reconciler := getServiceExportReconciler(t, mock, fakeClient)
-
-	request := ctrl.Request{
-		NamespacedName: types.NamespacedName{
-			Namespace: test.HttpNsName,
-			Name:      test.SvcName,
-		},
-	}
-
-	// Reconciling should throw an error
-	got, err := reconciler.Reconcile(context.Background(), request)
-	expectedError := fmt.Errorf("clusterproperties.about.k8s.io \"clusterset.k8s.io\" not found")
-	assert.ErrorContains(t, err, expectedError.Error())
-	assert.Equal(t, ctrl.Result{}, got, "Result should be empty")
-}
-
 func getServiceExportScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
-	scheme.AddKnownTypes(aboutv1alpha1.GroupVersion, &aboutv1alpha1.ClusterProperty{})
 	scheme.AddKnownTypes(multiclusterv1alpha1.GroupVersion, &multiclusterv1alpha1.ServiceExport{})
 	scheme.AddKnownTypes(v1.SchemeGroupVersion, &v1.Service{})
 	scheme.AddKnownTypes(discovery.SchemeGroupVersion, &discovery.EndpointSlice{}, &discovery.EndpointSliceList{})
@@ -236,10 +169,9 @@ func getServiceExportScheme() *runtime.Scheme {
 
 func getServiceExportReconciler(t *testing.T, mockClient *cloudmapMock.MockServiceDiscoveryClient, client client.Client) *ServiceExportReconciler {
 	return &ServiceExportReconciler{
-		Client:       client,
-		Log:          common.NewLoggerWithLogr(testr.New(t)),
-		Scheme:       client.Scheme(),
-		CloudMap:     mockClient,
-		ClusterUtils: common.NewClusterUtils(client),
+		Client:   client,
+		Log:      common.NewLoggerWithLogr(testr.New(t)),
+		Scheme:   client.Scheme(),
+		CloudMap: mockClient,
 	}
 }

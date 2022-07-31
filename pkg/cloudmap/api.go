@@ -52,17 +52,15 @@ type ServiceDiscoveryApi interface {
 }
 
 type serviceDiscoveryApi struct {
-	log          common.Logger
-	awsFacade    AwsFacade
-	clusterUtils common.ClusterUtils
+	log       common.Logger
+	awsFacade AwsFacade
 }
 
 // NewServiceDiscoveryApiFromConfig creates a new AWS Cloud Map API connection manager from an AWS client config.
-func NewServiceDiscoveryApiFromConfig(cfg *aws.Config, clusterUtils common.ClusterUtils) ServiceDiscoveryApi {
+func NewServiceDiscoveryApiFromConfig(cfg *aws.Config) ServiceDiscoveryApi {
 	return &serviceDiscoveryApi{
-		log:          common.NewLogger("cloudmap"),
-		awsFacade:    NewAwsFacadeFromConfig(cfg),
-		clusterUtils: clusterUtils,
+		log:       common.NewLogger("cloudmap"),
+		awsFacade: NewAwsFacadeFromConfig(cfg),
 	}
 }
 
@@ -116,20 +114,11 @@ func (sdApi *serviceDiscoveryApi) GetServiceIdMap(ctx context.Context, nsId stri
 }
 
 func (sdApi *serviceDiscoveryApi) DiscoverInstances(ctx context.Context, nsName string, svcName string) (insts []types.HttpInstanceSummary, err error) {
-	clusterSetId, err := sdApi.clusterUtils.GetClusterSetId(ctx)
-	if err != nil {
-		sdApi.log.Error(err, "failed to retrieve clusterSetId")
-		return nil, err
-	}
-
 	out, err := sdApi.awsFacade.DiscoverInstances(ctx, &sd.DiscoverInstancesInput{
 		NamespaceName: aws.String(nsName),
 		ServiceName:   aws.String(svcName),
 		HealthStatus:  types.HealthStatusFilterAll,
 		MaxResults:    aws.Int32(1000),
-		QueryParameters: map[string]string{
-			model.ClusterSetIdAttr: clusterSetId,
-		},
 	})
 
 	if err != nil {

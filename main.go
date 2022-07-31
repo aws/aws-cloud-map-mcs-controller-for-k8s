@@ -22,7 +22,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
 	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
 	multiclustercontrollers "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/controllers/multicluster"
 	// +kubebuilder:scaffold:imports
@@ -37,8 +36,6 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(multiclusterv1alpha1.AddToScheme(scheme))
-
-	utilruntime.Must(aboutv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -87,25 +84,21 @@ func main() {
 
 	log.Info("Running with AWS region", "AWS_REGION", awsCfg.Region)
 
-	clusterUtils := common.NewClusterUtils(mgr.GetClient())
-	serviceDiscoveryClient := cloudmap.NewDefaultServiceDiscoveryClient(&awsCfg, clusterUtils)
-
+	serviceDiscoveryClient := cloudmap.NewDefaultServiceDiscoveryClient(&awsCfg)
 	if err = (&multiclustercontrollers.ServiceExportReconciler{
-		Client:       mgr.GetClient(),
-		Log:          common.NewLogger("controllers", "ServiceExport"),
-		Scheme:       mgr.GetScheme(),
-		CloudMap:     serviceDiscoveryClient,
-		ClusterUtils: clusterUtils,
+		Client:   mgr.GetClient(),
+		Log:      common.NewLogger("controllers", "ServiceExport"),
+		Scheme:   mgr.GetScheme(),
+		CloudMap: serviceDiscoveryClient,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "ServiceExport")
 		os.Exit(1)
 	}
 
 	cloudMapReconciler := &multiclustercontrollers.CloudMapReconciler{
-		Client:       mgr.GetClient(),
-		Cloudmap:     serviceDiscoveryClient,
-		Log:          common.NewLogger("controllers", "Cloudmap"),
-		ClusterUtils: clusterUtils,
+		Client:   mgr.GetClient(),
+		Cloudmap: serviceDiscoveryClient,
+		Log:      common.NewLogger("controllers", "Cloudmap"),
 	}
 
 	if err = mgr.Add(cloudMapReconciler); err != nil {

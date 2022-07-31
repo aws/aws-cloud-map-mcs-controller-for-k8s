@@ -23,10 +23,9 @@ const (
 
 // CloudMapReconciler reconciles state of Cloud Map services with local ServiceImport objects
 type CloudMapReconciler struct {
-	Client       client.Client
-	Cloudmap     cloudmap.ServiceDiscoveryClient
-	Log          common.Logger
-	ClusterUtils common.ClusterUtils
+	Client   client.Client
+	Cloudmap cloudmap.ServiceDiscoveryClient
+	Log      common.Logger
 }
 
 // +kubebuilder:rbac:groups="",resources=namespaces,verbs=list;watch
@@ -54,19 +53,6 @@ func (r *CloudMapReconciler) Start(ctx context.Context) error {
 
 // Reconcile triggers a single reconciliation round
 func (r *CloudMapReconciler) Reconcile(ctx context.Context) error {
-	var err error
-	clusterId, err := r.ClusterUtils.GetClusterId(ctx)
-	if err != nil {
-		r.Log.Error(err, "unable to retrieve clusterId")
-		return err
-	}
-	clusterSetId, err := r.ClusterUtils.GetClusterSetId(ctx)
-	if err != nil {
-		r.Log.Error(err, "unable to retrieve clusterSetId")
-		return err
-	}
-	r.Log.Debug("ClusterId and ClusterSetId found", "ClusterId", clusterId, "ClusterSetId", clusterSetId)
-
 	namespaces := v1.NamespaceList{}
 	if err := r.Client.List(ctx, &namespaces); err != nil {
 		r.Log.Error(err, "unable to list cluster namespaces")

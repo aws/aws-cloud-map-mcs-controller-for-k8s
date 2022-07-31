@@ -30,29 +30,26 @@ type ServiceDiscoveryClient interface {
 }
 
 type serviceDiscoveryClient struct {
-	log          common.Logger
-	sdApi        ServiceDiscoveryApi
-	cache        ServiceDiscoveryClientCache
-	clusterUtils common.ClusterUtils
+	log   common.Logger
+	sdApi ServiceDiscoveryApi
+	cache ServiceDiscoveryClientCache
 }
 
 // NewDefaultServiceDiscoveryClient creates a new service discovery client for AWS Cloud Map with default resource cache
 // from a given AWS client config.
-func NewDefaultServiceDiscoveryClient(cfg *aws.Config, clusterUtils common.ClusterUtils) ServiceDiscoveryClient {
+func NewDefaultServiceDiscoveryClient(cfg *aws.Config) ServiceDiscoveryClient {
 	return &serviceDiscoveryClient{
-		log:          common.NewLogger("cloudmap"),
-		sdApi:        NewServiceDiscoveryApiFromConfig(cfg, clusterUtils),
-		cache:        NewDefaultServiceDiscoveryClientCache(),
-		clusterUtils: clusterUtils,
+		log:   common.NewLogger("cloudmap"),
+		sdApi: NewServiceDiscoveryApiFromConfig(cfg),
+		cache: NewDefaultServiceDiscoveryClientCache(),
 	}
 }
 
-func NewServiceDiscoveryClientWithCustomCache(cfg *aws.Config, cacheConfig *SdCacheConfig, clusterUtils common.ClusterUtils) ServiceDiscoveryClient {
+func NewServiceDiscoveryClientWithCustomCache(cfg *aws.Config, cacheConfig *SdCacheConfig) ServiceDiscoveryClient {
 	return &serviceDiscoveryClient{
-		log:          common.NewLogger("cloudmap"),
-		sdApi:        NewServiceDiscoveryApiFromConfig(cfg, clusterUtils),
-		cache:        NewServiceDiscoveryClientCache(cacheConfig),
-		clusterUtils: clusterUtils,
+		log:   common.NewLogger("cloudmap"),
+		sdApi: NewServiceDiscoveryApiFromConfig(cfg),
+		cache: NewServiceDiscoveryClientCache(cacheConfig),
 	}
 }
 

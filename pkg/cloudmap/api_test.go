@@ -6,11 +6,8 @@ import (
 	"fmt"
 	"testing"
 
-	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
-
 	cloudmapMock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
@@ -18,12 +15,10 @@ import (
 	"github.com/go-logr/logr/testr"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestNewServiceDiscoveryApi(t *testing.T) {
-	sdc := NewServiceDiscoveryApiFromConfig(&aws.Config{}, common.ClusterUtils{})
+	sdc := NewServiceDiscoveryApiFromConfig(&aws.Config{})
 	assert.NotNil(t, sdc)
 }
 
@@ -106,9 +101,6 @@ func TestServiceDiscoveryApi_DiscoverInstances_HappyCase(t *testing.T) {
 			ServiceName:   aws.String(test.SvcName),
 			HealthStatus:  types.HealthStatusFilterAll,
 			MaxResults:    aws.Int32(1000),
-			QueryParameters: map[string]string{
-				model.ClusterSetIdAttr: test.ClustersetId,
-			},
 		}).
 		Return(&sd.DiscoverInstancesOutput{
 			Instances: []types.HttpInstanceSummary{
@@ -329,12 +321,8 @@ func TestServiceDiscoveryApi_PollNamespaceOperation_HappyCase(t *testing.T) {
 }
 
 func getServiceDiscoveryApi(t *testing.T, awsFacade *cloudmapMock.MockAwsFacade) ServiceDiscoveryApi {
-	scheme := runtime.NewScheme()
-	scheme.AddKnownTypes(aboutv1alpha1.GroupVersion, &aboutv1alpha1.ClusterProperty{})
-	fakeClient := fake.NewClientBuilder().WithObjects(test.ClusterIdForTest(), test.ClusterSetIdForTest()).WithScheme(scheme).Build()
 	return &serviceDiscoveryApi{
-		log:          common.NewLoggerWithLogr(testr.New(t)),
-		awsFacade:    awsFacade,
-		clusterUtils: common.NewClusterUtils(fakeClient),
+		log:       common.NewLoggerWithLogr(testr.New(t)),
+		awsFacade: awsFacade,
 	}
 }
