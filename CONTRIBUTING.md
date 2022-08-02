@@ -78,6 +78,7 @@ To register the custom CRDs (`ServiceImport`, `ServiceExport`) in the cluster an
 ```sh
 make install
 # ...
+# customresourcedefinition.apiextensions.k8s.io/clusterproperties.about.k8s.io created
 # customresourcedefinition.apiextensions.k8s.io/serviceexports.multicluster.x-k8s.io created
 # customresourcedefinition.apiextensions.k8s.io/serviceimports.multicluster.x-k8s.io created
 ```
