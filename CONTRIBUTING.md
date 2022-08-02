@@ -74,7 +74,7 @@ kubectl create namespace example
 
 #### Run the controller from outside the cluster
 
-To register the custom CRDs (`ServiceImport`, `ServiceExport`) in the cluster and create installers:
+To register the custom CRDs (`ClusterProperties`, `ServiceImport`, `ServiceExport`) in the cluster and create installers:
 ```sh
 make install
 # ...
