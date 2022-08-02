@@ -42,9 +42,9 @@ Install the The CoreDNS multicluster plugin into each participating cluster. The
 To install the plugin, run the following commands.
 
 ```bash
-kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/coredns-clusterrole.yaml
-kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/coredns-configmap.yaml
-kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/coredns-deployment.yaml
+kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/coredns-clusterrole.yaml"
+kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/coredns-configmap.yaml"
+kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/coredns-deployment.yaml"
 ```
 
 ### Install Controller
@@ -62,6 +62,45 @@ kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/con
 The controller must have sufficient IAM permissions to perform required Cloud Map operations. Grant IAM access rights `AWSCloudMapFullAccess` to the controller Service Account to enable the controller to manage Cloud Map resources.
 
 ## Usage
+
+### Configure `id.k8s.io` and `clusterset.k8s.io`
+
+`id.k8s.io` is a unique identifier that uniquely identifies a cluster.
+
+`clusterset.k8s.io` is a unique identifier that uniquely identifies the set of clusters in your multicluster. This will be the same across all clusters in the set.
+
+```yaml
+apiVersion: about.k8s.io/v1alpha1
+kind: ClusterProperty
+metadata:
+  name: id.k8s.io
+spec:
+  value: [Your cluster identifier]
+---
+apiVersion: about.k8s.io/v1alpha1
+kind: ClusterProperty
+metadata:
+  name: clusterset.k8s.io
+spec:
+  value: [Your cluster set identifier]
+```
+
+**Example:**
+```yaml
+apiVersion: about.k8s.io/v1alpha1
+kind: ClusterProperty
+metadata:
+  name: id.k8s.io
+spec:
+  value: my-first-cluster
+---
+apiVersion: about.k8s.io/v1alpha1
+kind: ClusterProperty
+metadata:
+  name: clusterset.k8s.io
+spec:
+  value: my-clusterset
+```
 
 ### Export services
 

@@ -24,7 +24,7 @@ type testSdClient struct {
 }
 
 func TestNewServiceDiscoveryClient(t *testing.T) {
-	sdc := NewDefaultServiceDiscoveryClient(&aws.Config{}, common.ClusterUtils{})
+	sdc := NewDefaultServiceDiscoveryClient(&aws.Config{}, common.NewClusterUtilsForTest(test.ClusterId, test.ClusterSetId))
 	assert.NotNil(t, sdc)
 }
 
@@ -284,7 +284,7 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 
 	attrs1 := map[string]string{
 		model.ClusterIdAttr:         test.ClusterId,
-		model.ClusterSetIdAttr:      test.ClustersetId,
+		model.ClusterSetIdAttr:      test.ClusterSetId,
 		model.EndpointIpv4Attr:      test.EndptIp1,
 		model.EndpointPortAttr:      test.PortStr1,
 		model.EndpointPortNameAttr:  test.PortName1,
@@ -297,7 +297,7 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 	}
 	attrs2 := map[string]string{
 		model.ClusterIdAttr:         test.ClusterId,
-		model.ClusterSetIdAttr:      test.ClustersetId,
+		model.ClusterSetIdAttr:      test.ClusterSetId,
 		model.EndpointIpv4Attr:      test.EndptIp2,
 		model.EndpointPortAttr:      test.PortStr2,
 		model.EndpointPortNameAttr:  test.PortName2,
@@ -369,7 +369,7 @@ func getHttpInstanceSummaryForTest() []types.HttpInstanceSummary {
 			InstanceId: aws.String(test.EndptId1),
 			Attributes: map[string]string{
 				model.ClusterIdAttr:         test.ClusterId,
-				model.ClusterSetIdAttr:      test.ClustersetId,
+				model.ClusterSetIdAttr:      test.ClusterSetId,
 				model.EndpointIpv4Attr:      test.EndptIp1,
 				model.EndpointPortAttr:      test.PortStr1,
 				model.EndpointPortNameAttr:  test.PortName1,
@@ -385,7 +385,7 @@ func getHttpInstanceSummaryForTest() []types.HttpInstanceSummary {
 			InstanceId: aws.String(test.EndptId2),
 			Attributes: map[string]string{
 				model.ClusterIdAttr:         test.ClusterId,
-				model.ClusterSetIdAttr:      test.ClustersetId,
+				model.ClusterSetIdAttr:      test.ClusterSetId,
 				model.EndpointIpv4Attr:      test.EndptIp2,
 				model.EndpointPortAttr:      test.PortStr2,
 				model.EndpointPortNameAttr:  test.PortName2,
