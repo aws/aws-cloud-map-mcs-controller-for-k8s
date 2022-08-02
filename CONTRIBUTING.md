@@ -74,13 +74,23 @@ kubectl create namespace example
 
 #### Run the controller from outside the cluster
 
-To register the custom CRDs (`ServiceImport`, `ServiceExport`) in the cluster and create installers:
+To register the custom CRDs (`ClusterProperties`, `ServiceImport`, `ServiceExport`) in the cluster and create installers:
 ```sh
 make install
 # ...
+# customresourcedefinition.apiextensions.k8s.io/clusterproperties.about.k8s.io created
 # customresourcedefinition.apiextensions.k8s.io/serviceexports.multicluster.x-k8s.io created
 # customresourcedefinition.apiextensions.k8s.io/serviceimports.multicluster.x-k8s.io created
 ```
+
+Register a unique `id.k8s.io` and `clusterset.k8s.io` in your cluster:
+```bash
+kubectl apply -f samples/example-clusterproperty.yaml
+# clusterproperty.about.k8s.io/id.k8s.io created
+# clusterproperty.about.k8s.io/clusterset.k8s.io created
+```
+> ⚠ **Note:** If you are creating multiple clusters, ensure you create unique `id.k8s.io` identifiers for each cluster.
+
 
 To run the controller, run the following command. The controller runs in an infinite loop so open another terminal to create CRDs.
 ```sh

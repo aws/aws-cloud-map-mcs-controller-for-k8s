@@ -28,6 +28,14 @@ func NewClusterUtils(client client.Client) ClusterUtils {
 	}
 }
 
+// constructor for tests
+func NewClusterUtilsForTest(clusterId string, clusterSetId string) ClusterUtils {
+	return ClusterUtils{
+		clusterId:    clusterId,
+		clusterSetId: clusterSetId,
+	}
+}
+
 // retrieve the clusterId from the local field. If not set, retrieve from client
 func (r *ClusterUtils) GetClusterId(ctx context.Context) (string, error) {
 	if r.clusterId != "" {
