@@ -47,22 +47,6 @@ kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/co
 kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/coredns-deployment.yaml"
 ```
 
-### Configure ClusterId and ClusterSetId
-
-Each cluster must have a unique `ClusterId` that uniquely identifies the cluster.
-
-Update the `value` field in the below file with a unique ClusterId and run the following command.
-```bash
-kubectl apply -f "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/example-clusterid.yaml"
-```
-
-`ClusterSetId` is a unique identifier for the set of clusters in your multicluster. This `value` must be the same for all clusters in your set.
-
-Update the `value` field in the below file with a unique ClusterSetId and run the following command.
-```bash
-kubectl apply -f "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/example-clustersetid.yaml"
-```
-
 ### Install Controller
 
 To install the latest release of the controller, run the following commands.
@@ -78,6 +62,45 @@ kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/con
 The controller must have sufficient IAM permissions to perform required Cloud Map operations. Grant IAM access rights `AWSCloudMapFullAccess` to the controller Service Account to enable the controller to manage Cloud Map resources.
 
 ## Usage
+
+### Configure `id.k8s.io` and `clusterset.k8s.io`
+
+`id.k8s.io` is a unique identifier that uniquely identifies a cluster.
+
+`clusterset.k8s.io` is a unique identifier that uniquely identifies the set of clusters in your multicluster. This will be the same across all clusters in the set.
+
+```yaml
+apiVersion: about.k8s.io/v1alpha1
+kind: ClusterProperty
+metadata:
+  name: id.k8s.io
+spec:
+  value: [Your cluster identifier]
+---
+apiVersion: about.k8s.io/v1alpha1
+kind: ClusterProperty
+metadata:
+  name: clusterset.k8s.io
+spec:
+  value: [Your cluster set identifier]
+```
+
+**Example:**
+```yaml
+apiVersion: about.k8s.io/v1alpha1
+kind: ClusterProperty
+metadata:
+  name: id.k8s.io
+spec:
+  value: my-first-cluster
+---
+apiVersion: about.k8s.io/v1alpha1
+kind: ClusterProperty
+metadata:
+  name: clusterset.k8s.io
+spec:
+  value: my-clusterset
+```
 
 ### Export services
 
