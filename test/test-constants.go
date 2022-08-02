@@ -19,7 +19,7 @@ const (
 	SvcName         = "svc-name"
 	SvcId           = "svc-id"
 	ClusterId       = "test-mcs-clusterId"
-	ClustersetId    = "test-mcs-clusterSetId"
+	ClusterSetId    = "test-mcs-clusterSetId"
 	EndptId1        = "tcp-192_168_0_1-1"
 	EndptId2        = "tcp-192_168_0_2-2"
 	EndptIp1        = "192.168.0.1"
@@ -90,7 +90,7 @@ func GetTestEndpoint1() *model.Endpoint {
 			Protocol:   Protocol1,
 		},
 		ClusterId:    ClusterId,
-		ClusterSetId: ClustersetId,
+		ClusterSetId: ClusterSetId,
 		ServiceType:  model.ClusterSetIPType,
 		Attributes:   make(map[string]string),
 	}
@@ -112,7 +112,7 @@ func GetTestEndpoint2() *model.Endpoint {
 			Protocol:   Protocol2,
 		},
 		ClusterId:    ClusterId,
-		ClusterSetId: ClustersetId,
+		ClusterSetId: ClusterSetId,
 		ServiceType:  model.ClusterSetIPType,
 		Attributes:   make(map[string]string),
 	}
@@ -147,7 +147,7 @@ func ClusterSetIdForTest() *aboutv1alpha1.ClusterProperty {
 			Name: common.ClusterSetIdName,
 		},
 		Spec: aboutv1alpha1.ClusterPropertySpec{
-			Value: ClustersetId,
+			Value: ClusterSetId,
 		},
 	}
 }
