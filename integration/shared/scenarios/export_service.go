@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	multiclustercontrollers "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/controllers/multicluster"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -59,6 +60,8 @@ func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, po
 				Protocol:   string(v1.ProtocolTCP),
 			},
 			EndpointPort: endpointPort,
+			ClusterId:    test.ClusterId,
+			ClusterSetId: test.ClusterSetId,
 			ServiceType:  model.ClusterSetIPType, // in scenario, we assume ClusterSetIP type
 			Attributes:   make(map[string]string),
 		})
@@ -70,7 +73,7 @@ func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, po
 				NsTTL:    time.Second,
 				SvcTTL:   time.Second,
 				EndptTTL: time.Second,
-			}, common.ClusterUtils{}),
+			}, common.NewClusterUtilsForTest(test.ClusterId, test.ClusterSetId)),
 		expectedSvc: model.Service{
 			Namespace: nsName,
 			Name:      svcName,
