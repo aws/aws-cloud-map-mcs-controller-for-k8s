@@ -82,6 +82,12 @@ make install
 # customresourcedefinition.apiextensions.k8s.io/serviceimports.multicluster.x-k8s.io created
 ```
 
+Register a unique `ClusterId` and `ClusterSetId` in your cluster:
+```bash
+kubectl apply -f "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/example-clusterid.yaml"
+kubectl apply -f "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/example-clustersetid.yaml"
+```
+
 To run the controller, run the following command. The controller runs in an infinite loop so open another terminal to create CRDs.
 ```sh
 make run 

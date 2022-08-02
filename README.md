@@ -42,9 +42,25 @@ Install the The CoreDNS multicluster plugin into each participating cluster. The
 To install the plugin, run the following commands.
 
 ```bash
-kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/coredns-clusterrole.yaml
-kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/coredns-configmap.yaml
-kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/coredns-deployment.yaml
+kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/coredns-clusterrole.yaml"
+kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/coredns-configmap.yaml"
+kubectl apply -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/coredns-deployment.yaml"
+```
+
+### Configure ClusterId and ClusterSetId
+
+Each cluster must have a unique `ClusterId` that uniquely identifies the cluster.
+
+Update the `value` field in the below file with a unique ClusterId and run the following command.
+```bash
+kubectl apply -f "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/example-clusterid.yaml"
+```
+
+`ClusterSetId` is a unique identifier for the set of clusters in your multicluster. This `value` must be the same for all clusters in your set.
+
+Update the `value` field in the below file with a unique ClusterSetId and run the following command.
+```bash
+kubectl apply -f "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/samples/example-clustersetid.yaml"
 ```
 
 ### Install Controller
