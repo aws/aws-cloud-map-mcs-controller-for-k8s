@@ -447,9 +447,115 @@ func TestPortsEqualIgnoreOrder(t *testing.T) {
 	}
 }
 
+func TestIPsEqualIgnoreOrder(t *testing.T) {
+	type args struct {
+		ipsA []string
+		ipsB []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "ips equal same order",
+			args: args{
+				ipsA: []string{
+					test.ClusterIp1,
+					test.ClusterIp2,
+				},
+				ipsB: []string{
+					test.ClusterIp1,
+					test.ClusterIp2,
+				},
+			},
+			want: true,
+		},
+		{
+			name: "ips equal different order",
+			args: args{
+				ipsA: []string{
+					test.ClusterIp1,
+					test.ClusterIp2,
+				},
+				ipsB: []string{
+					test.ClusterIp2,
+					test.ClusterIp1,
+				},
+			},
+			want: true,
+		},
+		{
+			name: "ips not equal",
+			args: args{
+				ipsA: []string{
+					test.ClusterIp1,
+					test.ClusterIp2,
+				},
+				ipsB: []string{
+					test.ClusterIp1,
+					"10.10.10.3",
+				},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IPsEqualIgnoreOrder(tt.args.ipsA, tt.args.ipsB); !(got == tt.want) {
+				t.Errorf("IPsEqualIgnoreOrder() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetClusterIpsFromServices(t *testing.T) {
+	type args struct {
+		services []*v1.Service
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "happy case",
+			args: args{
+				services: []*v1.Service{
+					{
+						ObjectMeta: metav1.ObjectMeta{},
+						Spec: v1.ServiceSpec{
+							Type:      v1.ServiceTypeClusterIP,
+							ClusterIP: test.ClusterIp1,
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{},
+						Spec: v1.ServiceSpec{
+							Type:      v1.ServiceTypeClusterIP,
+							ClusterIP: test.ClusterIp2,
+						},
+					},
+				}},
+			want: []string{
+				test.ClusterIp1, test.ClusterIp2,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetClusterIpsFromServices(tt.args.services); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetClusterIpsFromServices() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestCreateServiceImportStruct(t *testing.T) {
 	type args struct {
 		servicePorts []*model.Port
+		clusterIds   []string
 	}
 	tests := []struct {
 		name string
@@ -459,6 +565,7 @@ func TestCreateServiceImportStruct(t *testing.T) {
 		{
 			name: "happy case",
 			args: args{
+				clusterIds: []string{test.ClusterId1, test.ClusterId2},
 				servicePorts: []*model.Port{
 					{Name: test.PortName1, Protocol: test.Protocol1, Port: test.Port1},
 					{Name: test.PortName2, Protocol: test.Protocol1, Port: test.Port2},
@@ -466,9 +573,8 @@ func TestCreateServiceImportStruct(t *testing.T) {
 			},
 			want: multiclusterv1alpha1.ServiceImport{
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace:   test.HttpNsName,
-					Name:        test.SvcName,
-					Annotations: map[string]string{DerivedServiceAnnotation: DerivedName(test.HttpNsName, test.SvcName)},
+					Namespace: test.HttpNsName,
+					Name:      test.SvcName,
 				},
 				Spec: multiclusterv1alpha1.ServiceImportSpec{
 					IPs:  []string{},
@@ -478,13 +584,23 @@ func TestCreateServiceImportStruct(t *testing.T) {
 						{Name: test.PortName2, Protocol: v1.ProtocolTCP, Port: test.Port2},
 					},
 				},
+				Status: multiclusterv1alpha1.ServiceImportStatus{
+					Clusters: []multiclusterv1alpha1.ClusterStatus{
+						{
+							Cluster: test.ClusterId1,
+						},
+						{
+							Cluster: test.ClusterId2,
+						},
+					},
+				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := CreateServiceImportStruct(test.HttpNsName, test.SvcName, tt.args.servicePorts); !reflect.DeepEqual(*got, tt.want) {
-				t.Errorf("CreateServiceImportStruct() = %v, want %v", got, tt.want)
+			if got := CreateServiceImportStruct(test.HttpNsName, test.SvcName, tt.args.clusterIds, tt.args.servicePorts); !reflect.DeepEqual(*got, tt.want) {
+				t.Errorf("CreateServiceImportStruct() = %v, want %v", *got, tt.want)
 			}
 		})
 	}

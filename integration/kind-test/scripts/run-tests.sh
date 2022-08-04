@@ -4,9 +4,7 @@
 
 source ./integration/kind-test/scripts/common.sh
 
-$KUBECTL_BIN apply -f "$CONFIGS/e2e-clusterId.yaml"
-$KUBECTL_BIN apply -f "$CONFIGS/e2e-clusterSetId.yaml"
-
+$KUBECTL_BIN apply -f "$CONFIGS/e2e-clusterproperty.yaml"
 $KUBECTL_BIN apply -f "$CONFIGS/e2e-deployment.yaml"
 $KUBECTL_BIN apply -f "$CONFIGS/e2e-service.yaml"
 $KUBECTL_BIN apply -f "$CONFIGS/e2e-export.yaml"

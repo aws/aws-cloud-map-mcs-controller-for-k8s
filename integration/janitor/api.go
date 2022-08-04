@@ -23,7 +23,7 @@ type serviceDiscoveryJanitorApi struct {
 
 func NewServiceDiscoveryJanitorApiFromConfig(cfg *aws.Config) ServiceDiscoveryJanitorApi {
 	return &serviceDiscoveryJanitorApi{
-		ServiceDiscoveryApi: cloudmap.NewServiceDiscoveryApiFromConfig(cfg, common.NewClusterUtilsForTest(test.ClusterId, test.ClusterSetId)),
+		ServiceDiscoveryApi: cloudmap.NewServiceDiscoveryApiFromConfig(cfg, common.NewClusterUtilsForTest(test.ClusterId1, test.ClusterSetId1)),
 		janitorFacade:       NewSdkJanitorFacadeFromConfig(cfg),
 	}
 }

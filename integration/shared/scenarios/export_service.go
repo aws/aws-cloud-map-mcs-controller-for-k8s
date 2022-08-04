@@ -60,8 +60,8 @@ func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, po
 				Protocol:   string(v1.ProtocolTCP),
 			},
 			EndpointPort: endpointPort,
-			ClusterId:    test.ClusterId,
-			ClusterSetId: test.ClusterSetId,
+			ClusterId:    test.ClusterId1,
+			ClusterSetId: test.ClusterSetId1,
 			ServiceType:  model.ClusterSetIPType, // in scenario, we assume ClusterSetIP type
 			Attributes:   make(map[string]string),
 		})
@@ -73,7 +73,7 @@ func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, po
 				NsTTL:    time.Second,
 				SvcTTL:   time.Second,
 				EndptTTL: time.Second,
-			}, common.NewClusterUtilsForTest(test.ClusterId, test.ClusterSetId)),
+			}, common.NewClusterUtilsForTest(test.ClusterId1, test.ClusterSetId1)),
 		expectedSvc: model.Service{
 			Namespace: nsName,
 			Name:      svcName,

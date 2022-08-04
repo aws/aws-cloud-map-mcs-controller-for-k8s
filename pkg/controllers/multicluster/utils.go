@@ -24,6 +24,9 @@ const (
 	// LabelEndpointSliceManagedBy indicates the name of the entity that manages the EndpointSlice.
 	LabelEndpointSliceManagedBy = "endpointslice.kubernetes.io/managed-by"
 
+	// LabelEndpointSliceSourceCluster indicates the id of the cluster the EndpointSlice was create for
+	LabelEndpointSliceSourceCluster = "multicluster.kubernetes.io/source-cluster"
+
 	// ValueEndpointSliceManagedBy indicates the name of the entity that manages the EndpointSlice.
 	ValueEndpointSliceManagedBy = "aws-cloud-map-mcs-controller-for-k8s"
 )
@@ -134,36 +137,72 @@ func PortsEqualIgnoreOrder(a, b []*model.Port) (equal bool) {
 	return true
 }
 
+func IPsEqualIgnoreOrder(a, b []string) (equal bool) {
+	if len(a) != len(b) {
+		return false
+	}
+
+	aMap := make(map[string]bool)
+	for _, ipA := range a {
+		aMap[ipA] = true
+	}
+
+	for _, ipB := range b {
+		if !aMap[ipB] {
+			return false
+		}
+	}
+	return true
+}
+
+// GetClusterIpsFromServices returns list of ClusterIPs from services
+func GetClusterIpsFromServices(services []*v1.Service) []string {
+	clusterIPs := make([]string, 0)
+	for _, svc := range services {
+		clusterIPs = append(clusterIPs, svc.Spec.ClusterIP)
+	}
+	return clusterIPs
+}
+
 // DerivedName computes the "placeholder" name for an imported service
-func DerivedName(namespace string, name string) string {
+func DerivedName(namespace string, name string, clusterId string) string {
 	hash := sha256.New()
-	hash.Write([]byte(namespace + name))
+	hash.Write([]byte(namespace + name + clusterId))
 	return "imported-" + strings.ToLower(base32.HexEncoding.WithPadding(base32.NoPadding).EncodeToString(hash.Sum(nil)))[:10]
 }
 
 // CreateServiceImportStruct creates struct representation of a ServiceImport
-func CreateServiceImportStruct(namespace string, name string, servicePorts []*model.Port) *multiclusterv1alpha1.ServiceImport {
+func CreateServiceImportStruct(namespace string, name string, clusterIds []string, servicePorts []*model.Port) *multiclusterv1alpha1.ServiceImport {
 	serviceImportPorts := make([]multiclusterv1alpha1.ServicePort, 0)
 	for _, port := range servicePorts {
 		serviceImportPorts = append(serviceImportPorts, PortToServiceImportPort(*port))
 	}
 
+	clusters := make([]multiclusterv1alpha1.ClusterStatus, 0)
+	for _, clusterId := range clusterIds {
+		clusters = append(clusters, multiclusterv1alpha1.ClusterStatus{
+			Cluster: clusterId,
+		})
+	}
+
 	return &multiclusterv1alpha1.ServiceImport{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:   namespace,
-			Name:        name,
-			Annotations: map[string]string{DerivedServiceAnnotation: DerivedName(namespace, name)},
+			Namespace: namespace,
+			Name:      name,
 		},
 		Spec: multiclusterv1alpha1.ServiceImportSpec{
 			IPs:   []string{},
 			Type:  multiclusterv1alpha1.ClusterSetIP,
 			Ports: serviceImportPorts,
 		},
+		Status: multiclusterv1alpha1.ServiceImportStatus{
+			Clusters: clusters,
+		},
 	}
 }
 
 // CreateDerivedServiceStruct creates struct representation of a derived service
-func CreateDerivedServiceStruct(svcImport *multiclusterv1alpha1.ServiceImport, importedSvcPorts []*model.Port) *v1.Service {
+func CreateDerivedServiceStruct(svcImport *multiclusterv1alpha1.ServiceImport, importedSvcPorts []*model.Port, clusterId string) *v1.Service {
 	ownerRef := metav1.NewControllerRef(svcImport, schema.GroupVersionKind{
 		Version: svcImport.TypeMeta.APIVersion,
 		Kind:    svcImport.TypeMeta.Kind,
@@ -177,7 +216,7 @@ func CreateDerivedServiceStruct(svcImport *multiclusterv1alpha1.ServiceImport, i
 	return &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       svcImport.Namespace,
-			Name:            svcImport.Annotations[DerivedServiceAnnotation],
+			Name:            DerivedName(svcImport.Namespace, svcImport.Name, clusterId),
 			OwnerReferences: []metav1.OwnerReference{*ownerRef},
 		},
 		Spec: v1.ServiceSpec{
@@ -205,7 +244,7 @@ func CreateEndpointForSlice(svc *v1.Service, ip string) discovery.Endpoint {
 	}
 }
 
-func CreateEndpointSliceStruct(svc *v1.Service, svcImportName string) *discovery.EndpointSlice {
+func CreateEndpointSliceStruct(svc *v1.Service, svcImportName string, clusterId string) *discovery.EndpointSlice {
 	return &discovery.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
@@ -215,6 +254,8 @@ func CreateEndpointSliceStruct(svc *v1.Service, svcImportName string) *discovery
 				LabelServiceImportName: svcImportName,
 				// 'managed-by' label set to controller
 				LabelEndpointSliceManagedBy: ValueEndpointSliceManagedBy,
+				// 'source-cluster' label set to current cluster
+				LabelEndpointSliceSourceCluster: clusterId,
 			},
 			GenerateName: svc.Name + "-",
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(svc, schema.GroupVersionKind{

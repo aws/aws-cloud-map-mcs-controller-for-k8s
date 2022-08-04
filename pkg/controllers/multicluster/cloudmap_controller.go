@@ -131,6 +131,16 @@ func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Se
 
 	importedSvcPorts := ExtractServicePorts(svc.Endpoints)
 
+	clusterIdToEndpointsMap := make(map[string][]*model.Endpoint)
+	for _, ep := range svc.Endpoints {
+		clusterIdToEndpointsMap[ep.ClusterId] = append(clusterIdToEndpointsMap[ep.ClusterId], ep)
+	}
+
+	clusterIds := make([]string, 0, len(clusterIdToEndpointsMap))
+	for clusterId := range clusterIdToEndpointsMap {
+		clusterIds = append(clusterIds, clusterId)
+	}
+
 	svcImport, err := r.getServiceImport(ctx, svc.Namespace, svc.Name)
 	if err != nil {
 		if !errors.IsNotFound(err) {
@@ -138,34 +148,45 @@ func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Se
 		}
 
 		// create ServiceImport if it doesn't exist
-		if svcImport, err = r.createAndGetServiceImport(ctx, svc.Namespace, svc.Name, importedSvcPorts); err != nil {
+		if svcImport, err = r.createAndGetServiceImport(ctx, svc.Namespace, svc.Name, importedSvcPorts, clusterIds); err != nil {
 			return err
 		}
 	}
 
-	derivedService, err := r.getDerivedService(ctx, svc.Namespace, svcImport.Annotations[DerivedServiceAnnotation])
-	if err != nil {
-		if !errors.IsNotFound(err) {
+	// get or create derived Service for each cluster the service is a member of
+	derivedServices := make([]*v1.Service, 0, len(clusterIdToEndpointsMap))
+	for _, clusterId := range clusterIds {
+		endpoints := clusterIdToEndpointsMap[clusterId]
+		clusterImportedSvcPorts := ExtractServicePorts(endpoints)
+
+		derivedService, err := r.getDerivedService(ctx, svc.Namespace, svc.Name, clusterId)
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				return err
+			}
+
+			// create derived Service if it doesn't exist
+			if derivedService, err = r.createAndGetDerivedService(ctx, svcImport, clusterId, clusterImportedSvcPorts); err != nil {
+				return err
+			}
+		}
+
+		// update derived Service ports to match imported ports if necessary
+		if err = r.updateDerivedService(ctx, derivedService, clusterImportedSvcPorts); err != nil {
 			return err
 		}
 
-		// create derived Service if it doesn't exist
-		if derivedService, err = r.createAndGetDerivedService(ctx, svcImport, importedSvcPorts); err != nil {
+		// update EndpointSlices of this derived Service
+		// log endpoints
+		if err = r.updateEndpointSlices(ctx, svcImport, endpoints, derivedService, clusterId); err != nil {
 			return err
 		}
+
+		derivedServices = append(derivedServices, derivedService)
 	}
 
-	// update service import to match derived service cluster IP and imported ports if necessary
-	if err = r.updateServiceImport(ctx, svcImport, derivedService, importedSvcPorts); err != nil {
-		return err
-	}
-
-	// update derived service ports to match imported ports if necessary
-	if err = r.updateDerivedService(ctx, derivedService, importedSvcPorts); err != nil {
-		return err
-	}
-
-	return r.updateEndpointSlices(ctx, svcImport, svc.Endpoints, derivedService)
+	// update service import to match derived service clusterIPs and imported ports if necessary
+	return r.updateServiceImport(ctx, svcImport, derivedServices, importedSvcPorts)
 }
 
 func (r *CloudMapReconciler) getServiceImport(ctx context.Context, namespace string, name string) (*multiclusterv1alpha1.ServiceImport, error) {
@@ -174,8 +195,8 @@ func (r *CloudMapReconciler) getServiceImport(ctx context.Context, namespace str
 	return existingServiceImport, err
 }
 
-func (r *CloudMapReconciler) createAndGetServiceImport(ctx context.Context, namespace string, name string, servicePorts []*model.Port) (*multiclusterv1alpha1.ServiceImport, error) {
-	toCreate := CreateServiceImportStruct(namespace, name, servicePorts)
+func (r *CloudMapReconciler) createAndGetServiceImport(ctx context.Context, namespace string, name string, servicePorts []*model.Port, clusterIds []string) (*multiclusterv1alpha1.ServiceImport, error) {
+	toCreate := CreateServiceImportStruct(namespace, name, clusterIds, servicePorts)
 	if err := r.Client.Create(ctx, toCreate); err != nil {
 		return nil, err
 	}
@@ -184,23 +205,24 @@ func (r *CloudMapReconciler) createAndGetServiceImport(ctx context.Context, name
 	return r.getServiceImport(ctx, namespace, name)
 }
 
-func (r *CloudMapReconciler) getDerivedService(ctx context.Context, namespace string, name string) (*v1.Service, error) {
+func (r *CloudMapReconciler) getDerivedService(ctx context.Context, namespace string, name string, clusterId string) (*v1.Service, error) {
+	derivedName := DerivedName(namespace, name, clusterId)
 	existingService := &v1.Service{}
-	err := r.Client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, existingService)
+	err := r.Client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: derivedName}, existingService)
 	return existingService, err
 }
 
-func (r *CloudMapReconciler) createAndGetDerivedService(ctx context.Context, svcImport *multiclusterv1alpha1.ServiceImport, svcPorts []*model.Port) (*v1.Service, error) {
-	toCreate := CreateDerivedServiceStruct(svcImport, svcPorts)
+func (r *CloudMapReconciler) createAndGetDerivedService(ctx context.Context, svcImport *multiclusterv1alpha1.ServiceImport, clusterId string, svcPorts []*model.Port) (*v1.Service, error) {
+	toCreate := CreateDerivedServiceStruct(svcImport, svcPorts, clusterId)
 	if err := r.Client.Create(ctx, toCreate); err != nil {
 		return nil, err
 	}
 	r.Log.Info("created derived Service", "namespace", toCreate.Namespace, "name", toCreate.Name)
 
-	return r.getDerivedService(ctx, toCreate.Namespace, svcImport.Annotations[DerivedServiceAnnotation])
+	return r.getDerivedService(ctx, svcImport.Namespace, svcImport.Name, clusterId)
 }
 
-func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport *multiclusterv1alpha1.ServiceImport, desiredEndpoints []*model.Endpoint, svc *v1.Service) error {
+func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport *multiclusterv1alpha1.ServiceImport, desiredEndpoints []*model.Endpoint, svc *v1.Service, clusterId string) error {
 	existingSlicesList := discovery.EndpointSliceList{}
 	if err := r.Client.List(ctx, &existingSlicesList,
 		client.InNamespace(svc.Namespace), client.MatchingLabels{discovery.LabelServiceName: svc.Name}); err != nil {
@@ -217,6 +239,7 @@ func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport
 		Desired:           desiredEndpoints,
 		Service:           svc,
 		ServiceImportName: svcImport.Name,
+		ClusterId:         clusterId,
 	}
 
 	changes := plan.CalculateChanges()
@@ -245,11 +268,13 @@ func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport
 	return nil
 }
 
-func (r *CloudMapReconciler) updateServiceImport(ctx context.Context, svcImport *multiclusterv1alpha1.ServiceImport, svc *v1.Service, importedSvcPorts []*model.Port) error {
+func (r *CloudMapReconciler) updateServiceImport(ctx context.Context, svcImport *multiclusterv1alpha1.ServiceImport, derivedServices []*v1.Service, importedSvcPorts []*model.Port) error {
 	updateRequired := false
-	if len(svcImport.Spec.IPs) != 1 || svcImport.Spec.IPs[0] != svc.Spec.ClusterIP {
-		r.Log.Debug("ServiceImport IP need update", "ServiceImport IPs", svcImport.Spec.IPs, "cluster IP", svc.Spec.ClusterIP)
-		svcImport.Spec.IPs = []string{svc.Spec.ClusterIP}
+
+	clusterIPs := GetClusterIpsFromServices(derivedServices)
+	if !IPsEqualIgnoreOrder(svcImport.Spec.IPs, clusterIPs) {
+		r.Log.Debug("ServiceImport IPs need update", "ServiceImport IPs", svcImport.Spec.IPs, "cluster IPs", clusterIPs)
+		svcImport.Spec.IPs = clusterIPs
 		updateRequired = true
 	}
 
