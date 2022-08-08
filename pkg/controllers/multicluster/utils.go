@@ -26,8 +26,6 @@ const (
 
 	// ValueEndpointSliceManagedBy indicates the name of the entity that manages the EndpointSlice.
 	ValueEndpointSliceManagedBy = "aws-cloud-map-mcs-controller-for-k8s"
-
-	LabelEndpointSliceSourceCluster = "multicluster.kubernetes.io/source-cluster"
 )
 
 // ServicePortToPort converts a k8s service port to internal model port
@@ -232,8 +230,7 @@ func CreateEndpointSliceStruct(svc *v1.Service, svcImportName string) *discovery
 				// original ServiceImport name
 				LabelServiceImportName: svcImportName,
 				// 'managed-by' label set to controller
-				LabelEndpointSliceManagedBy:     ValueEndpointSliceManagedBy,
-				LabelEndpointSliceSourceCluster: "test-name",
+				LabelEndpointSliceManagedBy: ValueEndpointSliceManagedBy,
 			},
 			GenerateName: svc.Name + "-",
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(svc, schema.GroupVersionKind{
