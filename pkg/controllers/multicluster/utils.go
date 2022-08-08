@@ -26,6 +26,8 @@ const (
 
 	// ValueEndpointSliceManagedBy indicates the name of the entity that manages the EndpointSlice.
 	ValueEndpointSliceManagedBy = "aws-cloud-map-mcs-controller-for-k8s"
+
+	LabelEndpointSliceSourceCluster = "multicluster.kubernetes.io/source-cluster"
 )
 
 // ServicePortToPort converts a k8s service port to internal model port
@@ -142,7 +144,7 @@ func DerivedName(namespace string, name string) string {
 }
 
 // CreateServiceImportStruct creates struct representation of a ServiceImport
-func CreateServiceImportStruct(namespace string, name string, servicePorts []*model.Port) *multiclusterv1alpha1.ServiceImport {
+func CreateServiceImportStruct(namespace string, name string, servicePorts []*model.Port, endpoints []*model.Endpoint) *multiclusterv1alpha1.ServiceImport {
 	serviceImportPorts := make([]multiclusterv1alpha1.ServicePort, 0)
 	for _, port := range servicePorts {
 		serviceImportPorts = append(serviceImportPorts, PortToServiceImportPort(*port))
@@ -156,7 +158,7 @@ func CreateServiceImportStruct(namespace string, name string, servicePorts []*mo
 		},
 		Spec: multiclusterv1alpha1.ServiceImportSpec{
 			IPs:   []string{},
-			Type:  multiclusterv1alpha1.ClusterSetIP,
+			Type:  ServiceTypetoServiceImportType(endpoints[0].ServiceType), // assume each endpoint has the same serviceType
 			Ports: serviceImportPorts,
 		},
 	}
@@ -172,6 +174,22 @@ func CreateDerivedServiceStruct(svcImport *multiclusterv1alpha1.ServiceImport, i
 	svcPorts := make([]v1.ServicePort, 0)
 	for _, svcPort := range importedSvcPorts {
 		svcPorts = append(svcPorts, PortToServicePort(*svcPort))
+	}
+
+	// if svcImport is Headless type, specify ClusterIP field to "None"
+	if svcImport.Spec.Type == multiclusterv1alpha1.Headless {
+		return &v1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace:       svcImport.Namespace,
+				Name:            svcImport.Annotations[DerivedServiceAnnotation],
+				OwnerReferences: []metav1.OwnerReference{*ownerRef},
+			},
+			Spec: v1.ServiceSpec{
+				Type:      v1.ServiceTypeClusterIP,
+				Ports:     svcPorts,
+				ClusterIP: "None",
+			},
+		}
 	}
 
 	return &v1.Service{
@@ -214,7 +232,8 @@ func CreateEndpointSliceStruct(svc *v1.Service, svcImportName string) *discovery
 				// original ServiceImport name
 				LabelServiceImportName: svcImportName,
 				// 'managed-by' label set to controller
-				LabelEndpointSliceManagedBy: ValueEndpointSliceManagedBy,
+				LabelEndpointSliceManagedBy:     ValueEndpointSliceManagedBy,
+				LabelEndpointSliceSourceCluster: "test-name",
 			},
 			GenerateName: svc.Name + "-",
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(svc, schema.GroupVersionKind{
@@ -234,4 +253,13 @@ func ExtractServiceType(svc *v1.Service) model.ServiceType {
 	}
 
 	return model.ClusterSetIPType
+}
+
+// ServiceTypetoServiceImportType converts model service type to multicluster ServiceImport type
+func ServiceTypetoServiceImportType(serviceType model.ServiceType) multiclusterv1alpha1.ServiceImportType {
+	if serviceType.String() == model.HeadlessType.String() {
+		return multiclusterv1alpha1.Headless
+	}
+
+	return multiclusterv1alpha1.ClusterSetIP
 }

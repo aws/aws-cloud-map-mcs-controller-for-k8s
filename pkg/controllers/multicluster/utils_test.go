@@ -450,6 +450,7 @@ func TestPortsEqualIgnoreOrder(t *testing.T) {
 func TestCreateServiceImportStruct(t *testing.T) {
 	type args struct {
 		servicePorts []*model.Port
+		endpoints    []*model.Endpoint
 	}
 	tests := []struct {
 		name string
@@ -462,6 +463,11 @@ func TestCreateServiceImportStruct(t *testing.T) {
 				servicePorts: []*model.Port{
 					{Name: test.PortName1, Protocol: test.Protocol1, Port: test.Port1},
 					{Name: test.PortName2, Protocol: test.Protocol1, Port: test.Port2},
+				},
+				endpoints: []*model.Endpoint{
+					{
+						ServiceType: model.ClusterSetIPType,
+					},
 				},
 			},
 			want: multiclusterv1alpha1.ServiceImport{
@@ -483,7 +489,7 @@ func TestCreateServiceImportStruct(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := CreateServiceImportStruct(test.HttpNsName, test.SvcName, tt.args.servicePorts); !reflect.DeepEqual(*got, tt.want) {
+			if got := CreateServiceImportStruct(test.HttpNsName, test.SvcName, tt.args.servicePorts, tt.args.endpoints); !reflect.DeepEqual(*got, tt.want) {
 				t.Errorf("CreateServiceImportStruct() = %v, want %v", got, tt.want)
 			}
 		})
@@ -542,6 +548,32 @@ func TestExtractServiceType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := ExtractServiceType(tt.svc); got != tt.want {
+				t.Errorf("ExtractServiceType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestServiceTypetoServiceImportType(t *testing.T) {
+	tests := []struct {
+		name    string
+		svcType model.ServiceType
+		want    multiclusterv1alpha1.ServiceImportType
+	}{
+		{
+			name:    "cluster ip type",
+			svcType: model.ClusterSetIPType,
+			want:    multiclusterv1alpha1.ClusterSetIP,
+		},
+		{
+			name:    "headless type",
+			svcType: model.HeadlessType,
+			want:    multiclusterv1alpha1.Headless,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ServiceTypetoServiceImportType(tt.svcType); got != tt.want {
 				t.Errorf("ExtractServiceType() = %v, want %v", got, tt.want)
 			}
 		})
