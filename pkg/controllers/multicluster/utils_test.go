@@ -2,11 +2,13 @@ package controllers
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
 
 	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/api/discovery/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -550,6 +552,21 @@ func TestGetClusterIpsFromServices(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDerivedService(t *testing.T) {
+	const numTests = 100
+	derivedServiceMap := make(map[string]bool)
+	for i := 0; i < numTests; i++ {
+		namespace := test.HttpNsName
+		name := "test-svcname-" + strconv.Itoa(i)
+		clusterId := "test-clusterid-" + strconv.Itoa(i)
+		derivedService := DerivedName(namespace, name, clusterId)
+		assert.NotContains(t, derivedServiceMap, derivedService, "derived service already exists")
+		derivedServiceMap[derivedService] = true
+	}
+	assert.Equal(t, numTests, len(derivedServiceMap))
+	assert.True(t, DerivedName(test.HttpNsName, test.SvcName, test.ClusterId1) != DerivedName(test.HttpNsName, test.SvcName, test.ClusterId2))
 }
 
 func TestCreateServiceImportStruct(t *testing.T) {

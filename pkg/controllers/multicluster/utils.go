@@ -7,6 +7,8 @@ import (
 
 	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "k8s.io/api/core/v1"
 	discovery "k8s.io/api/discovery/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,11 +23,14 @@ const (
 	// LabelServiceImportName indicates the name of the multi-cluster service that an EndpointSlice belongs to.
 	LabelServiceImportName = "multicluster.kubernetes.io/service-name"
 
+	// LabelDerivedServiceOriginatingName indicates the name of the multi-cluster service that the derived service originated from.
+	LabelDerivedServiceOriginatingName = "multicluster.kubernetes.io/service-name"
+
 	// LabelEndpointSliceManagedBy indicates the name of the entity that manages the EndpointSlice.
 	LabelEndpointSliceManagedBy = "endpointslice.kubernetes.io/managed-by"
 
-	// LabelEndpointSliceSourceCluster indicates the id of the cluster the EndpointSlice was create for
-	LabelEndpointSliceSourceCluster = "multicluster.kubernetes.io/source-cluster"
+	// LabelSourceCluster indicates the id of the cluster the object was created for
+	LabelSourceCluster = "multicluster.kubernetes.io/source-cluster"
 
 	// ValueEndpointSliceManagedBy indicates the name of the entity that manages the EndpointSlice.
 	ValueEndpointSliceManagedBy = "aws-cloud-map-mcs-controller-for-k8s"
@@ -115,44 +120,23 @@ func ExtractEndpointPorts(endpoints []*model.Endpoint) (endpointPorts []*model.P
 }
 
 func PortsEqualIgnoreOrder(a, b []*model.Port) (equal bool) {
-	if len(a) != len(b) {
-		return false
+	idsA := make([]string, len(a))
+	idsB := make([]string, len(b))
+	for i, port := range a {
+		idsA[i] = port.GetID()
 	}
-
-	aMap := make(map[string]*model.Port)
-	for _, portA := range a {
-		aMap[portA.GetID()] = portA
+	for i, port := range b {
+		idsB[i] = port.GetID()
 	}
-
-	for _, portB := range b {
-		portA, found := aMap[portB.GetID()]
-		if !found {
-			return false
-		}
-
-		if !portB.Equals(portA) {
-			return false
-		}
-	}
-	return true
+	less := func(x, y string) bool { return x < y }
+	equalIgnoreOrder := cmp.Diff(idsA, idsB, cmpopts.SortSlices(less)) == ""
+	return equalIgnoreOrder
 }
 
 func IPsEqualIgnoreOrder(a, b []string) (equal bool) {
-	if len(a) != len(b) {
-		return false
-	}
-
-	aMap := make(map[string]bool)
-	for _, ipA := range a {
-		aMap[ipA] = true
-	}
-
-	for _, ipB := range b {
-		if !aMap[ipB] {
-			return false
-		}
-	}
-	return true
+	less := func(x, y string) bool { return x < y }
+	equalIgnoreOrder := cmp.Diff(a, b, cmpopts.SortSlices(less)) == ""
+	return equalIgnoreOrder
 }
 
 // GetClusterIpsFromServices returns list of ClusterIPs from services
@@ -215,6 +199,10 @@ func CreateDerivedServiceStruct(svcImport *multiclusterv1alpha1.ServiceImport, i
 
 	return &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{
+				LabelSourceCluster:                 clusterId,
+				LabelDerivedServiceOriginatingName: svcImport.Name,
+			},
 			Namespace:       svcImport.Namespace,
 			Name:            DerivedName(svcImport.Namespace, svcImport.Name, clusterId),
 			OwnerReferences: []metav1.OwnerReference{*ownerRef},
@@ -255,7 +243,7 @@ func CreateEndpointSliceStruct(svc *v1.Service, svcImportName string, clusterId 
 				// 'managed-by' label set to controller
 				LabelEndpointSliceManagedBy: ValueEndpointSliceManagedBy,
 				// 'source-cluster' label set to current cluster
-				LabelEndpointSliceSourceCluster: clusterId,
+				LabelSourceCluster: clusterId,
 			},
 			GenerateName: svc.Name + "-",
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(svc, schema.GroupVersionKind{

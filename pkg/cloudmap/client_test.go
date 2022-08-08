@@ -342,8 +342,10 @@ func TestServiceDiscoveryClient_DeleteEndpoints(t *testing.T) {
 	tc.mockCache.EXPECT().EvictEndpoints(test.HttpNsName, test.SvcName)
 
 	err := tc.client.DeleteEndpoints(context.TODO(), test.HttpNsName, test.SvcName,
-		[]*model.Endpoint{{Id: test.EndptId1}, {Id: test.EndptId2}})
-
+		[]*model.Endpoint{
+			{Id: test.EndptId1, ClusterId: test.ClusterId1, ClusterSetId: test.ClusterSetId1},
+			{Id: test.EndptId2, ClusterId: test.ClusterId1, ClusterSetId: test.ClusterSetId1},
+		})
 	assert.Nil(t, err)
 }
 
@@ -353,9 +355,10 @@ func getTestSdClient(t *testing.T) *testSdClient {
 	mockApi := cloudmapMock.NewMockServiceDiscoveryApi(mockController)
 	return &testSdClient{
 		client: &serviceDiscoveryClient{
-			log:   common.NewLoggerWithLogr(testr.New(t)),
-			sdApi: mockApi,
-			cache: mockCache,
+			log:          common.NewLoggerWithLogr(testr.New(t)),
+			sdApi:        mockApi,
+			cache:        mockCache,
+			clusterUtils: common.NewClusterUtilsForTest(test.ClusterId1, test.ClusterSetId1),
 		},
 		mockApi:   *mockApi,
 		mockCache: *mockCache,

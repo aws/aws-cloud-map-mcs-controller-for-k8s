@@ -154,7 +154,7 @@ func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Se
 	}
 
 	// get or create derived Service for each cluster the service is a member of
-	derivedServices := make([]*v1.Service, 0, len(clusterIdToEndpointsMap))
+	derivedServices := make([]*v1.Service, 0, len(clusterIds))
 	for _, clusterId := range clusterIds {
 		endpoints := clusterIdToEndpointsMap[clusterId]
 		clusterImportedSvcPorts := ExtractServicePorts(endpoints)
@@ -177,12 +177,27 @@ func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Se
 		}
 
 		// update EndpointSlices of this derived Service
-		// log endpoints
 		if err = r.updateEndpointSlices(ctx, svcImport, endpoints, derivedService, clusterId); err != nil {
 			return err
 		}
 
 		derivedServices = append(derivedServices, derivedService)
+	}
+
+	// remove any existing derived services that do not have any endpoints in cloud map
+	existingDerivedServices := &v1.ServiceList{}
+	existingDerivedSvcErr := r.Client.List(ctx, existingDerivedServices, client.InNamespace(svcImport.Namespace), client.MatchingLabels{LabelDerivedServiceOriginatingName: svcImport.Name})
+	if existingDerivedSvcErr != nil {
+		r.Log.Error(existingDerivedSvcErr, "failed to list derived services")
+		return existingDerivedSvcErr
+	}
+	for _, derivedService := range existingDerivedServices.Items {
+		clusterId := derivedService.Labels[LabelSourceCluster]
+		if _, ok := clusterIdToEndpointsMap[clusterId]; !ok {
+			if err := r.DeleteDerivedServiceAndEndpointSlices(ctx, &derivedService); err != nil {
+				return err
+			}
+		}
 	}
 
 	// update service import to match derived service clusterIPs and imported ports if necessary
@@ -273,7 +288,7 @@ func (r *CloudMapReconciler) updateServiceImport(ctx context.Context, svcImport 
 
 	clusterIPs := GetClusterIpsFromServices(derivedServices)
 	if !IPsEqualIgnoreOrder(svcImport.Spec.IPs, clusterIPs) {
-		r.Log.Debug("ServiceImport IPs need update", "ServiceImport IPs", svcImport.Spec.IPs, "cluster IPs", clusterIPs)
+		r.Log.Info("ServiceImport IPs need update", "ServiceImport IPs", svcImport.Spec.IPs, "cluster IPs", clusterIPs)
 		svcImport.Spec.IPs = clusterIPs
 		updateRequired = true
 	}
@@ -339,4 +354,14 @@ func (r *CloudMapReconciler) updateDerivedService(ctx context.Context, svc *v1.S
 	}
 
 	return nil
+}
+
+func (r *CloudMapReconciler) DeleteDerivedServiceAndEndpointSlices(ctx context.Context, derivedService *v1.Service) error {
+	// delete EndpointSlices
+	if err := r.Client.DeleteAllOf(ctx, &discovery.EndpointSlice{}, client.InNamespace(derivedService.Namespace), client.MatchingLabels{discovery.LabelServiceName: derivedService.Name}); err != nil {
+		return err
+	}
+	// delete Service
+	r.Log.Info("deleting derived Service", "namespace", derivedService.Namespace, "name", derivedService.Name)
+	return r.Client.Delete(ctx, derivedService)
 }
