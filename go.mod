@@ -3,7 +3,7 @@ module github.com/aws/aws-cloud-map-mcs-controller-for-k8s
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.16.8
+	github.com/aws/aws-sdk-go-v2 v1.16.9
 	github.com/aws/aws-sdk-go-v2/config v1.15.14
 	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.17.8
 	github.com/go-logr/logr v1.2.3
