@@ -702,7 +702,7 @@ func TestCreateDerivedServiceAnnotation(t *testing.T) {
 				name:       test.SvcName,
 				clusterIds: []string{test.ClusterId1, test.ClusterId2},
 			},
-			want: "[{\"cluster-id\":\"test-mcs-clusterid-1\",\"derived-service\":\"imported-vm6pdvp7di\"},{\"cluster-id\":\"test-mcs-clusterid-2\",\"derived-service\":\"imported-i8hm9c3um2\"}]",
+			want: "[{\"cluster\":\"test-mcs-clusterid-1\",\"derived-service\":\"imported-vm6pdvp7di\"},{\"cluster\":\"test-mcs-clusterid-2\",\"derived-service\":\"imported-i8hm9c3um2\"}]",
 		},
 	}
 	for _, tt := range tests {
