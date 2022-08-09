@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 )
@@ -22,7 +23,7 @@ type cloudMapJanitor struct {
 }
 
 // NewDefaultJanitor returns a new janitor object.
-func NewDefaultJanitor() CloudMapJanitor {
+func NewDefaultJanitor(clusterId string, clusterSetId string) CloudMapJanitor {
 	awsCfg, err := config.LoadDefaultConfig(context.TODO())
 
 	if err != nil {
@@ -31,7 +32,7 @@ func NewDefaultJanitor() CloudMapJanitor {
 	}
 
 	return &cloudMapJanitor{
-		sdApi: NewServiceDiscoveryJanitorApiFromConfig(&awsCfg),
+		sdApi: NewServiceDiscoveryJanitorApiFromConfig(&awsCfg, common.NewClusterUtilsForTest(clusterId, clusterSetId)),
 		fail:  func() { os.Exit(1) },
 	}
 }

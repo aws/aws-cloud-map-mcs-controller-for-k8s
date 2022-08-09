@@ -592,6 +592,9 @@ func TestCreateServiceImportStruct(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: test.HttpNsName,
 					Name:      test.SvcName,
+					Annotations: map[string]string{
+						DerivedServiceAnnotation: CreateDerivedServiceAnnotation(test.HttpNsName, test.SvcName, []string{test.ClusterId1, test.ClusterId2}),
+					},
 				},
 				Spec: multiclusterv1alpha1.ServiceImportSpec{
 					IPs:  []string{},
@@ -676,6 +679,36 @@ func TestExtractServiceType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := ExtractServiceType(tt.svc); got != tt.want {
 				t.Errorf("ExtractServiceType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCreateDerivedServiceAnnotation(t *testing.T) {
+	type args struct {
+		namespace  string
+		name       string
+		clusterIds []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "create derived service annotation",
+			args: args{
+				namespace:  test.HttpNsName,
+				name:       test.SvcName,
+				clusterIds: []string{test.ClusterId1, test.ClusterId2},
+			},
+			want: "[{\"cluster-id\":\"test-mcs-clusterid-1\",\"derived-service\":\"imported-vm6pdvp7di\"},{\"cluster-id\":\"test-mcs-clusterid-2\",\"derived-service\":\"imported-i8hm9c3um2\"}]",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CreateDerivedServiceAnnotation(tt.args.namespace, tt.args.name, tt.args.clusterIds); got != tt.want {
+				t.Errorf("CreateDerivedServiceAnnotation() = %v, want %v", got, tt.want)
 			}
 		})
 	}

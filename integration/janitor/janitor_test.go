@@ -21,7 +21,7 @@ type testJanitor struct {
 }
 
 func TestNewDefaultJanitor(t *testing.T) {
-	assert.NotNil(t, NewDefaultJanitor())
+	assert.NotNil(t, NewDefaultJanitor(test.ClusterId1, test.ClusterSetId1))
 }
 
 func TestCleanupHappyCase(t *testing.T) {

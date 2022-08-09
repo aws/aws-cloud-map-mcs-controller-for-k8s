@@ -3,6 +3,7 @@ package controllers
 import (
 	"crypto/sha256"
 	"encoding/base32"
+	"encoding/json"
 	"strings"
 
 	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
@@ -173,6 +174,9 @@ func CreateServiceImportStruct(namespace string, name string, clusterIds []strin
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      name,
+			Annotations: map[string]string{
+				DerivedServiceAnnotation: CreateDerivedServiceAnnotation(namespace, name, clusterIds),
+			},
 		},
 		Spec: multiclusterv1alpha1.ServiceImportSpec{
 			IPs:   []string{},
@@ -261,6 +265,22 @@ func ExtractServiceType(svc *v1.Service) model.ServiceType {
 	if svc.Spec.ClusterIP == "None" {
 		return model.HeadlessType
 	}
-
 	return model.ClusterSetIPType
+}
+
+// CreateDerivedServiceAnnotation creates a JSON object containing a slice of maps of clusterIds and derived service names
+func CreateDerivedServiceAnnotation(namespace string, name string, clusterIds []string) string {
+	clusters := make([]map[string]string, 0, len(clusterIds))
+	for _, clusterId := range clusterIds {
+		clusters = append(clusters, map[string]string{
+			"cluster":         clusterId,
+			"derived-service": DerivedName(namespace, name, clusterId),
+		})
+	}
+	// create JSON
+	jsonBytes, err := json.Marshal(clusters)
+	if err != nil {
+		return ""
+	}
+	return string(jsonBytes)
 }
