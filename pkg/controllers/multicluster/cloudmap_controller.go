@@ -138,7 +138,7 @@ func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Se
 		}
 
 		// create ServiceImport if it doesn't exist
-		if svcImport, err = r.createAndGetServiceImport(ctx, svc.Namespace, svc.Name, importedSvcPorts, svc.Endpoints); err != nil {
+		if svcImport, err = r.createAndGetServiceImport(ctx, svc, importedSvcPorts); err != nil {
 			return err
 		}
 	}
@@ -174,14 +174,14 @@ func (r *CloudMapReconciler) getServiceImport(ctx context.Context, namespace str
 	return existingServiceImport, err
 }
 
-func (r *CloudMapReconciler) createAndGetServiceImport(ctx context.Context, namespace string, name string, servicePorts []*model.Port, endpoints []*model.Endpoint) (*multiclusterv1alpha1.ServiceImport, error) {
-	toCreate := CreateServiceImportStruct(namespace, name, servicePorts, endpoints)
+func (r *CloudMapReconciler) createAndGetServiceImport(ctx context.Context, svc *model.Service, servicePorts []*model.Port) (*multiclusterv1alpha1.ServiceImport, error) {
+	toCreate := CreateServiceImportStruct(svc, servicePorts)
 	if err := r.Client.Create(ctx, toCreate); err != nil {
 		return nil, err
 	}
-	r.Log.Info("created ServiceImport", "namespace", namespace, "name", name)
+	r.Log.Info("created ServiceImport", "namespace", svc.Namespace, "name", svc.Name)
 
-	return r.getServiceImport(ctx, namespace, name)
+	return r.getServiceImport(ctx, svc.Namespace, svc.Name)
 }
 
 func (r *CloudMapReconciler) getDerivedService(ctx context.Context, namespace string, name string) (*v1.Service, error) {

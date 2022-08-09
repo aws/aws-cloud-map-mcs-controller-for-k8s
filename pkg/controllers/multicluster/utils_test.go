@@ -462,7 +462,7 @@ func TestCreateServiceImportStruct(t *testing.T) {
 			args: args{
 				servicePorts: []*model.Port{
 					{Name: test.PortName1, Protocol: test.Protocol1, Port: test.Port1},
-					{Name: test.PortName2, Protocol: test.Protocol1, Port: test.Port2},
+					{Name: test.PortName2, Protocol: test.Protocol2, Port: test.Port2},
 				},
 				endpoints: []*model.Endpoint{
 					{
@@ -481,7 +481,7 @@ func TestCreateServiceImportStruct(t *testing.T) {
 					Type: multiclusterv1alpha1.ClusterSetIP,
 					Ports: []multiclusterv1alpha1.ServicePort{
 						{Name: test.PortName1, Protocol: v1.ProtocolTCP, Port: test.Port1},
-						{Name: test.PortName2, Protocol: v1.ProtocolTCP, Port: test.Port2},
+						{Name: test.PortName2, Protocol: v1.ProtocolUDP, Port: test.Port2},
 					},
 				},
 			},
@@ -489,7 +489,7 @@ func TestCreateServiceImportStruct(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := CreateServiceImportStruct(test.HttpNsName, test.SvcName, tt.args.servicePorts, tt.args.endpoints); !reflect.DeepEqual(*got, tt.want) {
+			if got := CreateServiceImportStruct(test.GetTestServiceWithEndpoint(tt.args.endpoints), tt.args.servicePorts); !reflect.DeepEqual(*got, tt.want) {
 				t.Errorf("CreateServiceImportStruct() = %v, want %v", got, tt.want)
 			}
 		})
@@ -574,7 +574,82 @@ func TestServiceTypetoServiceImportType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := ServiceTypetoServiceImportType(tt.svcType); got != tt.want {
-				t.Errorf("ExtractServiceType() = %v, want %v", got, tt.want)
+				t.Errorf("ServiceTypetoServiceImportType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCreateDerivedServiceStruct(t *testing.T) {
+	type args struct {
+		servicePorts []*model.Port
+		svcImport    *multiclusterv1alpha1.ServiceImport
+	}
+	tests := []struct {
+		name string
+		args args
+		want *v1.ServiceSpec
+	}{
+		{
+			name: "cluster ip case",
+			args: args{
+				servicePorts: []*model.Port{
+					{Name: test.PortName1, Protocol: test.Protocol1, Port: test.Port1, TargetPort: "8080"},
+					{Name: test.PortName2, Protocol: test.Protocol2, Port: test.Port2, TargetPort: "8080"},
+				},
+				svcImport: &multiclusterv1alpha1.ServiceImport{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace:   test.HttpNsName,
+						Name:        test.SvcName,
+						Annotations: map[string]string{DerivedServiceAnnotation: DerivedName(test.HttpNsName, test.SvcName)},
+					},
+					Spec: multiclusterv1alpha1.ServiceImportSpec{
+						IPs:  []string{},
+						Type: multiclusterv1alpha1.ClusterSetIP,
+					},
+				},
+			},
+			want: &v1.ServiceSpec{
+				Type: v1.ServiceTypeClusterIP,
+				Ports: []v1.ServicePort{
+					{Name: test.PortName1, Protocol: test.Protocol1, Port: test.Port1, TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: 8080}},
+					{Name: test.PortName2, Protocol: test.Protocol2, Port: test.Port2, TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: 8080}},
+				},
+			},
+		},
+		{
+			name: "headless case",
+			args: args{
+				servicePorts: []*model.Port{
+					{Name: test.PortName1, Protocol: test.Protocol1, Port: test.Port1, TargetPort: "8080"},
+					{Name: test.PortName2, Protocol: test.Protocol2, Port: test.Port2, TargetPort: "8080"},
+				},
+				svcImport: &multiclusterv1alpha1.ServiceImport{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace:   test.HttpNsName,
+						Name:        test.SvcName,
+						Annotations: map[string]string{DerivedServiceAnnotation: DerivedName(test.HttpNsName, test.SvcName)},
+					},
+					Spec: multiclusterv1alpha1.ServiceImportSpec{
+						IPs:  []string{},
+						Type: multiclusterv1alpha1.Headless,
+					},
+				},
+			},
+			want: &v1.ServiceSpec{
+				Type: v1.ServiceTypeClusterIP,
+				Ports: []v1.ServicePort{
+					{Name: test.PortName1, Protocol: test.Protocol1, Port: test.Port1, TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: 8080}},
+					{Name: test.PortName2, Protocol: test.Protocol2, Port: test.Port2, TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: 8080}},
+				},
+				ClusterIP: "None",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := &CreateDerivedServiceStruct(tt.args.svcImport, tt.args.servicePorts).Spec; !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CreateDerivedServiceStruct() = %v, want %v", got, tt.want)
 			}
 		})
 	}
