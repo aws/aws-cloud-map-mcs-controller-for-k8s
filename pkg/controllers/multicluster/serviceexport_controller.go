@@ -44,6 +44,7 @@ type ServiceExportReconciler struct {
 }
 
 // +kubebuilder:rbac:groups="",resources=services,verbs=get
+// +kubebuilder:rbac:groups=about.k8s.io,resources=clusterproperties,verbs=create;get;list;watch;update;patch;delete
 // +kubebuilder:rbac:groups="discovery.k8s.io",resources=endpointslices,verbs=list;watch;create
 // +kubebuilder:rbac:groups=multicluster.x-k8s.io,resources=serviceexports,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=multicluster.x-k8s.io,resources=serviceexports/finalizers,verbs=get;update

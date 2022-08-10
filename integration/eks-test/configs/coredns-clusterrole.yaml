@@ -24,6 +24,17 @@ rules:
   verbs:
   - get
 - apiGroups:
+  - about.k8s.io
+  resources:
+  - clusterproperties
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - discovery.k8s.io
   resources:
   - endpointslices
