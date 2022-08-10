@@ -148,7 +148,7 @@ func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Se
 		}
 
 		// create ServiceImport if it doesn't exist
-		if svcImport, err = r.createAndGetServiceImport(ctx, svc.Namespace, svc.Name, importedSvcPorts, clusterIds); err != nil {
+		if svcImport, err = r.createAndGetServiceImport(ctx, svc, importedSvcPorts, clusterIds); err != nil {
 			return err
 		}
 	}
@@ -180,24 +180,6 @@ func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Se
 		if err = r.updateEndpointSlices(ctx, svcImport, endpoints, derivedService, clusterId); err != nil {
 			return err
 		}
-
-		derivedServices = append(derivedServices, derivedService)
-	}
-
-	// remove any existing derived services that do not have any endpoints in cloud map
-	existingDerivedServices := &v1.ServiceList{}
-	existingDerivedSvcErr := r.Client.List(ctx, existingDerivedServices, client.InNamespace(svcImport.Namespace), client.MatchingLabels{LabelDerivedServiceOriginatingName: svcImport.Name})
-	if existingDerivedSvcErr != nil {
-		r.Log.Error(existingDerivedSvcErr, "failed to list derived services")
-		return existingDerivedSvcErr
-	}
-	for _, derivedService := range existingDerivedServices.Items {
-		clusterId := derivedService.Labels[LabelSourceCluster]
-		if _, ok := clusterIdToEndpointsMap[clusterId]; !ok {
-			if err := r.DeleteDerivedServiceAndEndpointSlices(ctx, &derivedService); err != nil {
-				return err
-			}
-		}
 	}
 
 	// update service import to match derived service clusterIPs and imported ports if necessary
@@ -210,14 +192,14 @@ func (r *CloudMapReconciler) getServiceImport(ctx context.Context, namespace str
 	return existingServiceImport, err
 }
 
-func (r *CloudMapReconciler) createAndGetServiceImport(ctx context.Context, namespace string, name string, servicePorts []*model.Port, clusterIds []string) (*multiclusterv1alpha1.ServiceImport, error) {
-	toCreate := CreateServiceImportStruct(namespace, name, clusterIds, servicePorts)
+func (r *CloudMapReconciler) createAndGetServiceImport(ctx context.Context, svc *model.Service, servicePorts []*model.Port, clusterIds []string) (*multiclusterv1alpha1.ServiceImport, error) {
+	toCreate := CreateServiceImportStruct(svc, clusterIds, servicePorts)
 	if err := r.Client.Create(ctx, toCreate); err != nil {
 		return nil, err
 	}
-	r.Log.Info("created ServiceImport", "namespace", namespace, "name", name)
+	r.Log.Info("created ServiceImport", "namespace", svc.Namespace, "name", svc.Name)
 
-	return r.getServiceImport(ctx, namespace, name)
+	return r.getServiceImport(ctx, svc.Namespace, svc.Name)
 }
 
 func (r *CloudMapReconciler) getDerivedService(ctx context.Context, namespace string, name string, clusterId string) (*v1.Service, error) {
