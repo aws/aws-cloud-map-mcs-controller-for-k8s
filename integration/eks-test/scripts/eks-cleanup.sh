@@ -39,5 +39,6 @@ $KUBECTL_BIN delete -k "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/conf
 
 echo "EKS clusters cleaned!"
 
-./integration/shared/scripts/cleanup-cloudmap.sh
-
+# ./integration/shared/scripts/cleanup-cloudmap.sh
+go run ./integration/janitor/runner/main.go "$NAMESPACE" "$CLUSTERID1" "$CLUSTERSETID1"
+go run ./integration/janitor/runner/main.go "$NAMESPACE" "$CLUSTERID2" "$CLUSTERSETID1"
