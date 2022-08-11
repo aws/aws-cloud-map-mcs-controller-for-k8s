@@ -157,7 +157,7 @@ func DerivedName(namespace string, name string, clusterId string) string {
 }
 
 // CreateServiceImportStruct creates struct representation of a ServiceImport
-func CreateServiceImportStruct(namespace string, name string, clusterIds []string, servicePorts []*model.Port) *multiclusterv1alpha1.ServiceImport {
+func CreateServiceImportStruct(svc *model.Service, clusterIds []string, servicePorts []*model.Port) *multiclusterv1alpha1.ServiceImport {
 	serviceImportPorts := make([]multiclusterv1alpha1.ServicePort, 0)
 	for _, port := range servicePorts {
 		serviceImportPorts = append(serviceImportPorts, PortToServiceImportPort(*port))
@@ -172,15 +172,15 @@ func CreateServiceImportStruct(namespace string, name string, clusterIds []strin
 
 	return &multiclusterv1alpha1.ServiceImport{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
-			Name:      name,
+			Namespace: svc.Namespace,
+			Name:      svc.Name,
 			Annotations: map[string]string{
-				DerivedServiceAnnotation: CreateDerivedServiceAnnotation(namespace, name, clusterIds),
+				DerivedServiceAnnotation: CreateDerivedServiceAnnotation(svc.Namespace, svc.Name, clusterIds),
 			},
 		},
 		Spec: multiclusterv1alpha1.ServiceImportSpec{
 			IPs:   []string{},
-			Type:  multiclusterv1alpha1.ClusterSetIP,
+			Type:  ServiceTypetoServiceImportType(svc.Endpoints[0].ServiceType),
 			Ports: serviceImportPorts,
 		},
 		Status: multiclusterv1alpha1.ServiceImportStatus{
@@ -201,7 +201,7 @@ func CreateDerivedServiceStruct(svcImport *multiclusterv1alpha1.ServiceImport, i
 		svcPorts = append(svcPorts, PortToServicePort(*svcPort))
 	}
 
-	return &v1.Service{
+	svc := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
 				LabelSourceCluster:                 clusterId,
@@ -216,6 +216,13 @@ func CreateDerivedServiceStruct(svcImport *multiclusterv1alpha1.ServiceImport, i
 			Ports: svcPorts,
 		},
 	}
+
+	// if svcImport is Headless type, specify ClusterIP field to "None"
+	if svcImport.Spec.Type == multiclusterv1alpha1.Headless {
+		svc.Spec.ClusterIP = "None"
+	}
+
+	return svc
 }
 
 func CreateEndpointForSlice(svc *v1.Service, ip string) discovery.Endpoint {
@@ -283,4 +290,13 @@ func CreateDerivedServiceAnnotation(namespace string, name string, clusterIds []
 		return ""
 	}
 	return string(jsonBytes)
+}
+
+// ServiceTypetoServiceImportType converts model service type to multicluster ServiceImport type
+func ServiceTypetoServiceImportType(serviceType model.ServiceType) multiclusterv1alpha1.ServiceImportType {
+	if serviceType == model.HeadlessType {
+		return multiclusterv1alpha1.Headless
+	}
+
+	return multiclusterv1alpha1.ClusterSetIP
 }
