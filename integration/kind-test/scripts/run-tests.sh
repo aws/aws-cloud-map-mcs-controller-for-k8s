@@ -3,13 +3,9 @@
 # Runs the AWS Cloud Map MCS Controller for K8s as a background process and tests services have been exported
 
 source ./integration/kind-test/scripts/common.sh
+export SERVICE=$1
 
-$KUBECTL_BIN apply -f "$CONFIGS/e2e-clusterId.yaml"
-$KUBECTL_BIN apply -f "$CONFIGS/e2e-clusterSetId.yaml"
-
-$KUBECTL_BIN apply -f "$CONFIGS/e2e-deployment.yaml"
-$KUBECTL_BIN apply -f "$CONFIGS/e2e-service.yaml"
-$KUBECTL_BIN apply -f "$CONFIGS/e2e-export.yaml"
+echo "testing service: $SERVICE"
 
 if ! endpts=$(./integration/shared/scripts/poll-endpoints.sh "$EXPECTED_ENDPOINT_COUNT") ; then
   exit $?
