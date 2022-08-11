@@ -1,8 +1,0 @@
-# An example object of `id.k8s.io ClusterProperty` 
-
-apiVersion: about.k8s.io/v1alpha1
-kind: ClusterProperty
-metadata:
-  name: id.k8s.io
-spec:
-  value: test-mcs-clusterId

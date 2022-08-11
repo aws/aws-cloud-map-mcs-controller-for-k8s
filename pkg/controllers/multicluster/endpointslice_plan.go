@@ -34,6 +34,9 @@ type EndpointSlicePlan struct {
 
 	// Desired Endpoints
 	Desired []*model.Endpoint
+
+	// Cluster the EndpointSlice belongs to
+	ClusterId string
 }
 
 // CalculateChanges returns list of EndpointSlice Changes that need to applied
@@ -144,7 +147,7 @@ func (p *EndpointSlicePlan) getOrCreateUnfilledEndpointSlice(changes *EndpointSl
 	}
 
 	// No existing slices can fill new endpoint requirements so create a new slice
-	sliceToCreate := CreateEndpointSliceStruct(p.Service, p.ServiceImportName)
+	sliceToCreate := CreateEndpointSliceStruct(p.Service, p.ServiceImportName, p.ClusterId)
 	changes.Create = append(changes.Create, sliceToCreate)
 	return sliceToCreate, true
 }

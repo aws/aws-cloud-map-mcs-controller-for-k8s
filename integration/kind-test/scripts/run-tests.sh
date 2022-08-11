@@ -4,9 +4,7 @@
 
 source ./integration/kind-test/scripts/common.sh
 
-$KUBECTL_BIN apply -f "$CONFIGS/e2e-clusterId.yaml"
-$KUBECTL_BIN apply -f "$CONFIGS/e2e-clusterSetId.yaml"
-
+$KUBECTL_BIN apply -f "$CONFIGS/e2e-clusterproperty.yaml"
 $KUBECTL_BIN apply -f "$CONFIGS/e2e-deployment.yaml"
 $KUBECTL_BIN apply -f "$CONFIGS/e2e-service.yaml"
 $KUBECTL_BIN apply -f "$CONFIGS/e2e-export.yaml"
@@ -20,7 +18,7 @@ mkdir -p "$LOGS"
 CTL_PID=$!
 echo "controller PID:$CTL_PID"
 
-go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $ENDPT_PORT $SERVICE_PORT "$endpts"
+go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $CLUSTERID1 $CLUSTERSETID1 $ENDPT_PORT $SERVICE_PORT "$endpts"
 exit_code=$?
 
 if [ "$exit_code" -eq 0 ] ; then
@@ -42,7 +40,7 @@ if [ "$exit_code" -eq 0 ] ; then
     exit $?
   fi
 
-  go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $ENDPT_PORT $SERVICE_PORT "$updated_endpoints"
+  go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $CLUSTERID1 $CLUSTERSETID1 $ENDPT_PORT $SERVICE_PORT "$updated_endpoints"
   exit_code=$?
 
   if [ "$exit_code" -eq 0 ] ; then

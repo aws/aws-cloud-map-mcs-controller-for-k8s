@@ -4,4 +4,4 @@
 
 set -eo pipefail
 
-go run ./integration/janitor/runner/main.go "$NAMESPACE"
+go run ./integration/janitor/runner/main.go "$NAMESPACE" "$CLUSTERID1" "$CLUSTERSETID1"

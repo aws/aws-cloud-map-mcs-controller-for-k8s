@@ -204,6 +204,23 @@ func (sdc *serviceDiscoveryClient) DeleteEndpoints(ctx context.Context, nsName s
 
 	for _, endpt := range endpts {
 		endptId := endpt.Id
+
+		// only delete endpoint if its clusterid & clustersetid is the same as this cluster
+		clusterId, clusterIdErr := sdc.clusterUtils.GetClusterId(ctx)
+		if clusterIdErr != nil {
+			return clusterIdErr
+		}
+		clusterSetId, clusterSetIdErr := sdc.clusterUtils.GetClusterSetId(ctx)
+		if clusterSetIdErr != nil {
+			return clusterSetIdErr
+		}
+
+		if endpt.ClusterId != clusterId || endpt.ClusterSetId != clusterSetId {
+			sdc.log.Debug("skipping endpoint deletion as different clusterid", "serviceName", svcName, "endpointId", endptId, "clusterId", endpt.ClusterId)
+			continue
+		}
+
+		// add operation to delete endpoint
 		opCollector.Add(func() (opId string, err error) {
 			return sdc.sdApi.DeregisterInstance(ctx, svcId, endptId)
 		})
