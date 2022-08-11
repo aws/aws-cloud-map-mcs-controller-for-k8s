@@ -25,13 +25,7 @@ import (
 
 func TestCloudMapReconciler_Reconcile(t *testing.T) {
 	// create a fake controller client and add some objects
-	objs := []runtime.Object{k8sNamespaceForTest()}
-
-	s := scheme.Scheme
-	s.AddKnownTypes(multiclusterv1alpha1.GroupVersion, &multiclusterv1alpha1.ServiceImportList{}, &multiclusterv1alpha1.ServiceImport{})
-	s.AddKnownTypes(aboutv1alpha1.GroupVersion, &aboutv1alpha1.ClusterProperty{})
-
-	fakeClient := fake.NewClientBuilder().WithRuntimeObjects(objs...).WithObjects(test.ClusterIdForTest(), test.ClusterSetIdForTest()).Build()
+	fakeClient := fake.NewClientBuilder().WithScheme(getCloudMapReconcilerScheme()).WithObjects(k8sNamespaceForTest(), test.ClusterIdForTest(), test.ClusterSetIdForTest()).Build()
 
 	// create a mock cloudmap service discovery client
 	mockController := gomock.NewController(t)
@@ -60,19 +54,87 @@ func TestCloudMapReconciler_Reconcile(t *testing.T) {
 	err = fakeClient.List(context.TODO(), derivedServiceList, client.InNamespace(test.HttpNsName))
 	assert.NoError(t, err)
 	derivedService := derivedServiceList.Items[0]
-	assert.True(t, strings.Contains(derivedService.Name, "imported-"), "Derived service created", "service", derivedService.Name)
-	assert.Equal(t, int32(test.ServicePort1), derivedService.Spec.Ports[0].Port)
-	assert.Equal(t, int32(test.Port1), derivedService.Spec.Ports[0].TargetPort.IntVal)
+	assertDerivedService(t, &derivedService, test.ServicePort1, test.Port1)
 
 	// assert endpoint slices are created
 	endpointSliceList := &v1beta1.EndpointSliceList{}
 	err = fakeClient.List(context.TODO(), endpointSliceList, client.InNamespace(test.HttpNsName))
 	assert.NoError(t, err)
 	endpointSlice := endpointSliceList.Items[0]
-	assert.Equal(t, test.SvcName, endpointSlice.Labels["multicluster.kubernetes.io/service-name"], "Endpoint slice is created")
-	assert.Contains(t, endpointSlice.Labels, LabelEndpointSliceManagedBy, "Managed by label is added")
-	assert.Equal(t, int32(test.Port1), *endpointSlice.Ports[0].Port)
-	assert.Equal(t, test.EndptIp1, endpointSlice.Endpoints[0].Addresses[0])
+	assertEndpointSlice(t, &endpointSlice, test.Port1, test.EndptIp1, test.ClusterId1)
+}
+
+func TestCloudMapReconciler_Reconcile_MulticlusterService(t *testing.T) {
+	// create a fake controller client and add some objects
+	fakeClient := fake.NewClientBuilder().WithScheme(getCloudMapReconcilerScheme()).WithObjects(k8sNamespaceForTest(), test.ClusterIdForTest(), test.ClusterSetIdForTest()).Build()
+
+	// create a mock cloudmap service discovery client
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	mockSDClient := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
+	// The service model in the Cloudmap.
+	mockSDClient.EXPECT().ListServices(context.TODO(), test.HttpNsName).
+		// The multicluster service has endpoints in different clusters (different ClusterIds)
+		Return([]*model.Service{test.GetTestMulticlusterService()}, nil)
+
+	reconciler := getReconciler(t, mockSDClient, fakeClient)
+
+	err := reconciler.Reconcile(context.TODO())
+	if err != nil {
+		t.Fatalf("reconcile failed: (%v)", err)
+	}
+
+	// assert service import object
+	svcImport := &multiclusterv1alpha1.ServiceImport{}
+	err = fakeClient.Get(context.TODO(), types.NamespacedName{Namespace: test.HttpNsName, Name: test.SvcName}, svcImport)
+	assert.NoError(t, err)
+	assert.Equal(t, test.SvcName, svcImport.Name, "Service imported")
+
+	assert.Contains(t, svcImport.Status.Clusters, multiclusterv1alpha1.ClusterStatus{Cluster: test.ClusterId1})
+	assert.Contains(t, svcImport.Status.Clusters, multiclusterv1alpha1.ClusterStatus{Cluster: test.ClusterId2})
+	assert.Equal(t, 2, len(svcImport.Status.Clusters))
+
+	// assert derived services are successfully created
+	derivedServiceList := &v1.ServiceList{}
+	err = fakeClient.List(context.TODO(), derivedServiceList, client.InNamespace(test.HttpNsName))
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(derivedServiceList.Items))
+
+	derivedServiceMap := map[string]v1.Service{}
+	for _, derivedService := range derivedServiceList.Items {
+		derivedServiceMap[derivedService.ObjectMeta.Name] = derivedService
+	}
+
+	derivedService1 := derivedServiceMap[DerivedName(svcImport.Namespace, svcImport.Name, test.ClusterId1)]
+	assertDerivedService(t, &derivedService1, test.ServicePort1, test.Port1)
+	derivedService2 := derivedServiceMap[DerivedName(svcImport.Namespace, svcImport.Name, test.ClusterId2)]
+	assertDerivedService(t, &derivedService2, test.ServicePort2, test.Port2)
+
+	// assert endpoint slices are created for each derived service
+	endpointSliceList := &v1beta1.EndpointSliceList{}
+	err = fakeClient.List(context.TODO(), endpointSliceList, client.InNamespace(test.HttpNsName))
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(endpointSliceList.Items))
+
+	endpointSliceMap := make(map[string]v1beta1.EndpointSlice)
+	for _, endpointSlice := range endpointSliceList.Items {
+		endpointSliceName := endpointSlice.ObjectMeta.Name
+		derivedServiceName := endpointSliceName[:strings.LastIndex(endpointSliceName, "-")]
+		endpointSliceMap[derivedServiceName] = endpointSlice
+	}
+
+	endpointSlice1 := endpointSliceMap[derivedService1.Name]
+	assertEndpointSlice(t, &endpointSlice1, test.Port1, test.EndptIp1, test.ClusterId1)
+	endpointSlice2 := endpointSliceMap[derivedService2.Name]
+	assertEndpointSlice(t, &endpointSlice2, test.Port2, test.EndptIp2, test.ClusterId2)
+}
+
+func getCloudMapReconcilerScheme() *runtime.Scheme {
+	scheme := scheme.Scheme
+	scheme.AddKnownTypes(multiclusterv1alpha1.GroupVersion, &multiclusterv1alpha1.ServiceImportList{}, &multiclusterv1alpha1.ServiceImport{})
+	scheme.AddKnownTypes(aboutv1alpha1.GroupVersion, &aboutv1alpha1.ClusterProperty{})
+	return scheme
 }
 
 func getReconciler(t *testing.T, mockSDClient *cloudmapMock.MockServiceDiscoveryClient, client client.Client) *CloudMapReconciler {
@@ -82,4 +144,21 @@ func getReconciler(t *testing.T, mockSDClient *cloudmapMock.MockServiceDiscovery
 		Log:          common.NewLoggerWithLogr(testr.New(t)),
 		ClusterUtils: common.NewClusterUtils(client),
 	}
+}
+
+func assertDerivedService(t *testing.T, derivedService *v1.Service, servicePort int, port int) {
+	assert.NotNil(t, derivedService)
+	assert.True(t, strings.Contains(derivedService.Name, "imported-"), "Derived service created", "service", derivedService.Name)
+	assert.Equal(t, int32(servicePort), derivedService.Spec.Ports[0].Port)
+	assert.Equal(t, int32(port), derivedService.Spec.Ports[0].TargetPort.IntVal)
+}
+
+func assertEndpointSlice(t *testing.T, endpointSlice *v1beta1.EndpointSlice, port int, endptIp string, clusterId string) {
+	assert.NotNil(t, endpointSlice)
+	assert.Equal(t, test.SvcName, endpointSlice.Labels["multicluster.kubernetes.io/service-name"], "Endpoint slice is created")
+	assert.Equal(t, clusterId, endpointSlice.Labels["multicluster.kubernetes.io/source-cluster"], "Endpoint slice is created")
+	assert.Contains(t, endpointSlice.Labels, LabelEndpointSliceManagedBy, "Managed by label is added")
+	assert.Equal(t, int32(port), *endpointSlice.Ports[0].Port)
+	assert.Equal(t, 1, len(endpointSlice.Endpoints))
+	assert.Equal(t, endptIp, endpointSlice.Endpoints[0].Addresses[0])
 }

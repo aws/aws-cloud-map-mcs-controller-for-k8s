@@ -23,7 +23,7 @@ import (
 )
 
 func TestNewServiceDiscoveryApi(t *testing.T) {
-	sdc := NewServiceDiscoveryApiFromConfig(&aws.Config{}, common.NewClusterUtilsForTest(test.ClusterId, test.ClusterSetId))
+	sdc := NewServiceDiscoveryApiFromConfig(&aws.Config{}, common.NewClusterUtilsForTest(test.ClusterId1, test.ClusterSetId1))
 	assert.NotNil(t, sdc)
 }
 
@@ -107,7 +107,7 @@ func TestServiceDiscoveryApi_DiscoverInstances_HappyCase(t *testing.T) {
 			HealthStatus:  types.HealthStatusFilterAll,
 			MaxResults:    aws.Int32(1000),
 			QueryParameters: map[string]string{
-				model.ClusterSetIdAttr: test.ClusterSetId,
+				model.ClusterSetIdAttr: test.ClusterSetId1,
 			},
 		}).
 		Return(&sd.DiscoverInstancesOutput{

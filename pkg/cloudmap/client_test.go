@@ -24,7 +24,7 @@ type testSdClient struct {
 }
 
 func TestNewServiceDiscoveryClient(t *testing.T) {
-	sdc := NewDefaultServiceDiscoveryClient(&aws.Config{}, common.NewClusterUtilsForTest(test.ClusterId, test.ClusterSetId))
+	sdc := NewDefaultServiceDiscoveryClient(&aws.Config{}, common.NewClusterUtilsForTest(test.ClusterId1, test.ClusterSetId1))
 	assert.NotNil(t, sdc)
 }
 
@@ -283,8 +283,8 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 	tc.mockCache.EXPECT().GetServiceIdMap(test.HttpNsName).Return(getServiceIdMapForTest(), true)
 
 	attrs1 := map[string]string{
-		model.ClusterIdAttr:         test.ClusterId,
-		model.ClusterSetIdAttr:      test.ClusterSetId,
+		model.ClusterIdAttr:         test.ClusterId1,
+		model.ClusterSetIdAttr:      test.ClusterSetId1,
 		model.EndpointIpv4Attr:      test.EndptIp1,
 		model.EndpointPortAttr:      test.PortStr1,
 		model.EndpointPortNameAttr:  test.PortName1,
@@ -296,8 +296,8 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 		model.ServiceTypeAttr:       test.SvcType,
 	}
 	attrs2 := map[string]string{
-		model.ClusterIdAttr:         test.ClusterId,
-		model.ClusterSetIdAttr:      test.ClusterSetId,
+		model.ClusterIdAttr:         test.ClusterId1,
+		model.ClusterSetIdAttr:      test.ClusterSetId1,
 		model.EndpointIpv4Attr:      test.EndptIp2,
 		model.EndpointPortAttr:      test.PortStr2,
 		model.EndpointPortNameAttr:  test.PortName2,
@@ -342,8 +342,10 @@ func TestServiceDiscoveryClient_DeleteEndpoints(t *testing.T) {
 	tc.mockCache.EXPECT().EvictEndpoints(test.HttpNsName, test.SvcName)
 
 	err := tc.client.DeleteEndpoints(context.TODO(), test.HttpNsName, test.SvcName,
-		[]*model.Endpoint{{Id: test.EndptId1}, {Id: test.EndptId2}})
-
+		[]*model.Endpoint{
+			{Id: test.EndptId1, ClusterId: test.ClusterId1, ClusterSetId: test.ClusterSetId1},
+			{Id: test.EndptId2, ClusterId: test.ClusterId1, ClusterSetId: test.ClusterSetId1},
+		})
 	assert.Nil(t, err)
 }
 
@@ -353,9 +355,10 @@ func getTestSdClient(t *testing.T) *testSdClient {
 	mockApi := cloudmapMock.NewMockServiceDiscoveryApi(mockController)
 	return &testSdClient{
 		client: &serviceDiscoveryClient{
-			log:   common.NewLoggerWithLogr(testr.New(t)),
-			sdApi: mockApi,
-			cache: mockCache,
+			log:          common.NewLoggerWithLogr(testr.New(t)),
+			sdApi:        mockApi,
+			cache:        mockCache,
+			clusterUtils: common.NewClusterUtilsForTest(test.ClusterId1, test.ClusterSetId1),
 		},
 		mockApi:   *mockApi,
 		mockCache: *mockCache,
@@ -368,8 +371,8 @@ func getHttpInstanceSummaryForTest() []types.HttpInstanceSummary {
 		{
 			InstanceId: aws.String(test.EndptId1),
 			Attributes: map[string]string{
-				model.ClusterIdAttr:         test.ClusterId,
-				model.ClusterSetIdAttr:      test.ClusterSetId,
+				model.ClusterIdAttr:         test.ClusterId1,
+				model.ClusterSetIdAttr:      test.ClusterSetId1,
 				model.EndpointIpv4Attr:      test.EndptIp1,
 				model.EndpointPortAttr:      test.PortStr1,
 				model.EndpointPortNameAttr:  test.PortName1,
@@ -384,8 +387,8 @@ func getHttpInstanceSummaryForTest() []types.HttpInstanceSummary {
 		{
 			InstanceId: aws.String(test.EndptId2),
 			Attributes: map[string]string{
-				model.ClusterIdAttr:         test.ClusterId,
-				model.ClusterSetIdAttr:      test.ClusterSetId,
+				model.ClusterIdAttr:         test.ClusterId1,
+				model.ClusterSetIdAttr:      test.ClusterSetId1,
 				model.EndpointIpv4Attr:      test.EndptIp2,
 				model.EndpointPortAttr:      test.PortStr2,
 				model.EndpointPortNameAttr:  test.PortName2,
