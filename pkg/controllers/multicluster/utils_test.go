@@ -2,11 +2,13 @@ package controllers
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
 
 	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/api/discovery/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -447,10 +449,131 @@ func TestPortsEqualIgnoreOrder(t *testing.T) {
 	}
 }
 
+func TestIPsEqualIgnoreOrder(t *testing.T) {
+	type args struct {
+		ipsA []string
+		ipsB []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "ips equal same order",
+			args: args{
+				ipsA: []string{
+					test.ClusterIp1,
+					test.ClusterIp2,
+				},
+				ipsB: []string{
+					test.ClusterIp1,
+					test.ClusterIp2,
+				},
+			},
+			want: true,
+		},
+		{
+			name: "ips equal different order",
+			args: args{
+				ipsA: []string{
+					test.ClusterIp1,
+					test.ClusterIp2,
+				},
+				ipsB: []string{
+					test.ClusterIp2,
+					test.ClusterIp1,
+				},
+			},
+			want: true,
+		},
+		{
+			name: "ips not equal",
+			args: args{
+				ipsA: []string{
+					test.ClusterIp1,
+					test.ClusterIp2,
+				},
+				ipsB: []string{
+					test.ClusterIp1,
+					"10.10.10.3",
+				},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IPsEqualIgnoreOrder(tt.args.ipsA, tt.args.ipsB); !(got == tt.want) {
+				t.Errorf("IPsEqualIgnoreOrder() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetClusterIpsFromServices(t *testing.T) {
+	type args struct {
+		services []*v1.Service
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "happy case",
+			args: args{
+				services: []*v1.Service{
+					{
+						ObjectMeta: metav1.ObjectMeta{},
+						Spec: v1.ServiceSpec{
+							Type:      v1.ServiceTypeClusterIP,
+							ClusterIP: test.ClusterIp1,
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{},
+						Spec: v1.ServiceSpec{
+							Type:      v1.ServiceTypeClusterIP,
+							ClusterIP: test.ClusterIp2,
+						},
+					},
+				}},
+			want: []string{
+				test.ClusterIp1, test.ClusterIp2,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetClusterIpsFromServices(tt.args.services); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetClusterIpsFromServices() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDerivedService(t *testing.T) {
+	const numTests = 100
+	derivedServiceMap := make(map[string]bool)
+	for i := 0; i < numTests; i++ {
+		namespace := test.HttpNsName
+		name := "test-svcname-" + strconv.Itoa(i)
+		clusterId := "test-clusterid-" + strconv.Itoa(i)
+		derivedService := DerivedName(namespace, name, clusterId)
+		assert.NotContains(t, derivedServiceMap, derivedService, "derived service already exists")
+		derivedServiceMap[derivedService] = true
+	}
+	assert.Equal(t, numTests, len(derivedServiceMap))
+	assert.True(t, DerivedName(test.HttpNsName, test.SvcName, test.ClusterId1) != DerivedName(test.HttpNsName, test.SvcName, test.ClusterId2))
+}
+
 func TestCreateServiceImportStruct(t *testing.T) {
 	type args struct {
 		servicePorts []*model.Port
 		endpoints    []*model.Endpoint
+		clusterIds   []string
 	}
 	tests := []struct {
 		name string
@@ -460,6 +583,7 @@ func TestCreateServiceImportStruct(t *testing.T) {
 		{
 			name: "happy case",
 			args: args{
+				clusterIds: []string{test.ClusterId1, test.ClusterId2},
 				servicePorts: []*model.Port{
 					{Name: test.PortName1, Protocol: test.Protocol1, Port: test.Port1},
 					{Name: test.PortName2, Protocol: test.Protocol2, Port: test.Port2},
@@ -472,9 +596,11 @@ func TestCreateServiceImportStruct(t *testing.T) {
 			},
 			want: multiclusterv1alpha1.ServiceImport{
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace:   test.HttpNsName,
-					Name:        test.SvcName,
-					Annotations: map[string]string{DerivedServiceAnnotation: DerivedName(test.HttpNsName, test.SvcName)},
+					Namespace: test.HttpNsName,
+					Name:      test.SvcName,
+					Annotations: map[string]string{
+						DerivedServiceAnnotation: CreateDerivedServiceAnnotation(test.HttpNsName, test.SvcName, []string{test.ClusterId1, test.ClusterId2}),
+					},
 				},
 				Spec: multiclusterv1alpha1.ServiceImportSpec{
 					IPs:  []string{},
@@ -484,13 +610,23 @@ func TestCreateServiceImportStruct(t *testing.T) {
 						{Name: test.PortName2, Protocol: v1.ProtocolUDP, Port: test.Port2},
 					},
 				},
+				Status: multiclusterv1alpha1.ServiceImportStatus{
+					Clusters: []multiclusterv1alpha1.ClusterStatus{
+						{
+							Cluster: test.ClusterId1,
+						},
+						{
+							Cluster: test.ClusterId2,
+						},
+					},
+				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := CreateServiceImportStruct(test.GetTestServiceWithEndpoint(tt.args.endpoints), tt.args.servicePorts); !reflect.DeepEqual(*got, tt.want) {
-				t.Errorf("CreateServiceImportStruct() = %v, want %v", got, tt.want)
+			if got := CreateServiceImportStruct(test.GetTestServiceWithEndpoint(tt.args.endpoints), tt.args.clusterIds, tt.args.servicePorts); !reflect.DeepEqual(*got, tt.want) {
+				t.Errorf("CreateServiceImportStruct() = %v, want %v", *got, tt.want)
 			}
 		})
 	}
@@ -601,7 +737,7 @@ func TestCreateDerivedServiceStruct(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace:   test.HttpNsName,
 						Name:        test.SvcName,
-						Annotations: map[string]string{DerivedServiceAnnotation: DerivedName(test.HttpNsName, test.SvcName)},
+						Annotations: map[string]string{DerivedServiceAnnotation: DerivedName(test.HttpNsName, test.SvcName, test.ClusterId1)},
 					},
 					Spec: multiclusterv1alpha1.ServiceImportSpec{
 						IPs:  []string{},
@@ -628,7 +764,7 @@ func TestCreateDerivedServiceStruct(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace:   test.HttpNsName,
 						Name:        test.SvcName,
-						Annotations: map[string]string{DerivedServiceAnnotation: DerivedName(test.HttpNsName, test.SvcName)},
+						Annotations: map[string]string{DerivedServiceAnnotation: DerivedName(test.HttpNsName, test.SvcName, test.ClusterId1)},
 					},
 					Spec: multiclusterv1alpha1.ServiceImportSpec{
 						IPs:  []string{},
@@ -648,8 +784,38 @@ func TestCreateDerivedServiceStruct(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := &CreateDerivedServiceStruct(tt.args.svcImport, tt.args.servicePorts).Spec; !reflect.DeepEqual(got, tt.want) {
+			if got := &CreateDerivedServiceStruct(tt.args.svcImport, tt.args.servicePorts, test.ClusterId1).Spec; !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("CreateDerivedServiceStruct() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCreateDerivedServiceAnnotation(t *testing.T) {
+	type args struct {
+		namespace  string
+		name       string
+		clusterIds []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "create derived service annotation",
+			args: args{
+				namespace:  test.HttpNsName,
+				name:       test.SvcName,
+				clusterIds: []string{test.ClusterId1, test.ClusterId2},
+			},
+			want: "[{\"cluster\":\"test-mcs-clusterid-1\",\"derived-service\":\"imported-vm6pdvp7di\"},{\"cluster\":\"test-mcs-clusterid-2\",\"derived-service\":\"imported-i8hm9c3um2\"}]",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CreateDerivedServiceAnnotation(tt.args.namespace, tt.args.name, tt.args.clusterIds); got != tt.want {
+				t.Errorf("CreateDerivedServiceAnnotation() = %v, want %v", got, tt.want)
 			}
 		})
 	}

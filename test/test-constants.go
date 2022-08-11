@@ -18,8 +18,10 @@ const (
 	DnsNsId         = "dns-ns-id"
 	SvcName         = "svc-name"
 	SvcId           = "svc-id"
-	ClusterId       = "test-mcs-clusterId"
-	ClusterSetId    = "test-mcs-clusterSetId"
+	ClusterId1      = "test-mcs-clusterid-1"
+	ClusterSetId1   = "test-mcs-clustersetid-1"
+	ClusterId2      = "test-mcs-clusterid-2"
+	ClusterSetId2   = "test-mcs-clustersetid-2"
 	EndptId1        = "tcp-192_168_0_1-1"
 	EndptId2        = "tcp-192_168_0_2-2"
 	EndptIp1        = "192.168.0.1"
@@ -36,6 +38,8 @@ const (
 	Protocol2       = "UDP"
 	ServicePort2    = 22
 	ServicePortStr2 = "22"
+	ClusterIp1      = "10.10.10.1"
+	ClusterIp2      = "10.10.10.2"
 	OpId1           = "operation-id-1"
 	OpId2           = "operation-id-2"
 	OpStart         = 1
@@ -74,6 +78,15 @@ func GetTestServiceWithEndpoint(endpoints []*model.Endpoint) *model.Service {
 	}
 }
 
+func GetTestMulticlusterService() *model.Service {
+	// Service has two endpoints belonging to two different clusters in the same clusterset
+	return &model.Service{
+		Namespace: HttpNsName,
+		Name:      SvcName,
+		Endpoints: GetMulticlusterTestEndpoints(),
+	}
+}
+
 func GetTestEndpoint1() *model.Endpoint {
 	return &model.Endpoint{
 		Id: EndptId1,
@@ -89,8 +102,8 @@ func GetTestEndpoint1() *model.Endpoint {
 			TargetPort: PortStr1,
 			Protocol:   Protocol1,
 		},
-		ClusterId:    ClusterId,
-		ClusterSetId: ClusterSetId,
+		ClusterId:    ClusterId1,
+		ClusterSetId: ClusterSetId1,
 		ServiceType:  model.ClusterSetIPType,
 		Attributes:   make(map[string]string),
 	}
@@ -111,18 +124,26 @@ func GetTestEndpoint2() *model.Endpoint {
 			TargetPort: PortStr2,
 			Protocol:   Protocol2,
 		},
-		ClusterId:    ClusterId,
-		ClusterSetId: ClusterSetId,
+		ClusterId:    ClusterId1,
+		ClusterSetId: ClusterSetId1,
 		ServiceType:  model.ClusterSetIPType,
 		Attributes:   make(map[string]string),
 	}
+}
+
+func GetMulticlusterTestEndpoints() []*model.Endpoint {
+	endpoint1 := GetTestEndpoint1()
+	endpoint2 := GetTestEndpoint2()
+	// Set Different ClusterIds
+	endpoint2.ClusterId = ClusterId2
+	return []*model.Endpoint{endpoint1, endpoint2}
 }
 
 func GetTestEndpoints(count int) (endpts []*model.Endpoint) {
 	// use +3 offset go avoid collision with test endpoint 1 and 2
 	for i := 3; i < count+3; i++ {
 		e := GetTestEndpoint1()
-		e.ClusterId = ClusterId
+		e.ClusterId = ClusterId1
 		e.Id = fmt.Sprintf("tcp-192_168_0_%d-1", i)
 		e.IP = fmt.Sprintf("192.168.0.%d", i)
 		endpts = append(endpts, e)
@@ -136,7 +157,7 @@ func ClusterIdForTest() *aboutv1alpha1.ClusterProperty {
 			Name: common.ClusterIdName,
 		},
 		Spec: aboutv1alpha1.ClusterPropertySpec{
-			Value: ClusterId,
+			Value: ClusterId1,
 		},
 	}
 }
@@ -147,7 +168,7 @@ func ClusterSetIdForTest() *aboutv1alpha1.ClusterProperty {
 			Name: common.ClusterSetIdName,
 		},
 		Spec: aboutv1alpha1.ClusterPropertySpec{
-			Value: ClusterSetId,
+			Value: ClusterSetId1,
 		},
 	}
 }
