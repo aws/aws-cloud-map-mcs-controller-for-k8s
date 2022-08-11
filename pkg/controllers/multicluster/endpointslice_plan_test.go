@@ -177,6 +177,7 @@ func TestEndpointSlicePlan_CalculateChanges(t *testing.T) {
 			p := &EndpointSlicePlan{
 				Service:           k8sServiceForTest(),
 				ServiceImportName: test.SvcName,
+				ClusterId:         test.ClusterId1,
 				Current:           tt.fields.Current,
 				Desired:           tt.fields.Desired,
 			}
@@ -194,6 +195,7 @@ func TestEndpointSlicePlan_MultipleSliceCreation(t *testing.T) {
 		maxEndpointsPerSlice: 2,
 		Service:              k8sServiceForTest(),
 		ServiceImportName:    test.SvcName,
+		ClusterId:            test.ClusterId1,
 		Current:              []*discovery.EndpointSlice{},
 		Desired:              test.GetTestEndpoints(43),
 	}
@@ -206,6 +208,7 @@ func TestEndpointSlicePlan_PreferCreateOverMultipleSliceUpdate(t *testing.T) {
 		maxEndpointsPerSlice: 2,
 		Service:              k8sServiceForTest(),
 		ServiceImportName:    test.SvcName,
+		ClusterId:            test.ClusterId1,
 		Current:              []*discovery.EndpointSlice{endpointSliceForTest()},
 		Desired:              []*model.Endpoint{test.GetTestEndpoint1()},
 	}

@@ -41,7 +41,6 @@ spec:
                   is ClusterSetIP.
                 items:
                   type: string
-                maxItems: 1
                 type: array
               ports:
                 items:

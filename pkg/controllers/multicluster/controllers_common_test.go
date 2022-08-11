@@ -72,7 +72,7 @@ func endpointSliceForTest() *discovery.EndpointSlice {
 
 func endpointSliceWithIpsAndPortsForTest(ips []string, ports []discovery.EndpointPort) *discovery.EndpointSlice {
 	svc := k8sServiceForTest()
-	slice := CreateEndpointSliceStruct(svc, test.SvcName)
+	slice := CreateEndpointSliceStruct(svc, test.SvcName, test.ClusterId1)
 	slice.Ports = ports
 
 	testEndpoints := make([]discovery.Endpoint, 0)

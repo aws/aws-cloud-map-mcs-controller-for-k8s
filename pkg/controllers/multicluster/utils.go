@@ -3,10 +3,13 @@ package controllers
 import (
 	"crypto/sha256"
 	"encoding/base32"
+	"encoding/json"
 	"strings"
 
 	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "k8s.io/api/core/v1"
 	discovery "k8s.io/api/discovery/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,8 +24,14 @@ const (
 	// LabelServiceImportName indicates the name of the multi-cluster service that an EndpointSlice belongs to.
 	LabelServiceImportName = "multicluster.kubernetes.io/service-name"
 
+	// LabelDerivedServiceOriginatingName indicates the name of the multi-cluster service that the derived service originated from.
+	LabelDerivedServiceOriginatingName = "multicluster.kubernetes.io/service-name"
+
 	// LabelEndpointSliceManagedBy indicates the name of the entity that manages the EndpointSlice.
 	LabelEndpointSliceManagedBy = "endpointslice.kubernetes.io/managed-by"
+
+	// LabelSourceCluster indicates the id of the cluster the object was created for
+	LabelSourceCluster = "multicluster.kubernetes.io/source-cluster"
 
 	// ValueEndpointSliceManagedBy indicates the name of the entity that manages the EndpointSlice.
 	ValueEndpointSliceManagedBy = "aws-cloud-map-mcs-controller-for-k8s"
@@ -112,58 +121,76 @@ func ExtractEndpointPorts(endpoints []*model.Endpoint) (endpointPorts []*model.P
 }
 
 func PortsEqualIgnoreOrder(a, b []*model.Port) (equal bool) {
-	if len(a) != len(b) {
-		return false
+	idsA := make([]string, len(a))
+	idsB := make([]string, len(b))
+	for i, port := range a {
+		idsA[i] = port.GetID()
 	}
-
-	aMap := make(map[string]*model.Port)
-	for _, portA := range a {
-		aMap[portA.GetID()] = portA
+	for i, port := range b {
+		idsB[i] = port.GetID()
 	}
+	less := func(x, y string) bool { return x < y }
+	equalIgnoreOrder := cmp.Diff(idsA, idsB, cmpopts.SortSlices(less)) == ""
+	return equalIgnoreOrder
+}
 
-	for _, portB := range b {
-		portA, found := aMap[portB.GetID()]
-		if !found {
-			return false
-		}
+func IPsEqualIgnoreOrder(a, b []string) (equal bool) {
+	less := func(x, y string) bool { return x < y }
+	equalIgnoreOrder := cmp.Diff(a, b, cmpopts.SortSlices(less)) == ""
+	return equalIgnoreOrder
+}
 
-		if !portB.Equals(portA) {
-			return false
-		}
+// GetClusterIpsFromServices returns list of ClusterIPs from services
+func GetClusterIpsFromServices(services []*v1.Service) []string {
+	clusterIPs := make([]string, 0)
+	for _, svc := range services {
+		clusterIPs = append(clusterIPs, svc.Spec.ClusterIP)
 	}
-	return true
+	return clusterIPs
 }
 
 // DerivedName computes the "placeholder" name for an imported service
-func DerivedName(namespace string, name string) string {
+func DerivedName(namespace string, name string, clusterId string) string {
 	hash := sha256.New()
-	hash.Write([]byte(namespace + name))
+	hash.Write([]byte(namespace + name + clusterId))
 	return "imported-" + strings.ToLower(base32.HexEncoding.WithPadding(base32.NoPadding).EncodeToString(hash.Sum(nil)))[:10]
 }
 
 // CreateServiceImportStruct creates struct representation of a ServiceImport
-func CreateServiceImportStruct(svc *model.Service, servicePorts []*model.Port) *multiclusterv1alpha1.ServiceImport {
+func CreateServiceImportStruct(svc *model.Service, clusterIds []string, servicePorts []*model.Port) *multiclusterv1alpha1.ServiceImport {
 	serviceImportPorts := make([]multiclusterv1alpha1.ServicePort, 0)
 	for _, port := range servicePorts {
 		serviceImportPorts = append(serviceImportPorts, PortToServiceImportPort(*port))
 	}
 
+	clusters := make([]multiclusterv1alpha1.ClusterStatus, 0)
+	for _, clusterId := range clusterIds {
+		clusters = append(clusters, multiclusterv1alpha1.ClusterStatus{
+			Cluster: clusterId,
+		})
+	}
+
 	return &multiclusterv1alpha1.ServiceImport{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:   svc.Namespace,
-			Name:        svc.Name,
-			Annotations: map[string]string{DerivedServiceAnnotation: DerivedName(svc.Namespace, svc.Name)},
+			Namespace: svc.Namespace,
+			Name:      svc.Name,
+			Annotations: map[string]string{
+				DerivedServiceAnnotation: CreateDerivedServiceAnnotation(svc.Namespace, svc.Name, clusterIds),
+			},
 		},
 		Spec: multiclusterv1alpha1.ServiceImportSpec{
 			IPs:   []string{},
-			Type:  ServiceTypetoServiceImportType(svc.Endpoints[0].ServiceType), // assume each endpoint has the same serviceType
+			Type:  ServiceTypetoServiceImportType(svc.Endpoints[0].ServiceType),
 			Ports: serviceImportPorts,
+		},
+		Status: multiclusterv1alpha1.ServiceImportStatus{
+			Clusters: clusters,
 		},
 	}
 }
 
 // CreateDerivedServiceStruct creates struct representation of a derived service
-func CreateDerivedServiceStruct(svcImport *multiclusterv1alpha1.ServiceImport, importedSvcPorts []*model.Port) *v1.Service {
+func CreateDerivedServiceStruct(svcImport *multiclusterv1alpha1.ServiceImport, importedSvcPorts []*model.Port, clusterId string) *v1.Service {
 	ownerRef := metav1.NewControllerRef(svcImport, schema.GroupVersionKind{
 		Version: svcImport.TypeMeta.APIVersion,
 		Kind:    svcImport.TypeMeta.Kind,
@@ -176,8 +203,12 @@ func CreateDerivedServiceStruct(svcImport *multiclusterv1alpha1.ServiceImport, i
 
 	svc := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{
+				LabelSourceCluster:                 clusterId,
+				LabelDerivedServiceOriginatingName: svcImport.Name,
+			},
 			Namespace:       svcImport.Namespace,
-			Name:            svcImport.Annotations[DerivedServiceAnnotation],
+			Name:            DerivedName(svcImport.Namespace, svcImport.Name, clusterId),
 			OwnerReferences: []metav1.OwnerReference{*ownerRef},
 		},
 		Spec: v1.ServiceSpec{
@@ -212,7 +243,7 @@ func CreateEndpointForSlice(svc *v1.Service, ip string) discovery.Endpoint {
 	}
 }
 
-func CreateEndpointSliceStruct(svc *v1.Service, svcImportName string) *discovery.EndpointSlice {
+func CreateEndpointSliceStruct(svc *v1.Service, svcImportName string, clusterId string) *discovery.EndpointSlice {
 	return &discovery.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
@@ -222,6 +253,8 @@ func CreateEndpointSliceStruct(svc *v1.Service, svcImportName string) *discovery
 				LabelServiceImportName: svcImportName,
 				// 'managed-by' label set to controller
 				LabelEndpointSliceManagedBy: ValueEndpointSliceManagedBy,
+				// 'source-cluster' label set to current cluster
+				LabelSourceCluster: clusterId,
 			},
 			GenerateName: svc.Name + "-",
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(svc, schema.GroupVersionKind{
@@ -239,8 +272,24 @@ func ExtractServiceType(svc *v1.Service) model.ServiceType {
 	if svc.Spec.ClusterIP == "None" {
 		return model.HeadlessType
 	}
-
 	return model.ClusterSetIPType
+}
+
+// CreateDerivedServiceAnnotation creates a JSON object containing a slice of maps of clusterIds and derived service names
+func CreateDerivedServiceAnnotation(namespace string, name string, clusterIds []string) string {
+	clusters := make([]map[string]string, 0, len(clusterIds))
+	for _, clusterId := range clusterIds {
+		clusters = append(clusters, map[string]string{
+			"cluster":         clusterId,
+			"derived-service": DerivedName(namespace, name, clusterId),
+		})
+	}
+	// create JSON
+	jsonBytes, err := json.Marshal(clusters)
+	if err != nil {
+		return ""
+	}
+	return string(jsonBytes)
 }
 
 // ServiceTypetoServiceImportType converts model service type to multicluster ServiceImport type
