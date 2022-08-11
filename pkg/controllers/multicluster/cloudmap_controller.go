@@ -180,6 +180,24 @@ func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Se
 		if err = r.updateEndpointSlices(ctx, svcImport, endpoints, derivedService, clusterId); err != nil {
 			return err
 		}
+
+		derivedServices = append(derivedServices, derivedService)
+	}
+
+	// remove any existing derived services that do not have any endpoints in cloud map
+	existingDerivedServices := &v1.ServiceList{}
+	existingDerivedSvcErr := r.Client.List(ctx, existingDerivedServices, client.InNamespace(svcImport.Namespace), client.MatchingLabels{LabelDerivedServiceOriginatingName: svcImport.Name})
+	if existingDerivedSvcErr != nil {
+		r.Log.Error(existingDerivedSvcErr, "failed to list derived services")
+		return existingDerivedSvcErr
+	}
+	for _, derivedService := range existingDerivedServices.Items {
+		clusterId := derivedService.Labels[LabelSourceCluster]
+		if _, ok := clusterIdToEndpointsMap[clusterId]; !ok {
+			if err := r.DeleteDerivedServiceAndEndpointSlices(ctx, &derivedService); err != nil {
+				return err
+			}
+		}
 	}
 
 	// update service import to match derived service clusterIPs and imported ports if necessary
