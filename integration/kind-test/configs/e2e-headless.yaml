@@ -4,6 +4,7 @@ metadata:
   namespace: aws-cloud-map-mcs-e2e
   name: e2e-headless
 spec:
+  clusterIP: None
   selector:
     app: coredns
   ports:

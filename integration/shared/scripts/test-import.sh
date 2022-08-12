@@ -12,6 +12,7 @@ import_count=0
 poll_count=0
 while ((import_count < expected_endpoint_count))
 do
+  sleep 1
   if ((poll_count++ > 30)) ; then
     echo "timed out polling for import endpoints"
     exit 1
