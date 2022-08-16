@@ -58,11 +58,11 @@ if [ "$exit_code" -eq 0 ] ; then
   fi
 fi
 
-# Scale deployment back down for future test
-$KUBECTL_BIN scale deployment/"$deployment" --replicas="$EXPECTED_ENDPOINT_COUNT" --namespace "$NAMESPACE"
-
-# Delete export
-$KUBECTL_BIN delete ServiceExport $SERVICE -n $NAMESPACE
+# Scale deployment back down for future test and delete service export
+if [ "$exit_code" -eq 0 ] ; then
+  $KUBECTL_BIN scale deployment/"$deployment" --replicas="$EXPECTED_ENDPOINT_COUNT" --namespace "$NAMESPACE"
+  $KUBECTL_BIN delete ServiceExport $SERVICE -n $NAMESPACE
+fi
 
 echo "killing controller PID:$CTL_PID"
 kill $CTL_PID

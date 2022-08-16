@@ -2,13 +2,19 @@
 
 # Testing service consumption with dnsutils pod
 
-echo "verifying cross-cluster service consumption..."
+echo "verifying single-cluster service consumption..."
 
-# Add DNS pod
-$KUBECTL_BIN run $DNS_POD -n $NAMESPACE --image=tutum/dnsutils --command -- sleep infinity
-exit_code=$?
-
+# Add pod
+$KUBECTL_BIN apply -f "$KIND_CONFIGS/e2e-client-hello.yaml"
 $KUBECTL_BIN wait --for=condition=ready pod/$DNS_POD -n $NAMESPACE # wait until pod is deployed
+
+# Install dig if not installed
+$KUBECTL_BIN exec $DNS_POD -n $NAMESPACE -- dig -v &>/dev/null
+exit_code=$?
+if [ "$exit_code" -ne 0 ]; then
+    echo "dig not installed, installing..."
+    $KUBECTL_BIN exec $DNS_POD -n $NAMESPACE -- apk add --update bind-tools
+fi
 
 # Perform a dig to cluster-local CoreDNS 
 echo "performing dig for A/AAAA records..."
