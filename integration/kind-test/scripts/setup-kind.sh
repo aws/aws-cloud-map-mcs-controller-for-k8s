@@ -11,18 +11,17 @@ source ./integration/kind-test/scripts/common.sh
 
 $KIND_BIN create cluster --name "$KIND_SHORT" --image "$IMAGE"
 $KUBECTL_BIN config use-context "$CLUSTER"
-$KUBECTL_BIN create namespace "$NAMESPACE"
 make install
 
 # Install CoreDNS plugin
-$KUBECTL_BIN apply -f "$CONFIGS/e2e-coredns-clusterrole.yaml"
-$KUBECTL_BIN apply -f "$CONFIGS/e2e-coredns-configmap.yaml"
-$KUBECTL_BIN apply -f "$CONFIGS/e2e-coredns-deployment.yaml"
+$KUBECTL_BIN apply -f "$SHARED_CONFIGS/coredns-clusterrole.yaml"
+$KUBECTL_BIN apply -f "$SHARED_CONFIGS/coredns-configmap.yaml"
+$KUBECTL_BIN apply -f "$KIND_CONFIGS/e2e-coredns-deployment.yaml"
+
+$KUBECTL_BIN create namespace "$NAMESPACE"
 
 # Add ClusterId and ClusterSetId
-$KUBECTL_BIN apply -f "$CONFIGS/e2e-clusterproperty.yaml"
+$KUBECTL_BIN apply -f "$KIND_CONFIGS/e2e-clusterproperty.yaml"
 
 # Deploy pods 
-$KUBECTL_BIN apply -f "$CONFIGS/e2e-deployment.yaml"
-
-exit 0
+$KUBECTL_BIN apply -f "$KIND_CONFIGS/e2e-deployment.yaml"

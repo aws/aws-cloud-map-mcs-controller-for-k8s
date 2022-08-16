@@ -17,11 +17,16 @@ mkdir -p "$LOGS"
 CTL_PID=$!
 echo "controller PID:$CTL_PID"
 
-go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $CLUSTERID1 $CLUSTERSETID1 $ENDPT_PORT $SERVICE_PORT "$endpts" $SERVICE_TYPE
+go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $CLUSTERID1 $CLUSTERSETID1 $ENDPT_PORT $SERVICE_PORT $SERVICE_TYPE "$endpts" 
 exit_code=$?
 
 if [ "$exit_code" -eq 0 ] ; then
   ./integration/shared/scripts/test-import.sh "$EXPECTED_ENDPOINT_COUNT" "$endpts"
+  exit_code=$?
+fi
+
+if [ "$exit_code" -eq 0 ] ; then
+  ./integration/kind-test/scripts/DNS-test.sh
   exit_code=$?
 fi
 
@@ -39,17 +44,25 @@ if [ "$exit_code" -eq 0 ] ; then
     exit $?
   fi
 
-  go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $CLUSTERID1 $CLUSTERSETID1 $ENDPT_PORT $SERVICE_PORT "$updated_endpoints" $SERVICE_TYPE
+  go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $CLUSTERID1 $CLUSTERSETID1 $ENDPT_PORT $SERVICE_PORT $SERVICE_TYPE "$updated_endpoints"
   exit_code=$?
 
   if [ "$exit_code" -eq 0 ] ; then
     ./integration/shared/scripts/test-import.sh "$UPDATED_ENDPOINT_COUNT" "$updated_endpoints"
     exit_code=$?
   fi
+
+  if [ "$exit_code" -eq 0 ] ; then
+    ./integration/kind-test/scripts/DNS-test.sh
+    exit_code=$?
+  fi
 fi
 
 # Scale deployment back down for future test
 $KUBECTL_BIN scale deployment/"$deployment" --replicas="$EXPECTED_ENDPOINT_COUNT" --namespace "$NAMESPACE"
+
+# Delete export
+$KUBECTL_BIN delete ServiceExport $SERVICE -n $NAMESPACE
 
 echo "killing controller PID:$CTL_PID"
 kill $CTL_PID
