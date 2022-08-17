@@ -26,7 +26,7 @@ if [ "$exit_code" -eq 0 ] ; then
 fi
 
 if [ "$exit_code" -eq 0 ] ; then
-  ./integration/kind-test/scripts/DNS-test.sh
+  ./integration/kind-test/scripts/DNS-test.sh "$EXPECTED_ENDPOINT_COUNT"
   exit_code=$?
 fi
 
@@ -58,7 +58,7 @@ if [ "$exit_code" -eq 0 ] ; then
 fi
 
 if [ "$exit_code" -eq 0 ] ; then
-  ./integration/kind-test/scripts/DNS-test.sh
+  ./integration/kind-test/scripts/DNS-test.sh "$UPDATED_ENDPOINT_COUNT"
   exit_code=$?
 fi
 

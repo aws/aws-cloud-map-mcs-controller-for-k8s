@@ -17,22 +17,59 @@ if [ "$exit_code" -ne 0 ]; then
 fi
 
 # Perform a dig to cluster-local CoreDNS 
+# TODO: parse dig outputs for more precise verification - check specifics IPs?
 echo "performing dig for A/AAAA records..."
-$KUBECTL_BIN exec $DNS_POD -n $NAMESPACE -- dig +all +ans $SERVICE.$NAMESPACE.svc.clusterset.local +short
+addresses=$($KUBECTL_BIN exec $DNS_POD -n $NAMESPACE -- dig +all +ans $SERVICE.$NAMESPACE.svc.clusterset.local +short)
 exit_code=$?
+echo "$addresses"
 
 if [ "$exit_code" -ne 0 ]; then
     echo "ERROR: Unable to dig service $SERVICE.$NAMESPACE.svc.clusterset.local"
     exit $exit_code
 fi
 
+# verify number of returns IP addreses matches expected number
+endpt_count=$(echo "$addresses" | wc -l | xargs)
+
+if [ "$SERVICE_TYPE" = "Headless" ]; then
+    if [ "$endpt_count" -ne "$1" ]; then
+        echo "ERROR: Found $endpt_count endpoints, expected $1 endpoints"
+        exit 1
+    fi
+fi
+
+if [ "$SERVICE_TYPE" = "ClusterSetIP" ]; then
+    if [ "$endpt_count" -ne 1 ]; then
+        echo "ERROR: Found $endpt_count endpoints, expected 1 endpoint"
+        exit 1
+    fi
+fi
+
 echo "performing dig for SRV records..."
-$KUBECTL_BIN exec $DNS_POD -n $NAMESPACE -- dig +all +ans $SERVICE.$NAMESPACE.svc.clusterset.local. SRV +short
+addresses=$($KUBECTL_BIN exec $DNS_POD -n $NAMESPACE -- dig +all +ans $SERVICE.$NAMESPACE.svc.clusterset.local. SRV +short)
 exit_code=$?
+echo "$addresses"
 
 if [ "$exit_code" -ne 0 ]; then
     echo "ERROR: Unable to dig service $SERVICE.$NAMESPACE.svc.clusterset.local"
     exit $exit_code
+fi
+
+# verify number of returns IP addreses matches expected number
+endpt_count=$(echo "$addresses" | wc -l | xargs)
+
+if [ "$SERVICE_TYPE" = "Headless" ]; then
+    if [ "$endpt_count" -ne "$1" ]; then
+        echo "ERROR: Found $endpt_count endpoints, expected $1 endpoints"
+        exit 1
+    fi
+fi
+
+if [ "$SERVICE_TYPE" = "ClusterSetIP" ]; then
+    if [ "$endpt_count" -ne 1 ]; then
+        echo "ERROR: Found $endpt_count endpoints, expected 1 endpoint"
+        exit 1
+    fi
 fi
 
 echo "confirmed service consumption"
