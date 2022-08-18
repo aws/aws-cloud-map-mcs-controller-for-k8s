@@ -94,7 +94,7 @@ kind-integration-setup: build kind ## Setup the integration test using kind clus
 	@./integration/kind-test/scripts/setup-kind.sh
 
 kind-integration-run: ## Run the integration test controller
-	@./integration/kind-test/scripts/run-tests.sh
+	@./integration/kind-test/scripts/run-helper.sh
 
 kind-integration-cleanup: kind  ## Cleanup integration test resources in Cloud Map and local kind cluster
 	@./integration/kind-test/scripts/cleanup-kind.sh

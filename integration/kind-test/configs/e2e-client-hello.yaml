@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: client-hello
+  namespace: aws-cloud-map-mcs-e2e
+spec:
+  containers:
+    - command:
+        - sleep
+        - "1d"
+      image: alpine
+      name: client-hello

@@ -2,18 +2,16 @@
 
 source ./integration/eks-test/scripts/eks-common.sh
 
-# Apply ClusterProperties
-$KUBECTL_BIN config use-context $EXPORT_CLS
-make install
-$KUBECTL_BIN apply -f "$CONFIGS/e2e-clusterproperty-1.yaml"
-
-$KUBECTL_BIN config use-context $IMPORT_CLS
-make install
-$KUBECTL_BIN apply -f "$CONFIGS/e2e-clusterproperty-2.yaml"
-
 # Call helper for service account and controller installation
 ./integration/eks-test/scripts/eks-setup-helper.sh $EXPORT_CLS
 ./integration/eks-test/scripts/eks-setup-helper.sh $IMPORT_CLS
+
+# Apply ClusterProperties
+$KUBECTL_BIN config use-context $EXPORT_CLS
+$KUBECTL_BIN apply -f "$CONFIGS/e2e-clusterproperty-1.yaml"
+
+$KUBECTL_BIN config use-context $IMPORT_CLS
+$KUBECTL_BIN apply -f "$CONFIGS/e2e-clusterproperty-2.yaml"
 
 # Installing service
 $KUBECTL_BIN config use-context $EXPORT_CLS

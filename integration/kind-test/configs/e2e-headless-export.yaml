@@ -1,0 +1,5 @@
+kind: ServiceExport
+apiVersion: multicluster.x-k8s.io/v1alpha1
+metadata:
+  namespace: aws-cloud-map-mcs-e2e
+  name: e2e-headless

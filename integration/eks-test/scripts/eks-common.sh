@@ -8,6 +8,7 @@ export SCENARIOS='./integration/shared/scenarios'
 export NAMESPACE='aws-cloud-map-mcs-eks-e2e'
 export MCS_NAMESPACE='cloud-map-mcs-system'
 export SERVICE='nginx-hello'
+export SERVICE_TYPE='ClusterSetIP'
 export CLIENT_POD='client-hello'
 export ENDPT_PORT=80
 export SERVICE_PORT=80 # from nginx-service.yaml
