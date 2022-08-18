@@ -4,6 +4,25 @@
 
 echo "verifying single-cluster service consumption..."
 
+# Helper function to verify DNS results
+checkDNS() {
+    endpt_count=$(echo "$1" | wc -l | xargs)
+
+    if [ "$2" = "Headless" ]; then
+        if [ "$endpt_count" -ne "$3" ]; then
+            echo "ERROR: Found $endpt_count endpoints, expected $3 endpoints"
+            exit 1
+        fi
+    fi
+
+    if [ "$2" = "ClusterSetIP" ]; then
+        if [ "$endpt_count" -ne 1 ]; then
+            echo "ERROR: Found $endpt_count endpoints, expected 1 endpoint"
+            exit 1
+        fi
+    fi
+}
+
 # Add pod
 $KUBECTL_BIN apply -f "$KIND_CONFIGS/e2e-client-hello.yaml"
 $KUBECTL_BIN wait --for=condition=ready pod/$DNS_POD -n $NAMESPACE # wait until pod is deployed
@@ -28,22 +47,8 @@ if [ "$exit_code" -ne 0 ]; then
     exit $exit_code
 fi
 
-# verify number of returns IP addreses matches expected number
-endpt_count=$(echo "$addresses" | wc -l | xargs)
-
-if [ "$SERVICE_TYPE" = "Headless" ]; then
-    if [ "$endpt_count" -ne "$1" ]; then
-        echo "ERROR: Found $endpt_count endpoints, expected $1 endpoints"
-        exit 1
-    fi
-fi
-
-if [ "$SERVICE_TYPE" = "ClusterSetIP" ]; then
-    if [ "$endpt_count" -ne 1 ]; then
-        echo "ERROR: Found $endpt_count endpoints, expected 1 endpoint"
-        exit 1
-    fi
-fi
+# verify DNS results
+checkDNS "$addresses" "$SERVICE_TYPE" "$1"
 
 echo "performing dig for SRV records..."
 addresses=$($KUBECTL_BIN exec $DNS_POD -n $NAMESPACE -- dig +all +ans $SERVICE.$NAMESPACE.svc.clusterset.local. SRV +short)
@@ -55,22 +60,8 @@ if [ "$exit_code" -ne 0 ]; then
     exit $exit_code
 fi
 
-# verify number of returns IP addreses matches expected number
-endpt_count=$(echo "$addresses" | wc -l | xargs)
-
-if [ "$SERVICE_TYPE" = "Headless" ]; then
-    if [ "$endpt_count" -ne "$1" ]; then
-        echo "ERROR: Found $endpt_count endpoints, expected $1 endpoints"
-        exit 1
-    fi
-fi
-
-if [ "$SERVICE_TYPE" = "ClusterSetIP" ]; then
-    if [ "$endpt_count" -ne 1 ]; then
-        echo "ERROR: Found $endpt_count endpoints, expected 1 endpoint"
-        exit 1
-    fi
-fi
+# verify DNS results
+checkDNS "$addresses" "$SERVICE_TYPE" "$1"
 
 echo "confirmed service consumption"
 exit 0
