@@ -33,7 +33,7 @@ type exportServiceScenario struct {
 	expectedSvc model.Service
 }
 
-func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, clusterId string, clusterSetId string, portStr string, servicePortStr string, ips string) (ExportServiceScenario, error) {
+func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, clusterId string, clusterSetId string, portStr string, servicePortStr string, serviceType string, ips string) (ExportServiceScenario, error) {
 	endpts := make([]*model.Endpoint, 0)
 
 	port, parseError := strconv.ParseUint(portStr, 10, 16)
@@ -61,7 +61,7 @@ func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, cl
 			EndpointPort: endpointPort,
 			ClusterId:    clusterId,
 			ClusterSetId: clusterSetId,
-			ServiceType:  model.ClusterSetIPType, // in scenario, we assume ClusterSetIP type
+			ServiceType:  model.ServiceType(serviceType),
 			Attributes:   make(map[string]string),
 		})
 	}
