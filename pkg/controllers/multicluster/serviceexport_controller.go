@@ -139,7 +139,7 @@ func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, serviceExpor
 		return ctrl.Result{}, err
 	}
 
-	endpoints, err := r.extractEndpoints(ctx, service)
+	endpoints, err := r.extractEndpoints(ctx, service, serviceExport)
 	if err != nil {
 		r.Log.Error(err, "error extracting Endpoints",
 			"namespace", serviceExport.Namespace, "name", serviceExport.Name)
@@ -230,7 +230,7 @@ func (r *ServiceExportReconciler) handleDelete(ctx context.Context, serviceExpor
 	return ctrl.Result{}, nil
 }
 
-func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.Service) ([]*model.Endpoint, error) {
+func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.Service, svcExport *multiclusterv1alpha1.ServiceExport) ([]*model.Endpoint, error) {
 	result := make([]*model.Endpoint, 0)
 
 	endpointSlices := discovery.EndpointSliceList{}
@@ -259,6 +259,8 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 		return nil, err
 	}
 
+	creationTimestamp := svcExport.ObjectMeta.CreationTimestamp.Time.Unix()
+
 	for _, slice := range endpointSlices.Items {
 		if slice.AddressType != discovery.AddressTypeIPv4 {
 			return nil, fmt.Errorf("unsupported address type %s for service %s", slice.AddressType, svc.Name)
@@ -275,14 +277,15 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 
 					port := EndpointPortToPort(endpointPort)
 					result = append(result, &model.Endpoint{
-						Id:           model.EndpointIdFromIPAddressAndPort(IP, port),
-						IP:           IP,
-						EndpointPort: port,
-						ServicePort:  servicePortMap[*endpointPort.Name],
-						ClusterId:    clusterId,
-						ClusterSetId: clusterSetId,
-						ServiceType:  serviceType,
-						Attributes:   attributes,
+						Id:                model.EndpointIdFromIPAddressAndPort(IP, port),
+						IP:                IP,
+						EndpointPort:      port,
+						ServicePort:       servicePortMap[*endpointPort.Name],
+						ClusterId:         clusterId,
+						ClusterSetId:      clusterSetId,
+						ServiceType:       serviceType,
+						CreationTimestamp: creationTimestamp,
+						Attributes:        attributes,
 					})
 				}
 			}

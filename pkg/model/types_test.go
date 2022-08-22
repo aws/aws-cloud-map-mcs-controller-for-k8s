@@ -2,6 +2,7 @@ package model
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
@@ -12,6 +13,7 @@ var ip = "192.168.0.1"
 var clusterId = "test-mcs-clusterId"
 var clusterSetId = "test-mcs-clusterSetId"
 var serviceType = ClusterSetIPType.String()
+var creationTimestamp int64 = 1640995200
 
 func TestNewEndpointFromInstance(t *testing.T) {
 	tests := []struct {
@@ -36,6 +38,7 @@ func TestNewEndpointFromInstance(t *testing.T) {
 					ServicePortAttr:       "65535",
 					ServiceTargetPortAttr: "80",
 					ServiceTypeAttr:       serviceType,
+					CreationTimestampAttr: strconv.FormatInt(creationTimestamp, 10),
 					"custom-attr":         "custom-val",
 				},
 			},
@@ -53,9 +56,10 @@ func TestNewEndpointFromInstance(t *testing.T) {
 					TargetPort: "80",
 					Protocol:   "TCP",
 				},
-				ClusterId:    clusterId,
-				ClusterSetId: clusterSetId,
-				ServiceType:  ServiceType(serviceType),
+				ClusterId:         clusterId,
+				ClusterSetId:      clusterSetId,
+				ServiceType:       ServiceType(serviceType),
+				CreationTimestamp: creationTimestamp,
 				Attributes: map[string]string{
 					"custom-attr": "custom-val",
 				},
@@ -177,14 +181,15 @@ func TestNewEndpointFromInstance(t *testing.T) {
 
 func TestEndpoint_GetAttributes(t *testing.T) {
 	type fields struct {
-		Id           string
-		IP           string
-		EndpointPort Port
-		ServicePort  Port
-		ClusterId    string
-		ClusterSetId string
-		ServiceType  ServiceType
-		Attributes   map[string]string
+		Id                string
+		IP                string
+		EndpointPort      Port
+		ServicePort       Port
+		ClusterId         string
+		ClusterSetId      string
+		ServiceType       ServiceType
+		CreationTimestamp int64
+		Attributes        map[string]string
 	}
 	tests := []struct {
 		name   string
@@ -206,9 +211,10 @@ func TestEndpoint_GetAttributes(t *testing.T) {
 					TargetPort: "80",
 					Protocol:   "TCP",
 				},
-				ClusterId:    clusterId,
-				ClusterSetId: clusterSetId,
-				ServiceType:  ServiceType(serviceType),
+				ClusterId:         clusterId,
+				ClusterSetId:      clusterSetId,
+				ServiceType:       ServiceType(serviceType),
+				CreationTimestamp: creationTimestamp,
 				Attributes: map[string]string{
 					"custom-attr": "custom-val",
 				},
@@ -225,6 +231,7 @@ func TestEndpoint_GetAttributes(t *testing.T) {
 				ServicePortAttr:       "30",
 				ServiceTargetPortAttr: "80",
 				ServiceTypeAttr:       serviceType,
+				CreationTimestampAttr: strconv.FormatInt(creationTimestamp, 10),
 				"custom-attr":         "custom-val",
 			},
 		},
@@ -232,14 +239,15 @@ func TestEndpoint_GetAttributes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := &Endpoint{
-				Id:           tt.fields.Id,
-				IP:           tt.fields.IP,
-				EndpointPort: tt.fields.EndpointPort,
-				ServicePort:  tt.fields.ServicePort,
-				ClusterId:    tt.fields.ClusterId,
-				ClusterSetId: tt.fields.ClusterSetId,
-				ServiceType:  tt.fields.ServiceType,
-				Attributes:   tt.fields.Attributes,
+				Id:                tt.fields.Id,
+				IP:                tt.fields.IP,
+				EndpointPort:      tt.fields.EndpointPort,
+				ServicePort:       tt.fields.ServicePort,
+				ClusterId:         tt.fields.ClusterId,
+				ClusterSetId:      tt.fields.ClusterSetId,
+				ServiceType:       tt.fields.ServiceType,
+				CreationTimestamp: tt.fields.CreationTimestamp,
+				Attributes:        tt.fields.Attributes,
 			}
 			if got := e.GetCloudMapAttributes(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetAttributes() = %v, want %v", got, tt.want)

@@ -2,6 +2,7 @@ package cloudmap
 
 import (
 	"context"
+	"strconv"
 	"testing"
 
 	cloudmapMock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
@@ -294,6 +295,7 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 		model.ServiceProtocolAttr:   test.Protocol1,
 		model.ServiceTargetPortAttr: test.PortStr1,
 		model.ServiceTypeAttr:       test.SvcType,
+		model.CreationTimestampAttr: strconv.FormatInt(test.CreationTimestamp, 10),
 	}
 	attrs2 := map[string]string{
 		model.ClusterIdAttr:         test.ClusterId1,
@@ -307,6 +309,7 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 		model.ServiceProtocolAttr:   test.Protocol2,
 		model.ServiceTargetPortAttr: test.PortStr2,
 		model.ServiceTypeAttr:       test.SvcType,
+		model.CreationTimestampAttr: strconv.FormatInt(test.CreationTimestamp, 10),
 	}
 
 	tc.mockApi.EXPECT().RegisterInstance(context.TODO(), test.SvcId, test.EndptId1, attrs1).
@@ -382,6 +385,7 @@ func getHttpInstanceSummaryForTest() []types.HttpInstanceSummary {
 				model.ServiceProtocolAttr:   test.Protocol1,
 				model.ServiceTargetPortAttr: test.PortStr1,
 				model.ServiceTypeAttr:       test.SvcType,
+				model.CreationTimestampAttr: strconv.FormatInt(test.CreationTimestamp, 10),
 			},
 		},
 		{
@@ -398,6 +402,7 @@ func getHttpInstanceSummaryForTest() []types.HttpInstanceSummary {
 				model.ServiceProtocolAttr:   test.Protocol2,
 				model.ServiceTargetPortAttr: test.PortStr2,
 				model.ServiceTypeAttr:       test.SvcType,
+				model.CreationTimestampAttr: strconv.FormatInt(test.CreationTimestamp, 10),
 			},
 		},
 	}

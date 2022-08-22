@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"time"
+
 	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -41,10 +43,12 @@ func k8sServiceForTest() *v1.Service {
 }
 
 func serviceExportForTest() *multiclusterv1alpha1.ServiceExport {
+	creationTimestamp := metav1.NewTime(time.Unix(test.CreationTimestamp, 0))
 	return &multiclusterv1alpha1.ServiceExport{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      test.SvcName,
-			Namespace: test.HttpNsName,
+			Name:              test.SvcName,
+			Namespace:         test.HttpNsName,
+			CreationTimestamp: creationTimestamp,
 		},
 	}
 }
