@@ -259,7 +259,7 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 		return nil, err
 	}
 
-	creationTimestamp := svcExport.ObjectMeta.CreationTimestamp.Time.Unix()
+	svcExportCreationTimestamp := svcExport.ObjectMeta.CreationTimestamp.Time.UnixMilli()
 
 	for _, slice := range endpointSlices.Items {
 		if slice.AddressType != discovery.AddressTypeIPv4 {
@@ -277,15 +277,15 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 
 					port := EndpointPortToPort(endpointPort)
 					result = append(result, &model.Endpoint{
-						Id:                model.EndpointIdFromIPAddressAndPort(IP, port),
-						IP:                IP,
-						EndpointPort:      port,
-						ServicePort:       servicePortMap[*endpointPort.Name],
-						ClusterId:         clusterId,
-						ClusterSetId:      clusterSetId,
-						ServiceType:       serviceType,
-						CreationTimestamp: creationTimestamp,
-						Attributes:        attributes,
+						Id:                         model.EndpointIdFromIPAddressAndPort(IP, port),
+						IP:                         IP,
+						EndpointPort:               port,
+						ServicePort:                servicePortMap[*endpointPort.Name],
+						ClusterId:                  clusterId,
+						ClusterSetId:               clusterSetId,
+						ServiceType:                serviceType,
+						SvcExportCreationTimestamp: svcExportCreationTimestamp,
+						Attributes:                 attributes,
 					})
 				}
 			}

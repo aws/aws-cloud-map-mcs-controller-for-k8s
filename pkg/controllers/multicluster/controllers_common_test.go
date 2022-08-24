@@ -43,7 +43,7 @@ func k8sServiceForTest() *v1.Service {
 }
 
 func serviceExportForTest() *multiclusterv1alpha1.ServiceExport {
-	creationTimestamp := metav1.NewTime(time.Unix(test.CreationTimestamp, 0))
+	creationTimestamp := metav1.NewTime(time.UnixMilli(test.SvcExportCreationTimestamp))
 	return &multiclusterv1alpha1.ServiceExport{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              test.SvcName,

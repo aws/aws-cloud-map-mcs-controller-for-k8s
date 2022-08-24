@@ -42,15 +42,15 @@ type ServiceType string
 
 // Endpoint holds basic values and attributes for an endpoint.
 type Endpoint struct {
-	Id                string
-	IP                string
-	EndpointPort      Port
-	ServicePort       Port
-	ClusterId         string
-	ClusterSetId      string
-	ServiceType       ServiceType
-	CreationTimestamp int64
-	Attributes        map[string]string
+	Id                         string
+	IP                         string
+	EndpointPort               Port
+	ServicePort                Port
+	ClusterId                  string
+	ClusterSetId               string
+	ServiceType                ServiceType
+	SvcExportCreationTimestamp int64
+	Attributes                 map[string]string
 }
 
 type Port struct {
@@ -63,18 +63,18 @@ type Port struct {
 // Cloudmap Instances IP and Port is supposed to be AWS_INSTANCE_IPV4 and AWS_INSTANCE_PORT
 // Rest are custom attributes
 const (
-	CreationTimestampAttr = "CREATION_TIMESTAMP"
-	EndpointIpv4Attr      = "AWS_INSTANCE_IPV4"
-	EndpointPortAttr      = "AWS_INSTANCE_PORT"
-	EndpointPortNameAttr  = "ENDPOINT_PORT_NAME"
-	EndpointProtocolAttr  = "ENDPOINT_PROTOCOL"
-	ClusterIdAttr         = "CLUSTER_ID"
-	ClusterSetIdAttr      = "CLUSTERSET_ID"
-	ServicePortNameAttr   = "SERVICE_PORT_NAME"
-	ServicePortAttr       = "SERVICE_PORT"
-	ServiceTargetPortAttr = "SERVICE_TARGET_PORT"
-	ServiceProtocolAttr   = "SERVICE_PROTOCOL"
-	ServiceTypeAttr       = "SERVICE_TYPE"
+	SvcExportCreationTimestampAttr = "CREATION_TIMESTAMP"
+	EndpointIpv4Attr               = "AWS_INSTANCE_IPV4"
+	EndpointPortAttr               = "AWS_INSTANCE_PORT"
+	EndpointPortNameAttr           = "ENDPOINT_PORT_NAME"
+	EndpointProtocolAttr           = "ENDPOINT_PROTOCOL"
+	ClusterIdAttr                  = "CLUSTER_ID"
+	ClusterSetIdAttr               = "CLUSTERSET_ID"
+	ServicePortNameAttr            = "SERVICE_PORT_NAME"
+	ServicePortAttr                = "SERVICE_PORT"
+	ServiceTargetPortAttr          = "SERVICE_TARGET_PORT"
+	ServiceProtocolAttr            = "SERVICE_PROTOCOL"
+	ServiceTypeAttr                = "SERVICE_TYPE"
 )
 
 // NewEndpointFromInstance converts a Cloud Map HttpInstanceSummary to an endpoint.
@@ -121,7 +121,7 @@ func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (*Endpoint, error)
 		return nil, err
 	}
 
-	if endpoint.CreationTimestamp, err = removeTimestampAttr(attributes, CreationTimestampAttr); err != nil {
+	if endpoint.SvcExportCreationTimestamp, err = removeTimestampAttr(attributes, SvcExportCreationTimestampAttr); err != nil {
 		return nil, err
 	}
 
@@ -211,7 +211,7 @@ func (e *Endpoint) GetCloudMapAttributes() map[string]string {
 	attrs[ServiceTargetPortAttr] = e.ServicePort.TargetPort
 	attrs[ServiceProtocolAttr] = e.ServicePort.Protocol
 	attrs[ServiceTypeAttr] = e.ServiceType.String()
-	attrs[CreationTimestampAttr] = strconv.FormatInt(e.CreationTimestamp, 10)
+	attrs[SvcExportCreationTimestampAttr] = strconv.FormatInt(e.SvcExportCreationTimestamp, 10)
 
 	for key, val := range e.Attributes {
 		attrs[key] = val

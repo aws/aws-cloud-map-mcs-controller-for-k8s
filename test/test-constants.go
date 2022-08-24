@@ -12,39 +12,39 @@ import (
 )
 
 const (
-	HttpNsName              = "http-ns-name"
-	DnsNsName               = "dns-ns-name"
-	HttpNsId                = "http-ns-id"
-	DnsNsId                 = "dns-ns-id"
-	SvcName                 = "svc-name"
-	SvcId                   = "svc-id"
-	ClusterId1              = "test-mcs-clusterid-1"
-	ClusterSetId1           = "test-mcs-clustersetid-1"
-	ClusterId2              = "test-mcs-clusterid-2"
-	ClusterSetId2           = "test-mcs-clustersetid-2"
-	EndptId1                = "tcp-192_168_0_1-1"
-	EndptId2                = "tcp-192_168_0_2-2"
-	EndptIp1                = "192.168.0.1"
-	EndptIp2                = "192.168.0.2"
-	Port1                   = 1
-	PortStr1                = "1"
-	PortName1               = "http"
-	Protocol1               = "TCP"
-	ServicePort1            = 11
-	ServicePortStr1         = "11"
-	Port2                   = 2
-	PortStr2                = "2"
-	PortName2               = "https"
-	Protocol2               = "UDP"
-	ServicePort2            = 22
-	ServicePortStr2         = "22"
-	ClusterIp1              = "10.10.10.1"
-	ClusterIp2              = "10.10.10.2"
-	OpId1                   = "operation-id-1"
-	OpId2                   = "operation-id-2"
-	OpStart                 = 1
-	SvcType                 = "ClusterSetIP"
-	CreationTimestamp int64 = 1640995200
+	HttpNsName                       = "http-ns-name"
+	DnsNsName                        = "dns-ns-name"
+	HttpNsId                         = "http-ns-id"
+	DnsNsId                          = "dns-ns-id"
+	SvcName                          = "svc-name"
+	SvcId                            = "svc-id"
+	ClusterId1                       = "test-mcs-clusterid-1"
+	ClusterSetId1                    = "test-mcs-clustersetid-1"
+	ClusterId2                       = "test-mcs-clusterid-2"
+	ClusterSetId2                    = "test-mcs-clustersetid-2"
+	EndptId1                         = "tcp-192_168_0_1-1"
+	EndptId2                         = "tcp-192_168_0_2-2"
+	EndptIp1                         = "192.168.0.1"
+	EndptIp2                         = "192.168.0.2"
+	Port1                            = 1
+	PortStr1                         = "1"
+	PortName1                        = "http"
+	Protocol1                        = "TCP"
+	ServicePort1                     = 11
+	ServicePortStr1                  = "11"
+	Port2                            = 2
+	PortStr2                         = "2"
+	PortName2                        = "https"
+	Protocol2                        = "UDP"
+	ServicePort2                     = 22
+	ServicePortStr2                  = "22"
+	ClusterIp1                       = "10.10.10.1"
+	ClusterIp2                       = "10.10.10.2"
+	OpId1                            = "operation-id-1"
+	OpId2                            = "operation-id-2"
+	OpStart                          = 1
+	SvcType                          = "ClusterSetIP"
+	SvcExportCreationTimestamp int64 = 1640995200000
 )
 
 func GetTestHttpNamespace() *model.Namespace {
@@ -103,11 +103,11 @@ func GetTestEndpoint1() *model.Endpoint {
 			TargetPort: PortStr1,
 			Protocol:   Protocol1,
 		},
-		ClusterId:         ClusterId1,
-		ClusterSetId:      ClusterSetId1,
-		ServiceType:       model.ClusterSetIPType,
-		CreationTimestamp: CreationTimestamp,
-		Attributes:        make(map[string]string),
+		ClusterId:                  ClusterId1,
+		ClusterSetId:               ClusterSetId1,
+		ServiceType:                model.ClusterSetIPType,
+		SvcExportCreationTimestamp: SvcExportCreationTimestamp,
+		Attributes:                 make(map[string]string),
 	}
 }
 
@@ -126,11 +126,11 @@ func GetTestEndpoint2() *model.Endpoint {
 			TargetPort: PortStr2,
 			Protocol:   Protocol2,
 		},
-		ClusterId:         ClusterId1,
-		ClusterSetId:      ClusterSetId1,
-		ServiceType:       model.ClusterSetIPType,
-		CreationTimestamp: CreationTimestamp,
-		Attributes:        make(map[string]string),
+		ClusterId:                  ClusterId1,
+		ClusterSetId:               ClusterSetId1,
+		ServiceType:                model.ClusterSetIPType,
+		SvcExportCreationTimestamp: SvcExportCreationTimestamp,
+		Attributes:                 make(map[string]string),
 	}
 }
 
