@@ -63,7 +63,7 @@ type Port struct {
 // Cloudmap Instances IP and Port is supposed to be AWS_INSTANCE_IPV4 and AWS_INSTANCE_PORT
 // Rest are custom attributes
 const (
-	SvcExportCreationTimestampAttr = "CREATION_TIMESTAMP"
+	SvcExportCreationTimestampAttr = "SVC_EXPORT_CREATION_TIMESTAMP"
 	EndpointIpv4Attr               = "AWS_INSTANCE_IPV4"
 	EndpointPortAttr               = "AWS_INSTANCE_PORT"
 	EndpointPortNameAttr           = "ENDPOINT_PORT_NAME"
