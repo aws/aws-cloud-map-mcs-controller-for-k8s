@@ -122,7 +122,7 @@ func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (*Endpoint, error)
 	}
 
 	if endpoint.SvcExportCreationTimestamp, err = removeTimestampAttr(attributes, SvcExportCreationTimestampAttr); err != nil {
-		return nil, err
+		endpoint.SvcExportCreationTimestamp = 0
 	}
 
 	// Add the remaining attributes

@@ -259,7 +259,10 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 		return nil, err
 	}
 
-	svcExportCreationTimestamp := svcExport.ObjectMeta.CreationTimestamp.Time.UnixMilli()
+	var svcExportCreationTimestamp int64 = 0
+	if !svcExport.ObjectMeta.CreationTimestamp.IsZero() {
+		svcExportCreationTimestamp = svcExport.ObjectMeta.CreationTimestamp.Time.UnixMilli()
+	}
 
 	for _, slice := range endpointSlices.Items {
 		if slice.AddressType != discovery.AddressTypeIPv4 {
