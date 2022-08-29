@@ -112,6 +112,8 @@ func (e *exportServiceScenario) compareEndpoints(cmEndpoints []*model.Endpoint) 
 		for _, actual := range cmEndpoints {
 			// Ignore K8S instance attribute for the purpose of this test.
 			delete(actual.Attributes, multiclustercontrollers.K8sVersionAttr)
+			// Ignore SvcExportCreationTimestamp attribute for the purpose of this test by setting value to 0.
+			actual.SvcExportCreationTimestamp = 0
 			if expected.Equals(actual) {
 				match = true
 				break
