@@ -42,15 +42,18 @@ type ServiceType string
 
 // Endpoint holds basic values and attributes for an endpoint.
 type Endpoint struct {
-	Id                         string
-	IP                         string
-	EndpointPort               Port
-	ServicePort                Port
-	ClusterId                  string
-	ClusterSetId               string
-	ServiceType                ServiceType
-	SvcExportCreationTimestamp int64
-	Attributes                 map[string]string
+	Id                             string
+	IP                             string
+	EndpointPort                   Port
+	ServicePort                    Port
+	ClusterId                      string
+	ClusterSetId                   string
+	ServiceType                    ServiceType
+	ServiceExportCreationTimestamp int64
+	Ready                          bool
+	Hostname                       string
+	Nodename                       string
+	Attributes                     map[string]string
 }
 
 type Port struct {
@@ -63,18 +66,22 @@ type Port struct {
 // Cloudmap Instances IP and Port is supposed to be AWS_INSTANCE_IPV4 and AWS_INSTANCE_PORT
 // Rest are custom attributes
 const (
-	SvcExportCreationTimestampAttr = "SVC_EXPORT_CREATION_TIMESTAMP"
-	EndpointIpv4Attr               = "AWS_INSTANCE_IPV4"
-	EndpointPortAttr               = "AWS_INSTANCE_PORT"
-	EndpointPortNameAttr           = "ENDPOINT_PORT_NAME"
-	EndpointProtocolAttr           = "ENDPOINT_PROTOCOL"
-	ClusterIdAttr                  = "CLUSTER_ID"
-	ClusterSetIdAttr               = "CLUSTERSET_ID"
-	ServicePortNameAttr            = "SERVICE_PORT_NAME"
-	ServicePortAttr                = "SERVICE_PORT"
-	ServiceTargetPortAttr          = "SERVICE_TARGET_PORT"
-	ServiceProtocolAttr            = "SERVICE_PROTOCOL"
-	ServiceTypeAttr                = "SERVICE_TYPE"
+	EndpointIpv4Attr          = "AWS_INSTANCE_IPV4"
+	EndpointPortAttr          = "AWS_INSTANCE_PORT"
+	EndpointPortNameAttr      = "ENDPOINT_PORT_NAME"
+	EndpointProtocolAttr      = "ENDPOINT_PROTOCOL"
+	EndpointReadyAttr         = "READY"
+	EndpointHostnameAttr      = "HOSTNAME"
+	EndpointNodeNameAttr      = "NODENAME"
+	ClusterIdAttr             = "CLUSTER_ID"
+	ClusterSetIdAttr          = "CLUSTERSET_ID"
+	ServicePortNameAttr       = "SERVICE_PORT_NAME"
+	ServicePortAttr           = "SERVICE_PORT"
+	ServiceTargetPortAttr     = "SERVICE_TARGET_PORT"
+	ServiceProtocolAttr       = "SERVICE_PROTOCOL"
+	ServiceTypeAttr           = "SERVICE_TYPE"
+	ServiceExportCreationAttr = "SERVICE_EXPORT_CREATION_TIMESTAMP"
+	K8sVersionAttr            = "K8S_CONTROLLER"
 )
 
 // NewEndpointFromInstance converts a Cloud Map HttpInstanceSummary to an endpoint.
@@ -121,9 +128,17 @@ func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (*Endpoint, error)
 		return nil, err
 	}
 
-	if endpoint.SvcExportCreationTimestamp, err = removeTimestampAttr(attributes, SvcExportCreationTimestampAttr); err != nil {
-		endpoint.SvcExportCreationTimestamp = 0
+	if endpoint.Ready, err = removeBoolAttr(attributes, EndpointReadyAttr); err != nil {
+		return nil, err
 	}
+
+	if endpoint.ServiceExportCreationTimestamp, err = removeTimestampAttr(attributes, ServiceExportCreationAttr); err != nil {
+		return nil, err
+	}
+
+	// Hostname and Nodename are Optional attributes
+	endpoint.Hostname, _ = removeStringAttr(attributes, EndpointHostnameAttr)
+	endpoint.Nodename, _ = removeStringAttr(attributes, EndpointNodeNameAttr)
 
 	// Add the remaining attributes
 	endpoint.Attributes = attributes
@@ -174,13 +189,24 @@ func removeIntAttr(attributes map[string]string, attr string) (int32, error) {
 	if value, hasValue := attributes[attr]; hasValue {
 		parsedValue, parseError := strconv.ParseUint(value, 10, 16)
 		if parseError != nil {
-			return 0, fmt.Errorf("failed to parse the %s as int with error %s",
-				attr, parseError.Error())
+			return 0, fmt.Errorf("failed to parse the %s as int with error %s", attr, parseError.Error())
 		}
 		delete(attributes, attr)
 		return int32(parsedValue), nil
 	}
 	return 0, fmt.Errorf("cannot find the attribute %s", attr)
+}
+
+func removeBoolAttr(attributes map[string]string, attr string) (bool, error) {
+	if value, hasValue := attributes[attr]; hasValue {
+		parsedValue, parseError := strconv.ParseBool(value)
+		if parseError != nil {
+			return false, fmt.Errorf("failed to parse the %s as bool with error %s", attr, parseError.Error())
+		}
+		delete(attributes, attr)
+		return parsedValue, nil
+	}
+	return false, fmt.Errorf("cannot find the attribute %s", attr)
 }
 
 func removeTimestampAttr(attributes map[string]string, attr string) (int64, error) {
@@ -211,7 +237,10 @@ func (e *Endpoint) GetCloudMapAttributes() map[string]string {
 	attrs[ServiceTargetPortAttr] = e.ServicePort.TargetPort
 	attrs[ServiceProtocolAttr] = e.ServicePort.Protocol
 	attrs[ServiceTypeAttr] = e.ServiceType.String()
-	attrs[SvcExportCreationTimestampAttr] = strconv.FormatInt(e.SvcExportCreationTimestamp, 10)
+	attrs[ServiceExportCreationAttr] = strconv.FormatInt(e.ServiceExportCreationTimestamp, 10)
+	attrs[EndpointReadyAttr] = strconv.FormatBool(e.Ready)
+	attrs[EndpointHostnameAttr] = e.Hostname
+	attrs[EndpointNodeNameAttr] = e.Nodename
 
 	for key, val := range e.Attributes {
 		attrs[key] = val

@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 )
@@ -18,8 +18,10 @@ type CloudMapJanitor interface {
 }
 
 type cloudMapJanitor struct {
-	sdApi ServiceDiscoveryJanitorApi
-	fail  func()
+	clusterId    string
+	clusterSetId string
+	sdApi        ServiceDiscoveryJanitorApi
+	fail         func()
 }
 
 // NewDefaultJanitor returns a new janitor object.
@@ -32,8 +34,10 @@ func NewDefaultJanitor(clusterId string, clusterSetId string) CloudMapJanitor {
 	}
 
 	return &cloudMapJanitor{
-		sdApi: NewServiceDiscoveryJanitorApiFromConfig(&awsCfg, common.NewClusterUtilsForTest(clusterId, clusterSetId)),
-		fail:  func() { os.Exit(1) },
+		clusterId:    clusterId,
+		clusterSetId: clusterSetId,
+		sdApi:        NewServiceDiscoveryJanitorApiFromConfig(&awsCfg),
+		fail:         func() { os.Exit(1) },
 	}
 }
 
@@ -73,7 +77,11 @@ func (j *cloudMapJanitor) Cleanup(ctx context.Context, nsName string) {
 }
 
 func (j *cloudMapJanitor) deregisterInstances(ctx context.Context, nsName string, svcName string, svcId string) {
-	insts, err := j.sdApi.DiscoverInstances(ctx, nsName, svcName)
+	queryParameters := map[string]string{
+		model.ClusterSetIdAttr: j.clusterSetId,
+	}
+
+	insts, err := j.sdApi.DiscoverInstances(ctx, nsName, svcName, &queryParameters)
 	j.checkOrFail(err,
 		fmt.Sprintf("service has %d instances to clean", len(insts)),
 		"could not list instances to cleanup")

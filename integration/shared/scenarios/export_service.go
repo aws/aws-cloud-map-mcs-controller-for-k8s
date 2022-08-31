@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
-	multiclustercontrollers "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/controllers/multicluster"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v1 "k8s.io/api/core/v1"
@@ -58,6 +56,7 @@ func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, cl
 				TargetPort: portStr,
 				Protocol:   string(v1.ProtocolTCP),
 			},
+			Ready:        true,
 			EndpointPort: endpointPort,
 			ClusterId:    clusterId,
 			ClusterSetId: clusterSetId,
@@ -72,7 +71,7 @@ func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, cl
 				NsTTL:    time.Second,
 				SvcTTL:   time.Second,
 				EndptTTL: time.Second,
-			}, common.NewClusterUtilsForTest(clusterId, clusterSetId)),
+			}, model.NewClusterUtilsWithValues(clusterId, clusterSetId)),
 		expectedSvc: model.Service{
 			Namespace: nsName,
 			Name:      svcName,
@@ -111,9 +110,12 @@ func (e *exportServiceScenario) compareEndpoints(cmEndpoints []*model.Endpoint) 
 		match := false
 		for _, actual := range cmEndpoints {
 			// Ignore K8S instance attribute for the purpose of this test.
-			delete(actual.Attributes, multiclustercontrollers.K8sVersionAttr)
-			// Ignore SvcExportCreationTimestamp attribute for the purpose of this test by setting value to 0.
-			actual.SvcExportCreationTimestamp = 0
+			delete(actual.Attributes, model.K8sVersionAttr)
+			// Ignore ServiceExportCreationTimestamp attribute for the purpose of this test by setting value to 0.
+			actual.ServiceExportCreationTimestamp = 0
+			// Ignore Nodename and Hostname, as they can be platform dependent
+			actual.Nodename = ""
+			actual.Hostname = ""
 			if expected.Equals(actual) {
 				match = true
 				break

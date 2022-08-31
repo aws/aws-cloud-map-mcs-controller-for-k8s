@@ -16,12 +16,7 @@ make install
 # Install CoreDNS plugin
 $KUBECTL_BIN apply -f "$SHARED_CONFIGS/coredns-clusterrole.yaml"
 $KUBECTL_BIN apply -f "$SHARED_CONFIGS/coredns-configmap.yaml"
-$KUBECTL_BIN apply -f "$KIND_CONFIGS/e2e-coredns-deployment.yaml"
-
-$KUBECTL_BIN create namespace "$NAMESPACE"
+$KUBECTL_BIN apply -f "$KIND_CONFIGS/coredns-deployment.yaml"
 
 # Add ClusterId and ClusterSetId
 $KUBECTL_BIN apply -f "$KIND_CONFIGS/e2e-clusterproperty.yaml"
-
-# Deploy pods 
-$KUBECTL_BIN apply -f "$KIND_CONFIGS/e2e-deployment.yaml"

@@ -1,3 +1,6 @@
+# Silence update recommendations for Ginkgo
+export ACK_GINKGO_DEPRECATIONS:=1.16.5
+
 GIT_COMMIT:=$(shell git describe --dirty --always)
 GIT_TAG:=$(shell git describe --dirty --always --tags)
 PKG:=github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/version

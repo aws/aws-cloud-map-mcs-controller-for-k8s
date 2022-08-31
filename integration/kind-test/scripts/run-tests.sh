@@ -6,7 +6,14 @@ source ./integration/kind-test/scripts/common.sh
 export SERVICE=$1
 export SERVICE_TYPE=$2
 
-echo "testing service: $SERVICE"
+# Deploy pods
+$KUBECTL_BIN apply -f "$KIND_CONFIGS/e2e-deployment.yaml"
+# Get deployment
+deployment=$($KUBECTL_BIN get deployment --namespace "$NAMESPACE" -o json | jq -r '.items[0].metadata.name')
+
+printf "\n***Testing Service: $SERVICE***\n"
+
+$KUBECTL_BIN apply -f "$KIND_CONFIGS/$SERVICE.yaml"
 
 if ! endpts=$(./integration/shared/scripts/poll-endpoints.sh "$EXPECTED_ENDPOINT_COUNT") ; then
   exit $?
@@ -17,7 +24,7 @@ mkdir -p "$LOGS"
 CTL_PID=$!
 echo "controller PID:$CTL_PID"
 
-go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $CLUSTERID1 $CLUSTERSETID1 $ENDPT_PORT $SERVICE_PORT $SERVICE_TYPE "$endpts" 
+go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $CLUSTERID1 $CLUSTERSETID1 $ENDPT_PORT $SERVICE_PORT $SERVICE_TYPE "$endpts"
 exit_code=$?
 
 if [ "$exit_code" -eq 0 ] ; then
@@ -26,7 +33,12 @@ if [ "$exit_code" -eq 0 ] ; then
 fi
 
 if [ "$exit_code" -eq 0 ] ; then
-  ./integration/kind-test/scripts/DNS-test.sh "$EXPECTED_ENDPOINT_COUNT"
+  ./integration/kind-test/scripts/dns-test.sh "$EXPECTED_ENDPOINT_COUNT"
+  exit_code=$?
+fi
+
+if [ "$exit_code" -eq 0 ] ; then
+  ./integration/kind-test/scripts/curl-test.sh "$deployment"
   exit_code=$?
 fi
 
@@ -34,8 +46,6 @@ echo "sleeping..."
 sleep 2
 
 if [ "$exit_code" -eq 0 ] ; then
-  deployment=$($KUBECTL_BIN get deployment --namespace "$NAMESPACE" -o json | jq -r '.items[0].metadata.name')
-
   echo "scaling the deployment $deployment to $UPDATED_ENDPOINT_COUNT"
   $KUBECTL_BIN scale deployment/"$deployment" --replicas="$UPDATED_ENDPOINT_COUNT" --namespace "$NAMESPACE"
   exit_code=$?
@@ -58,15 +68,18 @@ if [ "$exit_code" -eq 0 ] ; then
 fi
 
 if [ "$exit_code" -eq 0 ] ; then
-  ./integration/kind-test/scripts/DNS-test.sh "$UPDATED_ENDPOINT_COUNT"
+  ./integration/kind-test/scripts/dns-test.sh "$UPDATED_ENDPOINT_COUNT"
   exit_code=$?
 fi
 
-# Scale deployment back down for future test and delete service export
+echo "Test Successful. Cleaning up..."
+
+# Remove the deployment and delete service (should also delete ServiceExport)
 if [ "$exit_code" -eq 0 ] ; then
-  $KUBECTL_BIN scale deployment/"$deployment" --replicas="$EXPECTED_ENDPOINT_COUNT" --namespace "$NAMESPACE"
-  $KUBECTL_BIN delete ServiceExport $SERVICE -n $NAMESPACE
-  sleep 5
+  $KUBECTL_BIN delete -f "$KIND_CONFIGS/e2e-deployment.yaml"
+  $KUBECTL_BIN delete Service $SERVICE -n $NAMESPACE
+  # TODO: verify service export is not found
+  # TODO: verify cloudmap resources are cleaned up
 fi
 
 echo "killing controller PID:$CTL_PID"

@@ -11,7 +11,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "k8s.io/api/core/v1"
-	discovery "k8s.io/api/discovery/v1beta1"
+	discovery "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -20,6 +20,9 @@ import (
 const (
 	// DerivedServiceAnnotation annotates a ServiceImport with derived Service name
 	DerivedServiceAnnotation = "multicluster.k8s.aws/derived-service"
+
+	// ServiceExportFinalizer finalizer to perform cloudmap resource cleanup on delete
+	ServiceExportFinalizer = "multicluster.k8s.aws/service-export-finalizer"
 
 	// LabelServiceImportName indicates the name of the multi-cluster service that an EndpointSlice belongs to.
 	LabelServiceImportName = "multicluster.kubernetes.io/service-name"
@@ -225,14 +228,8 @@ func CreateDerivedServiceStruct(svcImport *multiclusterv1alpha1.ServiceImport, i
 	return svc
 }
 
-func CreateEndpointForSlice(svc *v1.Service, ip string) discovery.Endpoint {
-	t := true
-
-	return discovery.Endpoint{
-		Addresses: []string{ip},
-		Conditions: discovery.EndpointConditions{
-			Ready: &t,
-		},
+func CreateEndpointForSlice(svc *v1.Service, endpoint *model.Endpoint) discovery.Endpoint {
+	ep := discovery.Endpoint{
 		TargetRef: &v1.ObjectReference{
 			Kind:            "Service",
 			Namespace:       svc.Namespace,
@@ -240,7 +237,18 @@ func CreateEndpointForSlice(svc *v1.Service, ip string) discovery.Endpoint {
 			UID:             svc.ObjectMeta.UID,
 			ResourceVersion: svc.ObjectMeta.ResourceVersion,
 		},
+		Addresses: []string{endpoint.IP},
+		Conditions: discovery.EndpointConditions{
+			Ready: &endpoint.Ready,
+		},
 	}
+	if endpoint.Hostname != "" {
+		ep.Hostname = &endpoint.Hostname
+	}
+	if endpoint.Nodename != "" {
+		ep.NodeName = &endpoint.Nodename
+	}
+	return ep
 }
 
 func CreateEndpointSliceStruct(svc *v1.Service, svcImportName string, clusterId string) *discovery.EndpointSlice {

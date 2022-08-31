@@ -5,7 +5,11 @@ import (
 	"strconv"
 	"testing"
 
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
 	cloudmapMock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
+	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
@@ -25,8 +29,9 @@ type testSdClient struct {
 }
 
 func TestNewServiceDiscoveryClient(t *testing.T) {
-	sdc := NewDefaultServiceDiscoveryClient(&aws.Config{}, common.NewClusterUtilsForTest(test.ClusterId1, test.ClusterSetId1))
-	assert.NotNil(t, sdc)
+	tc := getTestSdClient(t)
+	defer tc.close()
+	assert.NotNil(t, tc)
 }
 
 func TestServiceDiscoveryClient_ListServices_HappyCase(t *testing.T) {
@@ -43,8 +48,10 @@ func TestServiceDiscoveryClient_ListServices_HappyCase(t *testing.T) {
 	tc.mockCache.EXPECT().CacheServiceIdMap(test.HttpNsName, getServiceIdMapForTest())
 
 	tc.mockCache.EXPECT().GetEndpoints(test.HttpNsName, test.SvcName).Return(nil, false)
-	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName).
-		Return(getHttpInstanceSummaryForTest(), nil)
+	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, &map[string]string{
+		model.ClusterSetIdAttr: test.ClusterSet,
+	}).Return(getHttpInstanceSummaryForTest(), nil)
+
 	tc.mockCache.EXPECT().CacheEndpoints(test.HttpNsName, test.SvcName,
 		[]*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()})
 
@@ -110,7 +117,9 @@ func TestServiceDiscoveryClient_ListServices_InstanceError(t *testing.T) {
 
 	endptErr := errors.New("error listing endpoints")
 	tc.mockCache.EXPECT().GetEndpoints(test.HttpNsName, test.SvcName).Return(nil, false)
-	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName).
+	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, &map[string]string{
+		model.ClusterSetIdAttr: test.ClusterSet,
+	}).
 		Return([]types.HttpInstanceSummary{}, endptErr)
 
 	svcs, err := tc.client.ListServices(context.TODO(), test.HttpNsName)
@@ -255,7 +264,9 @@ func TestServiceDiscoveryClient_GetService_HappyCase(t *testing.T) {
 	tc.mockCache.EXPECT().CacheServiceIdMap(test.HttpNsName, getServiceIdMapForTest())
 
 	tc.mockCache.EXPECT().GetEndpoints(test.HttpNsName, test.SvcName).Return([]*model.Endpoint{}, false)
-	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName).
+	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, &map[string]string{
+		model.ClusterSetIdAttr: test.ClusterSet,
+	}).
 		Return(getHttpInstanceSummaryForTest(), nil)
 	tc.mockCache.EXPECT().CacheEndpoints(test.HttpNsName, test.SvcName,
 		[]*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()})
@@ -284,32 +295,38 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 	tc.mockCache.EXPECT().GetServiceIdMap(test.HttpNsName).Return(getServiceIdMapForTest(), true)
 
 	attrs1 := map[string]string{
-		model.ClusterIdAttr:                  test.ClusterId1,
-		model.ClusterSetIdAttr:               test.ClusterSetId1,
-		model.EndpointIpv4Attr:               test.EndptIp1,
-		model.EndpointPortAttr:               test.PortStr1,
-		model.EndpointPortNameAttr:           test.PortName1,
-		model.EndpointProtocolAttr:           test.Protocol1,
-		model.ServicePortNameAttr:            test.PortName1,
-		model.ServicePortAttr:                test.ServicePortStr1,
-		model.ServiceProtocolAttr:            test.Protocol1,
-		model.ServiceTargetPortAttr:          test.PortStr1,
-		model.ServiceTypeAttr:                test.SvcType,
-		model.SvcExportCreationTimestampAttr: strconv.FormatInt(test.SvcExportCreationTimestamp, 10),
+		model.ClusterIdAttr:             test.ClusterId1,
+		model.ClusterSetIdAttr:          test.ClusterSet,
+		model.EndpointIpv4Attr:          test.EndptIp1,
+		model.EndpointPortAttr:          test.PortStr1,
+		model.EndpointPortNameAttr:      test.PortName1,
+		model.EndpointProtocolAttr:      test.Protocol1,
+		model.EndpointReadyAttr:         test.EndptReadyTrue,
+		model.ServicePortNameAttr:       test.PortName1,
+		model.ServicePortAttr:           test.ServicePortStr1,
+		model.ServiceProtocolAttr:       test.Protocol1,
+		model.ServiceTargetPortAttr:     test.PortStr1,
+		model.ServiceTypeAttr:           test.SvcType,
+		model.EndpointHostnameAttr:      test.Hostname,
+		model.EndpointNodeNameAttr:      test.Nodename,
+		model.ServiceExportCreationAttr: strconv.FormatInt(test.SvcExportCreationTimestamp, 10),
 	}
 	attrs2 := map[string]string{
-		model.ClusterIdAttr:                  test.ClusterId1,
-		model.ClusterSetIdAttr:               test.ClusterSetId1,
-		model.EndpointIpv4Attr:               test.EndptIp2,
-		model.EndpointPortAttr:               test.PortStr2,
-		model.EndpointPortNameAttr:           test.PortName2,
-		model.EndpointProtocolAttr:           test.Protocol2,
-		model.ServicePortNameAttr:            test.PortName2,
-		model.ServicePortAttr:                test.ServicePortStr2,
-		model.ServiceProtocolAttr:            test.Protocol2,
-		model.ServiceTargetPortAttr:          test.PortStr2,
-		model.ServiceTypeAttr:                test.SvcType,
-		model.SvcExportCreationTimestampAttr: strconv.FormatInt(test.SvcExportCreationTimestamp, 10),
+		model.ClusterIdAttr:             test.ClusterId1,
+		model.ClusterSetIdAttr:          test.ClusterSet,
+		model.EndpointIpv4Attr:          test.EndptIp2,
+		model.EndpointPortAttr:          test.PortStr2,
+		model.EndpointPortNameAttr:      test.PortName2,
+		model.EndpointProtocolAttr:      test.Protocol2,
+		model.EndpointReadyAttr:         test.EndptReadyTrue,
+		model.ServicePortNameAttr:       test.PortName2,
+		model.ServicePortAttr:           test.ServicePortStr2,
+		model.ServiceProtocolAttr:       test.Protocol2,
+		model.ServiceTargetPortAttr:     test.PortStr2,
+		model.ServiceTypeAttr:           test.SvcType,
+		model.EndpointHostnameAttr:      test.Hostname,
+		model.EndpointNodeNameAttr:      test.Nodename,
+		model.ServiceExportCreationAttr: strconv.FormatInt(test.SvcExportCreationTimestamp, 10),
 	}
 
 	tc.mockApi.EXPECT().RegisterInstance(context.TODO(), test.SvcId, test.EndptId1, attrs1).
@@ -346,8 +363,8 @@ func TestServiceDiscoveryClient_DeleteEndpoints(t *testing.T) {
 
 	err := tc.client.DeleteEndpoints(context.TODO(), test.HttpNsName, test.SvcName,
 		[]*model.Endpoint{
-			{Id: test.EndptId1, ClusterId: test.ClusterId1, ClusterSetId: test.ClusterSetId1},
-			{Id: test.EndptId2, ClusterId: test.ClusterId1, ClusterSetId: test.ClusterSetId1},
+			{Id: test.EndptId1, ClusterId: test.ClusterId1, ClusterSetId: test.ClusterSet},
+			{Id: test.EndptId2, ClusterId: test.ClusterId1, ClusterSetId: test.ClusterSet},
 		})
 	assert.Nil(t, err)
 }
@@ -356,12 +373,15 @@ func getTestSdClient(t *testing.T) *testSdClient {
 	mockController := gomock.NewController(t)
 	mockCache := cloudmapMock.NewMockServiceDiscoveryClientCache(mockController)
 	mockApi := cloudmapMock.NewMockServiceDiscoveryApi(mockController)
+	scheme := runtime.NewScheme()
+	scheme.AddKnownTypes(aboutv1alpha1.GroupVersion, &aboutv1alpha1.ClusterProperty{}, &aboutv1alpha1.ClusterPropertyList{})
+	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(test.ClusterIdForTest(), test.ClusterSetIdForTest()).Build()
 	return &testSdClient{
 		client: &serviceDiscoveryClient{
 			log:          common.NewLoggerWithLogr(testr.New(t)),
 			sdApi:        mockApi,
 			cache:        mockCache,
-			clusterUtils: common.NewClusterUtilsForTest(test.ClusterId1, test.ClusterSetId1),
+			clusterUtils: model.NewClusterUtils(fakeClient),
 		},
 		mockApi:   *mockApi,
 		mockCache: *mockCache,
@@ -374,35 +394,41 @@ func getHttpInstanceSummaryForTest() []types.HttpInstanceSummary {
 		{
 			InstanceId: aws.String(test.EndptId1),
 			Attributes: map[string]string{
-				model.ClusterIdAttr:                  test.ClusterId1,
-				model.ClusterSetIdAttr:               test.ClusterSetId1,
-				model.EndpointIpv4Attr:               test.EndptIp1,
-				model.EndpointPortAttr:               test.PortStr1,
-				model.EndpointPortNameAttr:           test.PortName1,
-				model.EndpointProtocolAttr:           test.Protocol1,
-				model.ServicePortNameAttr:            test.PortName1,
-				model.ServicePortAttr:                test.ServicePortStr1,
-				model.ServiceProtocolAttr:            test.Protocol1,
-				model.ServiceTargetPortAttr:          test.PortStr1,
-				model.ServiceTypeAttr:                test.SvcType,
-				model.SvcExportCreationTimestampAttr: strconv.FormatInt(test.SvcExportCreationTimestamp, 10),
+				model.ClusterIdAttr:             test.ClusterId1,
+				model.ClusterSetIdAttr:          test.ClusterSet,
+				model.EndpointIpv4Attr:          test.EndptIp1,
+				model.EndpointPortAttr:          test.PortStr1,
+				model.EndpointPortNameAttr:      test.PortName1,
+				model.EndpointProtocolAttr:      test.Protocol1,
+				model.EndpointReadyAttr:         test.EndptReadyTrue,
+				model.ServicePortNameAttr:       test.PortName1,
+				model.ServicePortAttr:           test.ServicePortStr1,
+				model.ServiceProtocolAttr:       test.Protocol1,
+				model.ServiceTargetPortAttr:     test.PortStr1,
+				model.ServiceTypeAttr:           test.SvcType,
+				model.EndpointHostnameAttr:      test.Hostname,
+				model.EndpointNodeNameAttr:      test.Nodename,
+				model.ServiceExportCreationAttr: strconv.FormatInt(test.SvcExportCreationTimestamp, 10),
 			},
 		},
 		{
 			InstanceId: aws.String(test.EndptId2),
 			Attributes: map[string]string{
-				model.ClusterIdAttr:                  test.ClusterId1,
-				model.ClusterSetIdAttr:               test.ClusterSetId1,
-				model.EndpointIpv4Attr:               test.EndptIp2,
-				model.EndpointPortAttr:               test.PortStr2,
-				model.EndpointPortNameAttr:           test.PortName2,
-				model.EndpointProtocolAttr:           test.Protocol2,
-				model.ServicePortNameAttr:            test.PortName2,
-				model.ServicePortAttr:                test.ServicePortStr2,
-				model.ServiceProtocolAttr:            test.Protocol2,
-				model.ServiceTargetPortAttr:          test.PortStr2,
-				model.ServiceTypeAttr:                test.SvcType,
-				model.SvcExportCreationTimestampAttr: strconv.FormatInt(test.SvcExportCreationTimestamp, 10),
+				model.ClusterIdAttr:             test.ClusterId1,
+				model.ClusterSetIdAttr:          test.ClusterSet,
+				model.EndpointIpv4Attr:          test.EndptIp2,
+				model.EndpointPortAttr:          test.PortStr2,
+				model.EndpointPortNameAttr:      test.PortName2,
+				model.EndpointProtocolAttr:      test.Protocol2,
+				model.EndpointReadyAttr:         test.EndptReadyTrue,
+				model.ServicePortNameAttr:       test.PortName2,
+				model.ServicePortAttr:           test.ServicePortStr2,
+				model.ServiceProtocolAttr:       test.Protocol2,
+				model.ServiceTargetPortAttr:     test.PortStr2,
+				model.ServiceTypeAttr:           test.SvcType,
+				model.EndpointHostnameAttr:      test.Hostname,
+				model.EndpointNodeNameAttr:      test.Nodename,
+				model.ServiceExportCreationAttr: strconv.FormatInt(test.SvcExportCreationTimestamp, 10),
 			},
 		},
 	}

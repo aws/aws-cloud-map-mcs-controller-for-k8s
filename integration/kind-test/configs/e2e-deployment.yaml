@@ -2,21 +2,21 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: aws-cloud-map-mcs-e2e
-  name: coredns-deployment
+  name: nginx-hello-deployment
   labels:
-    app: coredns
+    app: nginx-hello
 spec:
   replicas: 5
   selector:
     matchLabels:
-      app: coredns
+      app: nginx-hello
   template:
     metadata:
       labels:
-        app: coredns
+        app: nginx-hello
     spec:
       containers:
-        - name: coredns
-          image: k8s.gcr.io/coredns:1.7.0
+        - name: nginx-hello
+          image: nginxdemos/hello:0.3-plain-text
           ports:
             - containerPort: 80

@@ -6,8 +6,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
-
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 )
 
@@ -19,13 +17,14 @@ const (
 	SvcName                          = "svc-name"
 	SvcId                            = "svc-id"
 	ClusterId1                       = "test-mcs-clusterid-1"
-	ClusterSetId1                    = "test-mcs-clustersetid-1"
+	ClusterSet                       = "test-mcs-clustersetid"
 	ClusterId2                       = "test-mcs-clusterid-2"
-	ClusterSetId2                    = "test-mcs-clustersetid-2"
 	EndptId1                         = "tcp-192_168_0_1-1"
 	EndptId2                         = "tcp-192_168_0_2-2"
 	EndptIp1                         = "192.168.0.1"
 	EndptIp2                         = "192.168.0.2"
+	EndptReadyTrue                   = "true"
+	EndptReadyFalse                  = "false"
 	Port1                            = 1
 	PortStr1                         = "1"
 	PortName1                        = "http"
@@ -45,6 +44,8 @@ const (
 	OpStart                          = 1
 	SvcType                          = "ClusterSetIP"
 	SvcExportCreationTimestamp int64 = 1640995200000
+	Hostname                         = "host"
+	Nodename                         = "node"
 )
 
 func GetTestHttpNamespace() *model.Namespace {
@@ -103,11 +104,14 @@ func GetTestEndpoint1() *model.Endpoint {
 			TargetPort: PortStr1,
 			Protocol:   Protocol1,
 		},
-		ClusterId:                  ClusterId1,
-		ClusterSetId:               ClusterSetId1,
-		ServiceType:                model.ClusterSetIPType,
-		SvcExportCreationTimestamp: SvcExportCreationTimestamp,
-		Attributes:                 make(map[string]string),
+		Ready:                          true,
+		Hostname:                       Hostname,
+		Nodename:                       Nodename,
+		ClusterId:                      ClusterId1,
+		ClusterSetId:                   ClusterSet,
+		ServiceType:                    model.ClusterSetIPType,
+		ServiceExportCreationTimestamp: SvcExportCreationTimestamp,
+		Attributes:                     make(map[string]string),
 	}
 }
 
@@ -126,11 +130,14 @@ func GetTestEndpoint2() *model.Endpoint {
 			TargetPort: PortStr2,
 			Protocol:   Protocol2,
 		},
-		ClusterId:                  ClusterId1,
-		ClusterSetId:               ClusterSetId1,
-		ServiceType:                model.ClusterSetIPType,
-		SvcExportCreationTimestamp: SvcExportCreationTimestamp,
-		Attributes:                 make(map[string]string),
+		Ready:                          true,
+		Hostname:                       Hostname,
+		Nodename:                       Nodename,
+		ClusterId:                      ClusterId1,
+		ClusterSetId:                   ClusterSet,
+		ServiceType:                    model.ClusterSetIPType,
+		ServiceExportCreationTimestamp: SvcExportCreationTimestamp,
+		Attributes:                     make(map[string]string),
 	}
 }
 
@@ -157,7 +164,7 @@ func GetTestEndpoints(count int) (endpts []*model.Endpoint) {
 func ClusterIdForTest() *aboutv1alpha1.ClusterProperty {
 	return &aboutv1alpha1.ClusterProperty{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: common.ClusterIdName,
+			Name: model.ClusterIdName,
 		},
 		Spec: aboutv1alpha1.ClusterPropertySpec{
 			Value: ClusterId1,
@@ -168,10 +175,10 @@ func ClusterIdForTest() *aboutv1alpha1.ClusterProperty {
 func ClusterSetIdForTest() *aboutv1alpha1.ClusterProperty {
 	return &aboutv1alpha1.ClusterProperty{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: common.ClusterSetIdName,
+			Name: model.ClusterSetIdName,
 		},
 		Spec: aboutv1alpha1.ClusterPropertySpec{
-			Value: ClusterSetId1,
+			Value: ClusterSet,
 		},
 	}
 }

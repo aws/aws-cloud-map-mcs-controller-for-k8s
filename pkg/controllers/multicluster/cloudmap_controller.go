@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	v1 "k8s.io/api/core/v1"
-	discovery "k8s.io/api/discovery/v1beta1"
+	discovery "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -26,7 +26,7 @@ type CloudMapReconciler struct {
 	Client       client.Client
 	Cloudmap     cloudmap.ServiceDiscoveryClient
 	Log          common.Logger
-	ClusterUtils common.ClusterUtils
+	ClusterUtils model.ClusterUtils
 }
 
 // +kubebuilder:rbac:groups="",resources=namespaces,verbs=list;watch
@@ -55,18 +55,12 @@ func (r *CloudMapReconciler) Start(ctx context.Context) error {
 
 // Reconcile triggers a single reconciliation round
 func (r *CloudMapReconciler) Reconcile(ctx context.Context) error {
-	var err error
-	clusterId, err := r.ClusterUtils.GetClusterId(ctx)
+	clusterProperties, err := r.ClusterUtils.GetClusterProperties(ctx)
 	if err != nil {
-		r.Log.Error(err, "unable to retrieve clusterId")
+		r.Log.Error(err, "unable to retrieve ClusterId and ClusterSetId")
 		return err
 	}
-	clusterSetId, err := r.ClusterUtils.GetClusterSetId(ctx)
-	if err != nil {
-		r.Log.Error(err, "unable to retrieve clusterSetId")
-		return err
-	}
-	r.Log.Debug("ClusterId and ClusterSetId found", "ClusterId", clusterId, "ClusterSetId", clusterSetId)
+	r.Log.Debug("clusterProperties found", "ClusterId", clusterProperties.ClusterId(), "ClusterSetId", clusterProperties.ClusterSetId())
 
 	namespaces := v1.NamespaceList{}
 	if err := r.Client.List(ctx, &namespaces); err != nil {
