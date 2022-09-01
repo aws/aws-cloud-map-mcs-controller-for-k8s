@@ -42,7 +42,7 @@ Use command below to run the unit test:
 make test
 ```
 
-Use command below to run the unit test:
+Use command below to build:
 ```sh
 make build
 ```
