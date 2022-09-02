@@ -3,6 +3,7 @@ package test
 import (
 	"fmt"
 
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
@@ -46,7 +47,13 @@ const (
 	SvcExportCreationTimestamp int64 = 1640995200000
 	Hostname                         = "host"
 	Nodename                         = "node"
+	PackageVersion                   = "aws-cloud-map-mcs-controller-for-k8s 0.0.1 (abcd)"
 )
+
+func SetTestVersion() {
+	version.GitVersion = "v0.0.1"
+	version.GitCommit = "abcd"
+}
 
 func GetTestHttpNamespace() *model.Namespace {
 	return &model.Namespace{
@@ -111,7 +118,7 @@ func GetTestEndpoint1() *model.Endpoint {
 		ClusterSetId:                   ClusterSet,
 		ServiceType:                    model.ClusterSetIPType,
 		ServiceExportCreationTimestamp: SvcExportCreationTimestamp,
-		Attributes:                     make(map[string]string),
+		Attributes:                     map[string]string{model.K8sVersionAttr: PackageVersion},
 	}
 }
 
@@ -137,7 +144,7 @@ func GetTestEndpoint2() *model.Endpoint {
 		ClusterSetId:                   ClusterSet,
 		ServiceType:                    model.ClusterSetIPType,
 		ServiceExportCreationTimestamp: SvcExportCreationTimestamp,
-		Attributes:                     make(map[string]string),
+		Attributes:                     map[string]string{model.K8sVersionAttr: PackageVersion},
 	}
 }
 

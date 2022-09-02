@@ -71,13 +71,11 @@ func (r *ServiceExportReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	namespacedName := types.NamespacedName{Namespace: serviceExport.Namespace, Name: serviceExport.Name}
 	if err := r.Client.Get(ctx, namespacedName, &service); err != nil {
 		if errors.IsNotFound(err) {
-			r.Log.Info("no Service found, deleting the ServiceExport",
-				"Namespace", serviceExport.Namespace, "Name", serviceExport.Name)
+			r.Log.Info("no Service found, deleting the ServiceExport", "Namespace", serviceExport.Namespace, "Name", serviceExport.Name)
 			// Mark ServiceExport to be deleted, if the corresponding Service is not found
 			isServiceExportMarkedForDelete = true
 		} else {
-			r.Log.Error(err, "error fetching Service",
-				"Namespace", serviceExport.Namespace, "Name", serviceExport.Name)
+			r.Log.Error(err, "error fetching Service", "Namespace", serviceExport.Namespace, "Name", serviceExport.Name)
 			return ctrl.Result{}, nil
 		}
 	}
@@ -238,9 +236,7 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 	}
 
 	attributes := make(map[string]string)
-	if version.GetVersion() != "" {
-		attributes[model.K8sVersionAttr] = version.PackageName + " " + version.GetVersion()
-	}
+	attributes[model.K8sVersionAttr] = version.GetPackageVersion()
 
 	endpoints := make([]*model.Endpoint, 0)
 	for _, slice := range endpointSlices.Items {
