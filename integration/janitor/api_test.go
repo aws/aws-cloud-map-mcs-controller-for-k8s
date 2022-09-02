@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	janitorMock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/integration/janitor"
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
@@ -14,7 +13,7 @@ import (
 )
 
 func TestNewServiceDiscoveryJanitorApiFromConfig(t *testing.T) {
-	assert.NotNil(t, NewServiceDiscoveryJanitorApiFromConfig(&aws.Config{}, common.ClusterUtils{}))
+	assert.NotNil(t, NewServiceDiscoveryJanitorApiFromConfig(&aws.Config{}))
 }
 
 func TestServiceDiscoveryJanitorApi_DeleteNamespace_HappyCase(t *testing.T) {

@@ -1,29 +1,30 @@
 # Contributing Guidelines
 
-* [Architecture Overview](#architecture-overview)
-* [Getting Started](#getting-started)
-    + [Local Setup](#local-setup)
-        - [Prerequisites](#prerequisites)
-        - [Cluster Setup](#cluster-setup)
-        - [Run the controller from outside the cluster](#run-the-controller-from-outside-the-cluster)
-        - [Build and deploy to the cluster](#build-and-deploy-to-the-cluster)
-        - [Run unit tests](#run-unit-tests)
-        - [Cleanup](#cleanup)
-    + [Deploying to a cluster](#deploying-to-a-cluster)
-* [Integration testing](#integration-testing)
-* [Build and push docker image to ECR](#build-and-push-docker-image-to-ecr)
-* [Reporting Bugs/Feature Requests](#reporting-bugs-feature-requests)
-* [Contributing via Pull Requests](#contributing-via-pull-requests)
-* [Finding contributions to work on](#finding-contributions-to-work-on)
-* [Code of Conduct](#code-of-conduct)
-* [Security issue notifications](#security-issue-notifications)
-* [Licensing](#licensing)
-
 Thank you for your interest in contributing to our project. Whether it's a bug report, new feature, correction, or additional
 documentation, we greatly value feedback and contributions from our community.
 
 Please read through this document before submitting any issues or pull requests to ensure we have all the necessary
 information to effectively respond to your bug report or contribution.
+
+<!-- TOC -->
+* [Contributing Guidelines](#contributing-guidelines)
+  * [Architecture Overview](#architecture-overview)
+  * [Getting Started](#getting-started)
+    * [Build and Unit Tests](#build-and-unit-tests)
+    * [Local Setup](#local-setup)
+      * [Prerequisites](#prerequisites)
+      * [Kind Cluster Setup](#kind-cluster-setup)
+      * [Run the controller from outside the cluster](#run-the-controller-from-outside-the-cluster)
+      * [Build and deploy controller into the cluster](#build-and-deploy-controller-into-the-cluster)
+    * [Local integration testing](#local-integration-testing)
+  * [Build and push docker image](#build-and-push-docker-image)
+  * [Reporting Bugs/Feature Requests](#reporting-bugsfeature-requests)
+  * [Contributing via Pull Requests](#contributing-via-pull-requests)
+  * [Finding contributions to work on](#finding-contributions-to-work-on)
+  * [Code of Conduct](#code-of-conduct)
+  * [Security issue notifications](#security-issue-notifications)
+  * [Licensing](#licensing)
+<!-- TOC -->
 
 ## Architecture Overview
 
@@ -33,6 +34,23 @@ information to effectively respond to your bug report or contribution.
 * `pkg/controllers/cloudmap_controller` is periodically polling for changes in corresponding AWS Cloud Map namespaces (based on namespace "sameness" - a K8s namespace with the same name as a Cloud Map namespace). When new service or endpoints are discovered they are automatically created locally as a `ServiceImport`. 
 
 ## Getting Started
+
+### Build and Unit Tests
+
+Use command below to run the unit test:
+```sh
+make test
+```
+
+Use command below to build:
+```sh
+make build
+```
+
+Use the command below to perform cleanup:
+```sh
+make clean
+```
 
 ### Local Setup
 
@@ -50,7 +68,7 @@ Note that this walk-through assumes throughout to operate in the `us-west-2` reg
 export AWS_REGION=us-west-2
 ```
 
-#### Cluster Setup
+#### Kind Cluster Setup
 
 Spin up a local Kubernetes cluster using `kind`:
 
@@ -92,7 +110,7 @@ kubectl apply -f samples/example-clusterproperty.yaml
 > ⚠ **Note:** If you are creating multiple clusters, ensure you create unique `id.k8s.io` identifiers for each cluster.
 
 
-To run the controller, run the following command. The controller runs in an infinite loop so open another terminal to create CRDs.
+To run the controller, run the following command. The controller runs in an infinite loop so open another terminal to create CRDs. (Ctrl+C to exit)
 ```sh
 make run 
 ```
@@ -114,7 +132,12 @@ cloudmap	                fetching a service	{"namespaceName": "example", "servic
 cloudmap	                creating a new service	{"namespace": "example", "name": "my-service"}
 ```
 
-#### Build and deploy to the cluster
+Use the command below to remove the CRDs from the cluster:
+```sh
+make uninstall
+```
+
+#### Build and deploy controller into the cluster
 
 Build local `controller` docker image:
 ```sh
@@ -136,7 +159,8 @@ kind load docker-image controller:local --name my-cluster
 Finally, create the controller resources in the cluster:
 ```sh
 make deploy IMG=controller:local AWS_REGION=us-west-2
-# customresourcedefinition.apiextensions.k8s.io/serviceexports.multicluster.x-k8s.io configured
+# customresourcedefinition.apiextensions.k8s.io/clusterproperties.about.k8s.io created
+# customresourcedefinition.apiextensions.k8s.io/serviceexports.multicluster.x-k8s.io created
 # customresourcedefinition.apiextensions.k8s.io/serviceimports.multicluster.x-k8s.io created
 # ...
 # deployment.apps/cloud-map-mcs-controller-manager created
@@ -152,38 +176,13 @@ To remove the controller from your cluster, run:
 make undeploy
 ```
 
-#### Run unit tests
-
-Use command below to run the unit test:
-```sh
-make test
-```
-
-#### Cleanup
-
-Use the command below to perform cleanup:
-```sh
-make clean
-```
-
-Use the command below to remove the CRDs from the cluster:
-```sh
-make uninstall
-```
-
 Use the command below to delete the cluster `my-cluster`:
 ```sh
 kind delete cluster --name my-cluster
 ```
 
-### Deploying to a cluster
+### Local integration testing
 
-You must first push a Docker image containing the changes to a Docker repository like ECR, Github packages, or DockerHub. The repo is configured to use Github Actions to automatically publish the docker image upon push to `main` branch. The image URI will be `ghcr.io/[Your forked repo name here]` You can enable this for forked repos by enabling Github actions on your forked repo in the "Actions" tab of forked repo.
-
-If you are deploying to cluster using kustomize templates from the `config` directory, you will need to override the image URI away from `ghcr.io/aws/aws-cloud-map-mcs-controller-for-k8s` in order to use your own docker images.
-
-
-## Local integration testing
 The end-to-end integration test suite can be run locally to validate controller core functionality. This will provision a local Kind cluster and build and run the AWS Cloud Map MCS Controller for K8s. The test will verify service endpoints sync with AWS Cloud Map. If successful, the suite will then de-provision the local test cluster and delete AWS Cloud Map namespace `aws-cloud-map-mcs-e2e` along with test service and service instance resources:
 ```sh
 make kind-integration-suite
@@ -194,10 +193,15 @@ If integration test suite fails for some reason, you can perform a cleanup:
 make kind-integration-cleanup
 ```
 
-## Build and push docker image to ECR
+## Build and push docker image
 
+You must first push a Docker image containing the changes to a Docker repository like ECR, Github packages, or DockerHub. The repo is configured to use Github Actions to automatically publish the docker image upon push to `main` branch. The image URI will be `ghcr.io/[Your forked repo name here]` You can enable this for forked repos by enabling Github actions on your forked repo in the "Actions" tab of forked repo.
+
+If you are deploying to cluster using kustomize templates from the `config` directory, you will need to override the image URI away from `ghcr.io/aws/aws-cloud-map-mcs-controller-for-k8s` in order to use your own docker images.
+
+To push the docker image into personal repo:
 ```sh
-make docker-build docker-push IMG=<YOUR ACCOUNT ID>.dkr.ecr.<ECR REGION>.amazonaws.com/<ECR REPOSITORY>
+make docker-build docker-push IMG=[Your personal repo]
 ```
 
 ## Reporting Bugs/Feature Requests

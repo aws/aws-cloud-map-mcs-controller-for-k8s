@@ -5,8 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	cloudmapMock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
 	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
+	"k8s.io/apimachinery/pkg/runtime"
+
+	cloudmapMock "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/mocks/pkg/cloudmap"
 	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
@@ -15,8 +17,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/api/discovery/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime"
+	discovery "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -57,7 +58,7 @@ func TestCloudMapReconciler_Reconcile(t *testing.T) {
 	assertDerivedService(t, &derivedService, test.ServicePort1, test.Port1)
 
 	// assert endpoint slices are created
-	endpointSliceList := &v1beta1.EndpointSliceList{}
+	endpointSliceList := &discovery.EndpointSliceList{}
 	err = fakeClient.List(context.TODO(), endpointSliceList, client.InNamespace(test.HttpNsName))
 	assert.NoError(t, err)
 	endpointSlice := endpointSliceList.Items[0]
@@ -112,12 +113,12 @@ func TestCloudMapReconciler_Reconcile_MulticlusterService(t *testing.T) {
 	assertDerivedService(t, &derivedService2, test.ServicePort2, test.Port2)
 
 	// assert endpoint slices are created for each derived service
-	endpointSliceList := &v1beta1.EndpointSliceList{}
+	endpointSliceList := &discovery.EndpointSliceList{}
 	err = fakeClient.List(context.TODO(), endpointSliceList, client.InNamespace(test.HttpNsName))
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(endpointSliceList.Items))
 
-	endpointSliceMap := make(map[string]v1beta1.EndpointSlice)
+	endpointSliceMap := make(map[string]discovery.EndpointSlice)
 	for _, endpointSlice := range endpointSliceList.Items {
 		endpointSliceName := endpointSlice.ObjectMeta.Name
 		derivedServiceName := endpointSliceName[:strings.LastIndex(endpointSliceName, "-")]
@@ -131,10 +132,10 @@ func TestCloudMapReconciler_Reconcile_MulticlusterService(t *testing.T) {
 }
 
 func getCloudMapReconcilerScheme() *runtime.Scheme {
-	scheme := scheme.Scheme
-	scheme.AddKnownTypes(multiclusterv1alpha1.GroupVersion, &multiclusterv1alpha1.ServiceImportList{}, &multiclusterv1alpha1.ServiceImport{})
-	scheme.AddKnownTypes(aboutv1alpha1.GroupVersion, &aboutv1alpha1.ClusterProperty{})
-	return scheme
+	s := scheme.Scheme
+	s.AddKnownTypes(multiclusterv1alpha1.GroupVersion, &multiclusterv1alpha1.ServiceImportList{}, &multiclusterv1alpha1.ServiceImport{})
+	s.AddKnownTypes(aboutv1alpha1.GroupVersion, &aboutv1alpha1.ClusterProperty{}, &aboutv1alpha1.ClusterPropertyList{})
+	return s
 }
 
 func getReconciler(t *testing.T, mockSDClient *cloudmapMock.MockServiceDiscoveryClient, client client.Client) *CloudMapReconciler {
@@ -142,7 +143,7 @@ func getReconciler(t *testing.T, mockSDClient *cloudmapMock.MockServiceDiscovery
 		Client:       client,
 		Cloudmap:     mockSDClient,
 		Log:          common.NewLoggerWithLogr(testr.New(t)),
-		ClusterUtils: common.NewClusterUtils(client),
+		ClusterUtils: model.NewClusterUtils(client),
 	}
 }
 
@@ -153,7 +154,7 @@ func assertDerivedService(t *testing.T, derivedService *v1.Service, servicePort 
 	assert.Equal(t, int32(port), derivedService.Spec.Ports[0].TargetPort.IntVal)
 }
 
-func assertEndpointSlice(t *testing.T, endpointSlice *v1beta1.EndpointSlice, port int, endptIp string, clusterId string) {
+func assertEndpointSlice(t *testing.T, endpointSlice *discovery.EndpointSlice, port int, endptIp string, clusterId string) {
 	assert.NotNil(t, endpointSlice)
 	assert.Equal(t, test.SvcName, endpointSlice.Labels["multicluster.kubernetes.io/service-name"], "Endpoint slice is created")
 	assert.Equal(t, clusterId, endpointSlice.Labels["multicluster.kubernetes.io/source-cluster"], "Endpoint slice is created")

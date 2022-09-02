@@ -3,7 +3,7 @@ package controllers
 import (
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	v1 "k8s.io/api/core/v1"
-	discovery "k8s.io/api/discovery/v1beta1"
+	discovery "k8s.io/api/discovery/v1"
 )
 
 const defaultMaxEndpointsPerSlice = 100
@@ -62,7 +62,7 @@ func (p *EndpointSlicePlan) CalculateChanges() EndpointSliceChanges {
 				// stop adding to slice once it is full
 				break
 			}
-			sliceWithRoom.Endpoints = append(sliceWithRoom.Endpoints, CreateEndpointForSlice(p.Service, endpointToAdd.IP))
+			sliceWithRoom.Endpoints = append(sliceWithRoom.Endpoints, CreateEndpointForSlice(p.Service, endpointToAdd))
 			delete(desiredEndpoints, key)
 		}
 

@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/test"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/api/discovery/v1beta1"
+	discovery "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -90,7 +90,7 @@ func TestServiceImportPortToPort(t *testing.T) {
 
 func TestEndpointPortToPort(t *testing.T) {
 	type args struct {
-		port v1beta1.EndpointPort
+		port discovery.EndpointPort
 	}
 	name := "http"
 	protocolTCP := v1.ProtocolTCP
@@ -103,7 +103,7 @@ func TestEndpointPortToPort(t *testing.T) {
 		{
 			name: "happy case",
 			args: args{
-				port: v1beta1.EndpointPort{
+				port: discovery.EndpointPort{
 					Name:     &name,
 					Protocol: &protocolTCP,
 					Port:     &port,
@@ -230,7 +230,7 @@ func TestPortToEndpointPort(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want v1beta1.EndpointPort
+		want discovery.EndpointPort
 	}{
 		{
 			name: "happy case",
@@ -241,7 +241,7 @@ func TestPortToEndpointPort(t *testing.T) {
 					Protocol: "TCP",
 				},
 			},
-			want: v1beta1.EndpointPort{
+			want: discovery.EndpointPort{
 				Name:     &name,
 				Protocol: &protocolTCP,
 				Port:     &port,

@@ -5,9 +5,9 @@ import (
 	"flag"
 	"os"
 
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
-
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/version"
 	"github.com/aws/aws-sdk-go-v2/config"
 
@@ -70,7 +70,7 @@ func main() {
 		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "db692913.x-k8s.io",
+		LeaderElectionID:       "aws-cloud-map-mcs-controller-for-k8s-lock",
 	})
 	if err != nil {
 		log.Error(err, "unable to start manager")
@@ -87,7 +87,7 @@ func main() {
 
 	log.Info("Running with AWS region", "AWS_REGION", awsCfg.Region)
 
-	clusterUtils := common.NewClusterUtils(mgr.GetClient())
+	clusterUtils := model.NewClusterUtils(mgr.GetClient())
 	serviceDiscoveryClient := cloudmap.NewDefaultServiceDiscoveryClient(&awsCfg, clusterUtils)
 
 	if err = (&multiclustercontrollers.ServiceExportReconciler{

@@ -33,24 +33,24 @@ type serviceDiscoveryClient struct {
 	log          common.Logger
 	sdApi        ServiceDiscoveryApi
 	cache        ServiceDiscoveryClientCache
-	clusterUtils common.ClusterUtils
+	clusterUtils model.ClusterUtils
 }
 
 // NewDefaultServiceDiscoveryClient creates a new service discovery client for AWS Cloud Map with default resource cache
 // from a given AWS client config.
-func NewDefaultServiceDiscoveryClient(cfg *aws.Config, clusterUtils common.ClusterUtils) ServiceDiscoveryClient {
+func NewDefaultServiceDiscoveryClient(cfg *aws.Config, clusterUtils model.ClusterUtils) ServiceDiscoveryClient {
 	return &serviceDiscoveryClient{
 		log:          common.NewLogger("cloudmap"),
-		sdApi:        NewServiceDiscoveryApiFromConfig(cfg, clusterUtils),
+		sdApi:        NewServiceDiscoveryApiFromConfig(cfg),
 		cache:        NewDefaultServiceDiscoveryClientCache(),
 		clusterUtils: clusterUtils,
 	}
 }
 
-func NewServiceDiscoveryClientWithCustomCache(cfg *aws.Config, cacheConfig *SdCacheConfig, clusterUtils common.ClusterUtils) ServiceDiscoveryClient {
+func NewServiceDiscoveryClientWithCustomCache(cfg *aws.Config, cacheConfig *SdCacheConfig, clusterUtils model.ClusterUtils) ServiceDiscoveryClient {
 	return &serviceDiscoveryClient{
 		log:          common.NewLogger("cloudmap"),
-		sdApi:        NewServiceDiscoveryApiFromConfig(cfg, clusterUtils),
+		sdApi:        NewServiceDiscoveryApiFromConfig(cfg),
 		cache:        NewServiceDiscoveryClientCache(cacheConfig),
 		clusterUtils: clusterUtils,
 	}
@@ -188,8 +188,7 @@ func (sdc *serviceDiscoveryClient) DeleteEndpoints(ctx context.Context, nsName s
 		return nil
 	}
 
-	sdc.log.Info("deleting endpoints", "namespaceName", nsName,
-		"serviceName", svcName, "endpoints", endpts)
+	sdc.log.Info("deleting endpoints", "namespaceName", nsName, "serviceName", svcName, "endpoints", endpts)
 
 	svcIdMap, err := sdc.getServiceIds(ctx, nsName)
 	if err != nil {
@@ -204,22 +203,6 @@ func (sdc *serviceDiscoveryClient) DeleteEndpoints(ctx context.Context, nsName s
 
 	for _, endpt := range endpts {
 		endptId := endpt.Id
-
-		// only delete endpoint if its clusterid & clustersetid is the same as this cluster
-		clusterId, clusterIdErr := sdc.clusterUtils.GetClusterId(ctx)
-		if clusterIdErr != nil {
-			return clusterIdErr
-		}
-		clusterSetId, clusterSetIdErr := sdc.clusterUtils.GetClusterSetId(ctx)
-		if clusterSetIdErr != nil {
-			return clusterSetIdErr
-		}
-
-		if endpt.ClusterId != clusterId || endpt.ClusterSetId != clusterSetId {
-			sdc.log.Debug("skipping endpoint deletion as different clusterid", "serviceName", svcName, "endpointId", endptId, "clusterId", endpt.ClusterId)
-			continue
-		}
-
 		// add operation to delete endpoint
 		opCollector.Add(func() (opId string, err error) {
 			return sdc.sdApi.DeregisterInstance(ctx, svcId, endptId)
@@ -247,7 +230,16 @@ func (sdc *serviceDiscoveryClient) getEndpoints(ctx context.Context, nsName stri
 		return endpts, nil
 	}
 
-	insts, err := sdc.sdApi.DiscoverInstances(ctx, nsName, svcName)
+	clusterProperties, err := sdc.clusterUtils.GetClusterProperties(ctx)
+	if err != nil {
+		sdc.log.Error(err, "failed to retrieve clusterSetId")
+		return nil, err
+	}
+
+	queryParameters := map[string]string{
+		model.ClusterSetIdAttr: clusterProperties.ClusterSetId(),
+	}
+	insts, err := sdc.sdApi.DiscoverInstances(ctx, nsName, svcName, &queryParameters)
 	if err != nil {
 		return nil, err
 	}
