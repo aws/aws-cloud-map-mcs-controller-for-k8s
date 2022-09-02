@@ -2,6 +2,7 @@ package cloudmap
 
 import (
 	"context"
+
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/version"
 	"github.com/aws/aws-sdk-go-v2/aws/middleware"
 
