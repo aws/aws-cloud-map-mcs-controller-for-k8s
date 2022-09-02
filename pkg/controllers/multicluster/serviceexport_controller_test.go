@@ -205,6 +205,7 @@ func getServiceExportScheme() *runtime.Scheme {
 }
 
 func getServiceExportReconciler(t *testing.T, mockClient *cloudmapMock.MockServiceDiscoveryClient, client client.Client) *ServiceExportReconciler {
+	test.SetTestVersion()
 	return &ServiceExportReconciler{
 		Client:       client,
 		Log:          common.NewLoggerWithLogr(testr.New(t)),
