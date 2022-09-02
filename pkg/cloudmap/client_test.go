@@ -310,6 +310,7 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 		model.EndpointHostnameAttr:      test.Hostname,
 		model.EndpointNodeNameAttr:      test.Nodename,
 		model.ServiceExportCreationAttr: strconv.FormatInt(test.SvcExportCreationTimestamp, 10),
+		model.K8sVersionAttr:            test.PackageVersion,
 	}
 	attrs2 := map[string]string{
 		model.ClusterIdAttr:             test.ClusterId1,
@@ -327,6 +328,7 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 		model.EndpointHostnameAttr:      test.Hostname,
 		model.EndpointNodeNameAttr:      test.Nodename,
 		model.ServiceExportCreationAttr: strconv.FormatInt(test.SvcExportCreationTimestamp, 10),
+		model.K8sVersionAttr:            test.PackageVersion,
 	}
 
 	tc.mockApi.EXPECT().RegisterInstance(context.TODO(), test.SvcId, test.EndptId1, attrs1).
@@ -370,6 +372,7 @@ func TestServiceDiscoveryClient_DeleteEndpoints(t *testing.T) {
 }
 
 func getTestSdClient(t *testing.T) *testSdClient {
+	test.SetTestVersion()
 	mockController := gomock.NewController(t)
 	mockCache := cloudmapMock.NewMockServiceDiscoveryClientCache(mockController)
 	mockApi := cloudmapMock.NewMockServiceDiscoveryApi(mockController)
@@ -409,6 +412,7 @@ func getHttpInstanceSummaryForTest() []types.HttpInstanceSummary {
 				model.EndpointHostnameAttr:      test.Hostname,
 				model.EndpointNodeNameAttr:      test.Nodename,
 				model.ServiceExportCreationAttr: strconv.FormatInt(test.SvcExportCreationTimestamp, 10),
+				model.K8sVersionAttr:            test.PackageVersion,
 			},
 		},
 		{
@@ -429,6 +433,7 @@ func getHttpInstanceSummaryForTest() []types.HttpInstanceSummary {
 				model.EndpointHostnameAttr:      test.Hostname,
 				model.EndpointNodeNameAttr:      test.Nodename,
 				model.ServiceExportCreationAttr: strconv.FormatInt(test.SvcExportCreationTimestamp, 10),
+				model.K8sVersionAttr:            test.PackageVersion,
 			},
 		},
 	}
