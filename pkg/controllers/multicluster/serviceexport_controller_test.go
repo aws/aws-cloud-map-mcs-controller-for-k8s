@@ -17,7 +17,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
-	discovery "k8s.io/api/discovery/v1beta1"
+	discovery "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -161,23 +161,25 @@ func TestServiceExportReconciler_Reconcile_DeleteExistingService(t *testing.T) {
 	assert.Empty(t, serviceExport.Finalizers, "Finalizer removed from the service export")
 }
 
-func TestServiceExportReconciler_Reconcile_NoClusterId(t *testing.T) {
+func TestServiceExportReconciler_Reconcile_NoClusterProperty(t *testing.T) {
 	// create a fake controller client and add some objects
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(getServiceExportScheme()).
+		// do-not add clusterId
 		WithObjects(k8sServiceForTest(), serviceExportForTest(), test.ClusterSetIdForTest()).
 		WithLists(&discovery.EndpointSliceList{
 			Items: []discovery.EndpointSlice{*endpointSliceForTest()},
-		}).
-		Build()
+		}).Build()
 
 	// create a mock cloudmap service discovery client
 	mockController := gomock.NewController(t)
 	defer mockController.Finish()
 
-	mock := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
+	mockSDClient := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
 
-	reconciler := getServiceExportReconciler(t, mock, fakeClient)
+	mockSDClient.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName).Return(test.GetTestService(), nil)
+
+	reconciler := getServiceExportReconciler(t, mockSDClient, fakeClient)
 
 	request := ctrl.Request{
 		NamespacedName: types.NamespacedName{
@@ -188,46 +190,14 @@ func TestServiceExportReconciler_Reconcile_NoClusterId(t *testing.T) {
 
 	// Reconciling should throw an error
 	got, err := reconciler.Reconcile(context.Background(), request)
-	expectedError := fmt.Errorf("clusterproperties.about.k8s.io \"id.k8s.io\" not found")
-	assert.ErrorContains(t, err, expectedError.Error())
-	assert.Equal(t, ctrl.Result{}, got, "Result should be empty")
-}
-
-func TestServiceExportReconciler_Reconcile_NoClustersetId(t *testing.T) {
-	// create a fake controller client and add some objects
-	fakeClient := fake.NewClientBuilder().
-		WithScheme(getServiceExportScheme()).
-		WithObjects(k8sServiceForTest(), serviceExportForTest(), test.ClusterIdForTest()).
-		WithLists(&discovery.EndpointSliceList{
-			Items: []discovery.EndpointSlice{*endpointSliceForTest()},
-		}).
-		Build()
-
-	// create a mock cloudmap service discovery client
-	mockController := gomock.NewController(t)
-	defer mockController.Finish()
-
-	mock := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
-
-	reconciler := getServiceExportReconciler(t, mock, fakeClient)
-
-	request := ctrl.Request{
-		NamespacedName: types.NamespacedName{
-			Namespace: test.HttpNsName,
-			Name:      test.SvcName,
-		},
-	}
-
-	// Reconciling should throw an error
-	got, err := reconciler.Reconcile(context.Background(), request)
-	expectedError := fmt.Errorf("clusterproperties.about.k8s.io \"clusterset.k8s.io\" not found")
+	expectedError := fmt.Errorf("ClusterProperty not found")
 	assert.ErrorContains(t, err, expectedError.Error())
 	assert.Equal(t, ctrl.Result{}, got, "Result should be empty")
 }
 
 func getServiceExportScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
-	scheme.AddKnownTypes(aboutv1alpha1.GroupVersion, &aboutv1alpha1.ClusterProperty{})
+	scheme.AddKnownTypes(aboutv1alpha1.GroupVersion, &aboutv1alpha1.ClusterProperty{}, &aboutv1alpha1.ClusterPropertyList{})
 	scheme.AddKnownTypes(multiclusterv1alpha1.GroupVersion, &multiclusterv1alpha1.ServiceExport{})
 	scheme.AddKnownTypes(v1.SchemeGroupVersion, &v1.Service{})
 	scheme.AddKnownTypes(discovery.SchemeGroupVersion, &discovery.EndpointSlice{}, &discovery.EndpointSliceList{})
@@ -240,6 +210,6 @@ func getServiceExportReconciler(t *testing.T, mockClient *cloudmapMock.MockServi
 		Log:          common.NewLoggerWithLogr(testr.New(t)),
 		Scheme:       client.Scheme(),
 		CloudMap:     mockClient,
-		ClusterUtils: common.NewClusterUtils(client),
+		ClusterUtils: model.NewClusterUtils(client),
 	}
 }

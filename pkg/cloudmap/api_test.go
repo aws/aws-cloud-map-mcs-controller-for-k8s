@@ -19,12 +19,16 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestNewServiceDiscoveryApi(t *testing.T) {
-	sdc := NewServiceDiscoveryApiFromConfig(&aws.Config{}, common.NewClusterUtilsForTest(test.ClusterId1, test.ClusterSetId1))
-	assert.NotNil(t, sdc)
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
+
+	sdApi := getServiceDiscoveryApi(t, awsFacade)
+	assert.NotNil(t, sdApi)
 }
 
 func TestServiceDiscoveryApi_GetNamespaceMap_HappyCase(t *testing.T) {
@@ -107,7 +111,7 @@ func TestServiceDiscoveryApi_DiscoverInstances_HappyCase(t *testing.T) {
 			HealthStatus:  types.HealthStatusFilterAll,
 			MaxResults:    aws.Int32(1000),
 			QueryParameters: map[string]string{
-				model.ClusterSetIdAttr: test.ClusterSetId1,
+				model.ClusterSetIdAttr: test.ClusterSet,
 			},
 		}).
 		Return(&sd.DiscoverInstancesOutput{
@@ -117,7 +121,7 @@ func TestServiceDiscoveryApi_DiscoverInstances_HappyCase(t *testing.T) {
 			},
 		}, nil)
 
-	insts, err := sdApi.DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName)
+	insts, err := sdApi.DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, &map[string]string{model.ClusterSetIdAttr: test.ClusterSet})
 	assert.Nil(t, err, "No error for happy case")
 	assert.True(t, len(insts) == 2)
 	assert.Equal(t, test.EndptId1, *insts[0].InstanceId)
@@ -331,10 +335,8 @@ func TestServiceDiscoveryApi_PollNamespaceOperation_HappyCase(t *testing.T) {
 func getServiceDiscoveryApi(t *testing.T, awsFacade *cloudmapMock.MockAwsFacade) ServiceDiscoveryApi {
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(aboutv1alpha1.GroupVersion, &aboutv1alpha1.ClusterProperty{})
-	fakeClient := fake.NewClientBuilder().WithObjects(test.ClusterIdForTest(), test.ClusterSetIdForTest()).WithScheme(scheme).Build()
 	return &serviceDiscoveryApi{
-		log:          common.NewLoggerWithLogr(testr.New(t)),
-		awsFacade:    awsFacade,
-		clusterUtils: common.NewClusterUtils(fakeClient),
+		log:       common.NewLoggerWithLogr(testr.New(t)),
+		awsFacade: awsFacade,
 	}
 }

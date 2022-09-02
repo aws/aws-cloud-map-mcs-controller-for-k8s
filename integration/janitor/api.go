@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
-	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
 )
@@ -20,9 +19,9 @@ type serviceDiscoveryJanitorApi struct {
 	janitorFacade SdkJanitorFacade
 }
 
-func NewServiceDiscoveryJanitorApiFromConfig(cfg *aws.Config, clusterUtils common.ClusterUtils) ServiceDiscoveryJanitorApi {
+func NewServiceDiscoveryJanitorApiFromConfig(cfg *aws.Config) ServiceDiscoveryJanitorApi {
 	return &serviceDiscoveryJanitorApi{
-		ServiceDiscoveryApi: cloudmap.NewServiceDiscoveryApiFromConfig(cfg, clusterUtils),
+		ServiceDiscoveryApi: cloudmap.NewServiceDiscoveryApiFromConfig(cfg),
 		janitorFacade:       NewSdkJanitorFacadeFromConfig(cfg),
 	}
 }
