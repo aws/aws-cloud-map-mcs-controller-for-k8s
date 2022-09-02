@@ -2,6 +2,8 @@ package cloudmap
 
 import (
 	"context"
+	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/version"
+	"github.com/aws/aws-sdk-go-v2/aws/middleware"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
@@ -44,5 +46,9 @@ type awsFacade struct {
 
 // NewAwsFacadeFromConfig creates a new AWS facade from an AWS client config.
 func NewAwsFacadeFromConfig(cfg *aws.Config) AwsFacade {
-	return &awsFacade{sd.NewFromConfig(*cfg)}
+	sdClient := sd.NewFromConfig(*cfg, func(options *sd.Options) {
+		// Append User-Agent to all the request, the format is going to be aws-cloud-map-mcs-controller-for-k8s/0.0.0-abc
+		options.APIOptions = append(options.APIOptions, middleware.AddUserAgentKeyValue(version.GetUserAgentKey(), version.GetUserAgentValue()))
+	})
+	return &awsFacade{sdClient}
 }

@@ -22,3 +22,18 @@ func GetVersion() string {
 
 	return ""
 }
+
+func GetPackageVersion() string {
+	return PackageName + " " + GetVersion()
+}
+
+func GetUserAgentKey() string {
+	return PackageName
+}
+
+func GetUserAgentValue() string {
+	if GitVersion != "" {
+		return strings.TrimPrefix(GitVersion, "v")
+	}
+	return ""
+}
