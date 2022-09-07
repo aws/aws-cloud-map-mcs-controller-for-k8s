@@ -60,24 +60,19 @@ mod:
 tidy:
 	go mod tidy
 
-GOLANGCI_LINT=$(shell pwd)/bin/golangci-lint
-golangci-lint: ## Download golangci-lint
-ifneq ($(shell test -f $(GOLANGCI_LINT); echo $$?), 0)
-	@echo Getting golangci-lint...
-	@mkdir -p $(shell pwd)/bin
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell pwd)/bin v1.46.2
-endif
-
 .PHONY: lint
 lint: golangci-lint ## Run linter
 	$(GOLANGCI_LINT) run
 
 .PHONY: goimports
-goimports: ## run goimports updating files in place
-	goimports -w .
+goimports: goimports-bin ## run goimports updating files in place
+	$(GOIMPORTS) -w .
 
+# Run tests
 ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
 KUBEBUILDER_ASSETS?="$(shell $(ENVTEST) use -i $(ENVTEST_KUBERNETES_VERSION) --bin-dir=$(ENVTEST_ASSETS_DIR) -p path)"
+
+.PHONY: test
 test: manifests generate generate-mocks fmt vet test-setup ## Run tests
 	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) go test ./... -coverprofile cover.out -covermode=atomic
 
@@ -122,10 +117,10 @@ eks-test:
 ##@ Build
 
 .DEFAULT: build
-build: manifests generate generate-mocks fmt vet goimports lint ## Build manager binary.
+build: test goimports lint ## Build manager binary.
 	go build -ldflags="-s -w -X ${PKG}.GitVersion=${GIT_TAG} -X ${PKG}.GitCommit=${GIT_COMMIT}" -o bin/manager main.go
 
-run: manifests generate generate-mocks fmt vet ## Run a controller from your host.
+run: test ## Run a controller from your host.
 	go run -ldflags="-s -w -X ${PKG}.GitVersion=${GIT_TAG} -X ${PKG}.GitCommit=${GIT_COMMIT}" ./main.go --zap-devel=true $(ARGS)
 
 docker-build: test ## Build docker image with the manager.
@@ -185,6 +180,18 @@ setup-envtest: ## Download setup-envtest
 MOCKGEN = $(shell pwd)/bin/mockgen
 mockgen: ## Download mockgen
 	$(call go-get-tool,$(MOCKGEN),github.com/golang/mock/mockgen@v1.6.0)
+
+GOLANGCI_LINT=$(shell pwd)/bin/golangci-lint
+golangci-lint: ## Download golangci-lint
+ifneq ($(shell test -f $(GOLANGCI_LINT); echo $$?), 0)
+	@echo Getting golangci-lint...
+	@mkdir -p $(shell pwd)/bin
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell pwd)/bin v1.46.2
+endif
+
+GOIMPORTS = $(shell pwd)/bin/goimports
+goimports-bin: ## Download mockgen
+	$(call go-get-tool,$(GOIMPORTS),golang.org/x/tools/cmd/goimports@v0.1.12)
 
 KIND = $(shell pwd)/bin/kind
 kind: ## Download kind
