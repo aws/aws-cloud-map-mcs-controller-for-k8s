@@ -15,7 +15,6 @@ export KIND_SHORT='cloud-map-e2e'
 export CLUSTER='kind-cloud-map-e2e'
 export CLUSTERID1='kind-e2e-clusterid-1'
 export CLUSTERSETID1='kind-e2e-clustersetid-1'
-export DNS_POD='dnsutils'
 export IMAGE='kindest/node:v1.21.12@sha256:f316b33dd88f8196379f38feb80545ef3ed44d9197dca1bfd48bcb1583210207'
 export EXPECTED_ENDPOINT_COUNT=5
 export UPDATED_ENDPOINT_COUNT=6

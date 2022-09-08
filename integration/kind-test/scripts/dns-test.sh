@@ -27,12 +27,12 @@ expected_endpoint_count=$1
 
 # Install dnsutils pod
 $KUBECTL_BIN apply -f "$KIND_CONFIGS/dnsutils-pod.yaml"
-$KUBECTL_BIN wait --for=condition=ready pod/$DNS_POD # wait until pod is deployed
+$KUBECTL_BIN wait --for=condition=ready pod/dnsutils # wait until pod is deployed
 
 # Perform a dig to cluster-local CoreDNS
 # TODO: parse dig outputs for more precise verification - check specifics IPs?
 echo "performing dig for A/AAAA records..."
-addresses=$($KUBECTL_BIN exec $DNS_POD -- dig +all +ans $SERVICE.$NAMESPACE.svc.clusterset.local +short)
+addresses=$($KUBECTL_BIN exec dnsutils -- dig +all +ans $SERVICE.$NAMESPACE.svc.clusterset.local +short)
 exit_code=$?
 echo "$addresses"
 
@@ -45,7 +45,7 @@ fi
 checkDNS "$addresses"
 
 echo "performing dig for SRV records..."
-addresses=$($KUBECTL_BIN exec $DNS_POD -- dig +all +ans $SERVICE.$NAMESPACE.svc.clusterset.local. SRV +short)
+addresses=$($KUBECTL_BIN exec dnsutils -- dig +all +ans $SERVICE.$NAMESPACE.svc.clusterset.local. SRV +short)
 exit_code=$?
 echo "$addresses"
 

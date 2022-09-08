@@ -82,7 +82,7 @@ func TestClusterUtils_GetClusterProperties(t *testing.T) {
 func ClusterIdForTest(clusterId string) *aboutv1alpha1.ClusterProperty {
 	return &aboutv1alpha1.ClusterProperty{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: ClusterIdName,
+			Name: ClusterIdPropertyName,
 		},
 		Spec: aboutv1alpha1.ClusterPropertySpec{
 			Value: clusterId,
@@ -93,7 +93,7 @@ func ClusterIdForTest(clusterId string) *aboutv1alpha1.ClusterProperty {
 func ClusterSetIdForTest(clusterSetId string) *aboutv1alpha1.ClusterProperty {
 	return &aboutv1alpha1.ClusterProperty{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: ClusterSetIdName,
+			Name: ClusterSetIdPropertyName,
 		},
 		Spec: aboutv1alpha1.ClusterPropertySpec{
 			Value: clusterSetId,
