@@ -13,11 +13,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/aws/aws-cloud-map-mcs-controller-for-k8s)](https://goreportcard.com/report/github.com/aws/aws-cloud-map-mcs-controller-for-k8s)
 
 ## Introduction
-The AWS Cloud Map Multi-cluster Service Discovery Controller for Kubernetes (K8s) implements the Kubernetes [multi-cluster services API](https://github.com/kubernetes/enhancements/tree/master/keps/sig-multicluster/1645-multi-cluster-services-api) specification, which allows services to communicate across multiple clusters. The implementation relies on [AWS Cloud Map](https://aws.amazon.com/cloud-map/) for enabling cross-cluster service discovery.
-
-See the demo from AWS Container Day x KubeCon!
-
-[![Watch the video](https://img.youtube.com/vi/3f0Tv7IiQQw/0.jpg)](https://youtu.be/3f0Tv7IiQQw?t=24458)
+The AWS Cloud Map Multi-cluster Service Discovery Controller for Kubernetes (K8s) implements the Kubernetes [KEP-1645: Multi-Cluster Services API](https://github.com/kubernetes/enhancements/tree/master/keps/sig-multicluster/1645-multi-cluster-services-api) and [KEP-2149: ClusterId for ClusterSet identification](https://github.com/kubernetes/enhancements/tree/master/keps/sig-multicluster/2149-clusterid), which allows services to communicate across multiple clusters. The implementation relies on [AWS Cloud Map](https://aws.amazon.com/cloud-map/) for enabling cross-cluster service discovery.
 
 ## Installation
 
@@ -37,7 +33,7 @@ Perform the following installation steps on each participating cluster.
 
 #### Configure CoreDNS
 
-Install the The CoreDNS multicluster plugin into each participating cluster. The multicluster plugin enables CoreDNS to lifecycle manage DNS records for `ServiceImport` objects.
+Install the CoreDNS multicluster plugin into each participating cluster. The multicluster plugin enables CoreDNS to lifecycle manage DNS records for `ServiceImport` objects.
 
 To install the plugin, run the following commands.
 
@@ -63,26 +59,26 @@ The controller must have sufficient IAM permissions to perform required Cloud Ma
 
 ## Usage
 
-### Configure `id.k8s.io` and `clusterset.k8s.io`
+### Configure `cluster.clusterset.k8s.io` and `clusterset.k8s.io`
 
-`id.k8s.io` is a unique identifier that uniquely identifies a cluster.
+`cluster.clusterset.k8s.io` is a unique identifier for the cluster.
 
-`clusterset.k8s.io` is a unique identifier that uniquely identifies the set of clusters in your multicluster. This will be the same across all clusters in the set.
+`clusterset.k8s.io` is an identifier that relates to the `ClusterSet` in which the cluster belongs. 
 
 ```yaml
 apiVersion: about.k8s.io/v1alpha1
 kind: ClusterProperty
 metadata:
-  name: id.k8s.io
+  name: cluster.clusterset.k8s.io
 spec:
-  value: [Your cluster identifier]
+  value: [Your Cluster identifier]
 ---
 apiVersion: about.k8s.io/v1alpha1
 kind: ClusterProperty
 metadata:
   name: clusterset.k8s.io
 spec:
-  value: [Your cluster set identifier]
+  value: [Your ClusterSet identifier]
 ```
 
 **Example:**
@@ -90,7 +86,7 @@ spec:
 apiVersion: about.k8s.io/v1alpha1
 kind: ClusterProperty
 metadata:
-  name: id.k8s.io
+  name: cluster.clusterset.k8s.io
 spec:
   value: my-first-cluster
 ---
