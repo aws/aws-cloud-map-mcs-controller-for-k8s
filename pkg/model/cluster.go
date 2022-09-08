@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	ClusterIdName    = "id.k8s.io"
-	ClusterSetIdName = "clusterset.k8s.io"
+	ClusterIdPropertyName    = "cluster.clusterset.k8s.io"
+	ClusterSetIdPropertyName = "clusterset.k8s.io"
 )
 
 // Non-exported type, accessible via read-only func
@@ -73,9 +73,9 @@ func (r *ClusterUtils) LoadClusterProperties(ctx context.Context) error {
 	}
 	for _, clusterProperty := range clusterPropertyList.Items {
 		switch clusterProperty.Name {
-		case ClusterIdName:
+		case ClusterIdPropertyName:
 			r.clusterProperties.clusterId = clusterProperty.Spec.Value
-		case ClusterSetIdName:
+		case ClusterSetIdPropertyName:
 			r.clusterProperties.clusterSetId = clusterProperty.Spec.Value
 		}
 	}

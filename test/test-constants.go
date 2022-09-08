@@ -171,7 +171,7 @@ func GetTestEndpoints(count int) (endpts []*model.Endpoint) {
 func ClusterIdForTest() *aboutv1alpha1.ClusterProperty {
 	return &aboutv1alpha1.ClusterProperty{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: model.ClusterIdName,
+			Name: model.ClusterIdPropertyName,
 		},
 		Spec: aboutv1alpha1.ClusterPropertySpec{
 			Value: ClusterId1,
@@ -182,7 +182,7 @@ func ClusterIdForTest() *aboutv1alpha1.ClusterProperty {
 func ClusterSetIdForTest() *aboutv1alpha1.ClusterProperty {
 	return &aboutv1alpha1.ClusterProperty{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: model.ClusterSetIdName,
+			Name: model.ClusterSetIdPropertyName,
 		},
 		Spec: aboutv1alpha1.ClusterPropertySpec{
 			Value: ClusterSet,
