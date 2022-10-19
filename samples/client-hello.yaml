@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: client-hello
+  namespace: demo
+spec:
+  containers:
+    - command:
+        - sleep
+        - "1d"
+      image: alpine
+      name: client-hello
