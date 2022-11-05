@@ -27,7 +27,7 @@ type ServiceDiscoveryApi interface {
 	GetServiceIdMap(ctx context.Context, namespaceId string) (serviceIdMap map[string]string, err error)
 
 	// DiscoverInstances returns a list of service instances registered to a given service.
-	DiscoverInstances(ctx context.Context, nsName string, svcName string, queryParameters *map[string]string) (insts []types.HttpInstanceSummary, err error)
+	DiscoverInstances(ctx context.Context, nsName string, svcName string, queryParameters map[string]string) (insts []types.HttpInstanceSummary, err error)
 
 	// ListOperations returns a map of operations to their status matching a list of filters.
 	ListOperations(ctx context.Context, opFilters []types.OperationFilter) (operationStatusMap map[string]types.OperationStatus, err error)
@@ -59,7 +59,7 @@ type serviceDiscoveryApi struct {
 // NewServiceDiscoveryApiFromConfig creates a new AWS Cloud Map API connection manager from an AWS client config.
 func NewServiceDiscoveryApiFromConfig(cfg *aws.Config) ServiceDiscoveryApi {
 	return &serviceDiscoveryApi{
-		log:       common.NewLogger("cloudmap"),
+		log:       common.NewLogger("cloudmap", "api"),
 		awsFacade: NewAwsFacadeFromConfig(cfg),
 	}
 }
@@ -113,7 +113,7 @@ func (sdApi *serviceDiscoveryApi) GetServiceIdMap(ctx context.Context, nsId stri
 	return serviceIdMap, nil
 }
 
-func (sdApi *serviceDiscoveryApi) DiscoverInstances(ctx context.Context, nsName string, svcName string, queryParameters *map[string]string) (insts []types.HttpInstanceSummary, err error) {
+func (sdApi *serviceDiscoveryApi) DiscoverInstances(ctx context.Context, nsName string, svcName string, queryParameters map[string]string) (insts []types.HttpInstanceSummary, err error) {
 	input := &sd.DiscoverInstancesInput{
 		NamespaceName: aws.String(nsName),
 		ServiceName:   aws.String(svcName),
@@ -121,7 +121,7 @@ func (sdApi *serviceDiscoveryApi) DiscoverInstances(ctx context.Context, nsName 
 		MaxResults:    aws.Int32(1000),
 	}
 	if queryParameters != nil {
-		input.QueryParameters = *queryParameters
+		input.QueryParameters = queryParameters
 	}
 	out, err := sdApi.awsFacade.DiscoverInstances(ctx, input)
 

@@ -81,7 +81,7 @@ func (j *cloudMapJanitor) deregisterInstances(ctx context.Context, nsName string
 		model.ClusterSetIdAttr: j.clusterSetId,
 	}
 
-	insts, err := j.sdApi.DiscoverInstances(ctx, nsName, svcName, &queryParameters)
+	insts, err := j.sdApi.DiscoverInstances(ctx, nsName, svcName, queryParameters)
 	j.checkOrFail(err,
 		fmt.Sprintf("service has %d instances to clean", len(insts)),
 		"could not list instances to cleanup")

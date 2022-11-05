@@ -48,7 +48,7 @@ func TestServiceDiscoveryClient_ListServices_HappyCase(t *testing.T) {
 	tc.mockCache.EXPECT().CacheServiceIdMap(test.HttpNsName, getServiceIdMapForTest())
 
 	tc.mockCache.EXPECT().GetEndpoints(test.HttpNsName, test.SvcName).Return(nil, false)
-	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, &map[string]string{
+	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, map[string]string{
 		model.ClusterSetIdAttr: test.ClusterSet,
 	}).Return(getHttpInstanceSummaryForTest(), nil)
 
@@ -117,7 +117,7 @@ func TestServiceDiscoveryClient_ListServices_InstanceError(t *testing.T) {
 
 	endptErr := errors.New("error listing endpoints")
 	tc.mockCache.EXPECT().GetEndpoints(test.HttpNsName, test.SvcName).Return(nil, false)
-	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, &map[string]string{
+	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, map[string]string{
 		model.ClusterSetIdAttr: test.ClusterSet,
 	}).
 		Return([]types.HttpInstanceSummary{}, endptErr)
@@ -264,7 +264,7 @@ func TestServiceDiscoveryClient_GetService_HappyCase(t *testing.T) {
 	tc.mockCache.EXPECT().CacheServiceIdMap(test.HttpNsName, getServiceIdMapForTest())
 
 	tc.mockCache.EXPECT().GetEndpoints(test.HttpNsName, test.SvcName).Return([]*model.Endpoint{}, false)
-	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, &map[string]string{
+	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, map[string]string{
 		model.ClusterSetIdAttr: test.ClusterSet,
 	}).
 		Return(getHttpInstanceSummaryForTest(), nil)
@@ -335,10 +335,6 @@ func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
 		Return(test.OpId1, nil)
 	tc.mockApi.EXPECT().RegisterInstance(context.TODO(), test.SvcId, test.EndptId2, attrs2).
 		Return(test.OpId2, nil)
-	tc.mockApi.EXPECT().ListOperations(context.TODO(), gomock.Any()).
-		Return(map[string]types.OperationStatus{
-			test.OpId1: types.OperationStatusSuccess,
-			test.OpId2: types.OperationStatusSuccess}, nil)
 
 	tc.mockCache.EXPECT().EvictEndpoints(test.HttpNsName, test.SvcName)
 
@@ -356,10 +352,6 @@ func TestServiceDiscoveryClient_DeleteEndpoints(t *testing.T) {
 
 	tc.mockApi.EXPECT().DeregisterInstance(context.TODO(), test.SvcId, test.EndptId1).Return(test.OpId1, nil)
 	tc.mockApi.EXPECT().DeregisterInstance(context.TODO(), test.SvcId, test.EndptId2).Return(test.OpId2, nil)
-	tc.mockApi.EXPECT().ListOperations(context.TODO(), gomock.Any()).
-		Return(map[string]types.OperationStatus{
-			test.OpId1: types.OperationStatusSuccess,
-			test.OpId2: types.OperationStatusSuccess}, nil)
 
 	tc.mockCache.EXPECT().EvictEndpoints(test.HttpNsName, test.SvcName)
 

@@ -76,6 +76,8 @@ func main() {
 		log.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
+	clusterUtils := model.NewClusterUtils(mgr.GetClient())
+
 	log.Info("configuring AWS session")
 	// GO sdk will look for region in order 1) AWS_REGION env var, 2) ~/.aws/config file, 3) EC2 IMDS
 	awsCfg, err := config.LoadDefaultConfig(context.TODO(), config.WithEC2IMDSRegion())
@@ -87,29 +89,28 @@ func main() {
 
 	log.Info("Running with AWS region", "AWS_REGION", awsCfg.Region)
 
-	clusterUtils := model.NewClusterUtils(mgr.GetClient())
 	serviceDiscoveryClient := cloudmap.NewDefaultServiceDiscoveryClient(&awsCfg, clusterUtils)
 
 	if err = (&multiclustercontrollers.ServiceExportReconciler{
 		Client:       mgr.GetClient(),
-		Log:          common.NewLogger("controllers", "ServiceExport"),
+		Log:          common.NewLogger("controllers", "ServiceExportReconciler"),
 		Scheme:       mgr.GetScheme(),
 		CloudMap:     serviceDiscoveryClient,
 		ClusterUtils: clusterUtils,
 	}).SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create controller", "controller", "ServiceExport")
+		log.Error(err, "unable to create controller", "controller", "ServiceExportReconciler")
 		os.Exit(1)
 	}
 
 	cloudMapReconciler := &multiclustercontrollers.CloudMapReconciler{
 		Client:       mgr.GetClient(),
 		Cloudmap:     serviceDiscoveryClient,
-		Log:          common.NewLogger("controllers", "Cloudmap"),
+		Log:          common.NewLogger("controllers", "CloudmapReconciler"),
 		ClusterUtils: clusterUtils,
 	}
 
 	if err = mgr.Add(cloudMapReconciler); err != nil {
-		log.Error(err, "unable to create controller", "controller", "CloudMap")
+		log.Error(err, "unable to create controller", "controller", "CloudmapReconciler")
 		os.Exit(1)
 	}
 

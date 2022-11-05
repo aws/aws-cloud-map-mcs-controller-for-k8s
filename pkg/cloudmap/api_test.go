@@ -121,7 +121,7 @@ func TestServiceDiscoveryApi_DiscoverInstances_HappyCase(t *testing.T) {
 			},
 		}, nil)
 
-	insts, err := sdApi.DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, &map[string]string{model.ClusterSetIdAttr: test.ClusterSet})
+	insts, err := sdApi.DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, map[string]string{model.ClusterSetIdAttr: test.ClusterSet})
 	assert.Nil(t, err, "No error for happy case")
 	assert.True(t, len(insts) == 2)
 	assert.Equal(t, test.EndptId1, *insts[0].InstanceId)

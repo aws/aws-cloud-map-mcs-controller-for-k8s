@@ -2,8 +2,8 @@ package cloudmap
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
@@ -40,7 +40,7 @@ type serviceDiscoveryClient struct {
 // from a given AWS client config.
 func NewDefaultServiceDiscoveryClient(cfg *aws.Config, clusterUtils model.ClusterUtils) ServiceDiscoveryClient {
 	return &serviceDiscoveryClient{
-		log:          common.NewLogger("cloudmap"),
+		log:          common.NewLogger("cloudmap", "client"),
 		sdApi:        NewServiceDiscoveryApiFromConfig(cfg),
 		cache:        NewDefaultServiceDiscoveryClientCache(),
 		clusterUtils: clusterUtils,
@@ -156,27 +156,20 @@ func (sdc *serviceDiscoveryClient) RegisterEndpoints(ctx context.Context, nsName
 		return fmt.Errorf("service not found in Cloud Map: %s", svcName)
 	}
 
-	opCollector := NewOperationCollector()
-
+	var errs []string
 	for _, endpt := range endpts {
-		endptId := endpt.Id
 		endptAttrs := endpt.GetCloudMapAttributes()
-		opCollector.Add(func() (opId string, err error) {
-			return sdc.sdApi.RegisterInstance(ctx, svcId, endptId, endptAttrs)
-		})
+		_, err := sdc.sdApi.RegisterInstance(ctx, svcId, endpt.Id, endptAttrs)
+		if err != nil {
+			errs = append(errs, err.Error())
+		}
 	}
-
-	err = NewRegisterInstancePoller(sdc.sdApi, svcId, opCollector.Collect(), opCollector.GetStartTime()).Poll(ctx)
 
 	// Evict cache entry so next list call reflects changes
 	sdc.cache.EvictEndpoints(nsName, svcName)
 
-	if err != nil {
-		return err
-	}
-
-	if !opCollector.IsAllOperationsCreated() {
-		return errors.New("failure while registering endpoints")
+	if len(errs) > 0 {
+		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
 
 	return nil
@@ -199,26 +192,19 @@ func (sdc *serviceDiscoveryClient) DeleteEndpoints(ctx context.Context, nsName s
 		return fmt.Errorf("service not found in Cloud Map: %s", svcName)
 	}
 
-	opCollector := NewOperationCollector()
-
+	var errs []string
 	for _, endpt := range endpts {
-		endptId := endpt.Id
-		// add operation to delete endpoint
-		opCollector.Add(func() (opId string, err error) {
-			return sdc.sdApi.DeregisterInstance(ctx, svcId, endptId)
-		})
+		_, err := sdc.sdApi.DeregisterInstance(ctx, svcId, endpt.Id)
+		if err != nil {
+			errs = append(errs, err.Error())
+		}
 	}
-
-	err = NewDeregisterInstancePoller(sdc.sdApi, svcId, opCollector.Collect(), opCollector.GetStartTime()).Poll(ctx)
 
 	// Evict cache entry so next list call reflects changes
 	sdc.cache.EvictEndpoints(nsName, svcName)
-	if err != nil {
-		return err
-	}
 
-	if !opCollector.IsAllOperationsCreated() {
-		return errors.New("failure while de-registering endpoints")
+	if len(errs) > 0 {
+		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
 
 	return nil
@@ -239,7 +225,7 @@ func (sdc *serviceDiscoveryClient) getEndpoints(ctx context.Context, nsName stri
 	queryParameters := map[string]string{
 		model.ClusterSetIdAttr: clusterProperties.ClusterSetId(),
 	}
-	insts, err := sdc.sdApi.DiscoverInstances(ctx, nsName, svcName, &queryParameters)
+	insts, err := sdc.sdApi.DiscoverInstances(ctx, nsName, svcName, queryParameters)
 	if err != nil {
 		return nil, err
 	}
