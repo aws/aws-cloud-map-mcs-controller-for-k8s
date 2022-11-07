@@ -3,6 +3,9 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"k8s.io/apimachinery/pkg/api/errors"
 
 	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
@@ -12,9 +15,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v1 "k8s.io/api/core/v1"
 	discovery "k8s.io/api/discovery/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -295,6 +300,11 @@ func (r *ServiceExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			&source.Kind{Type: &aboutv1alpha1.ClusterProperty{}},
 			handler.EnqueueRequestsFromMapFunc(r.clusterPropertyMappingFunction()),
 		).
+		WithOptions(controller.Options{
+			// rate-limiting is applied to reconcile responses with an error
+			// We are increasing the base delay to 500ms, defaults baseDelay: 5ms, maxDelay: 1000s
+			RateLimiter: workqueue.NewItemExponentialFailureRateLimiter(500*time.Millisecond, 1000*time.Second),
+		}).
 		Complete(r)
 }
 
