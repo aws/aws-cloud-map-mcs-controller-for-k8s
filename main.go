@@ -92,24 +92,24 @@ func main() {
 
 	if err = (&multiclustercontrollers.ServiceExportReconciler{
 		Client:       mgr.GetClient(),
-		Log:          common.NewLogger("controllers", "ServiceExport"),
+		Log:          common.NewLogger("controllers", "ServiceExportReconciler"),
 		Scheme:       mgr.GetScheme(),
 		CloudMap:     serviceDiscoveryClient,
 		ClusterUtils: clusterUtils,
 	}).SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create controller", "controller", "ServiceExport")
+		log.Error(err, "unable to create controller", "controller", "ServiceExportReconciler")
 		os.Exit(1)
 	}
 
 	cloudMapReconciler := &multiclustercontrollers.CloudMapReconciler{
 		Client:       mgr.GetClient(),
 		Cloudmap:     serviceDiscoveryClient,
-		Log:          common.NewLogger("controllers", "Cloudmap"),
+		Log:          common.NewLogger("controllers", "CloudmapReconciler"),
 		ClusterUtils: clusterUtils,
 	}
 
 	if err = mgr.Add(cloudMapReconciler); err != nil {
-		log.Error(err, "unable to create controller", "controller", "CloudMap")
+		log.Error(err, "unable to create controller", "controller", "CloudmapReconciler")
 		os.Exit(1)
 	}
 

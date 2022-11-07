@@ -73,7 +73,7 @@ ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
 KUBEBUILDER_ASSETS?="$(shell $(ENVTEST) use -i $(ENVTEST_KUBERNETES_VERSION) --bin-dir=$(ENVTEST_ASSETS_DIR) -p path)"
 
 .PHONY: test
-test: manifests generate generate-mocks fmt vet test-setup ## Run tests
+test: manifests generate generate-mocks fmt vet test-setup goimports lint ## Run tests
 	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) go test ./... -coverprofile cover.out -covermode=atomic
 
 test-setup: setup-envtest ## Ensure test environment has been downloaded
@@ -117,7 +117,7 @@ eks-test:
 ##@ Build
 
 .DEFAULT: build
-build: test goimports lint ## Build manager binary.
+build: test ## Build manager binary.
 	go build -ldflags="-s -w -X ${PKG}.GitVersion=${GIT_TAG} -X ${PKG}.GitCommit=${GIT_COMMIT}" -o bin/manager main.go
 
 run: test ## Run a controller from your host.

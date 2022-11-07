@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
+
+	"golang.org/x/time/rate"
 
 	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
 
@@ -336,7 +339,10 @@ func getServiceDiscoveryApi(t *testing.T, awsFacade *cloudmapMock.MockAwsFacade)
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(aboutv1alpha1.GroupVersion, &aboutv1alpha1.ClusterProperty{})
 	return &serviceDiscoveryApi{
-		log:       common.NewLoggerWithLogr(testr.New(t)),
-		awsFacade: awsFacade,
+		log:            common.NewLoggerWithLogr(testr.New(t)),
+		awsFacade:      awsFacade,
+		nsRateLimiter:  rate.NewLimiter(rate.Every(1*time.Second), 2),    // 1 per second
+		svcRateLimiter: rate.NewLimiter(rate.Every(2*time.Second), 4),    // 2 per second
+		opRateLimiter:  rate.NewLimiter(rate.Every(10*time.Second), 100), // 10 per second
 	}
 }

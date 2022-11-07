@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
+	"golang.org/x/time/rate"
 
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
@@ -52,19 +55,30 @@ type ServiceDiscoveryApi interface {
 }
 
 type serviceDiscoveryApi struct {
-	log       common.Logger
-	awsFacade AwsFacade
+	log            common.Logger
+	awsFacade      AwsFacade
+	nsRateLimiter  *rate.Limiter
+	svcRateLimiter *rate.Limiter
+	opRateLimiter  *rate.Limiter
 }
 
 // NewServiceDiscoveryApiFromConfig creates a new AWS Cloud Map API connection manager from an AWS client config.
 func NewServiceDiscoveryApiFromConfig(cfg *aws.Config) ServiceDiscoveryApi {
 	return &serviceDiscoveryApi{
-		log:       common.NewLogger("cloudmap"),
-		awsFacade: NewAwsFacadeFromConfig(cfg),
+		log:            common.NewLogger("cloudmap", "api"),
+		awsFacade:      NewAwsFacadeFromConfig(cfg),
+		nsRateLimiter:  rate.NewLimiter(rate.Every(1*time.Second), 5),     // 1 per second
+		svcRateLimiter: rate.NewLimiter(rate.Every(2*time.Second), 10),    // 2 per second
+		opRateLimiter:  rate.NewLimiter(rate.Every(100*time.Second), 200), // 100 per second
 	}
 }
 
 func (sdApi *serviceDiscoveryApi) GetNamespaceMap(ctx context.Context) (map[string]*model.Namespace, error) {
+	err := sdApi.nsRateLimiter.Wait(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	namespaceMap := make(map[string]*model.Namespace)
 
 	pages := sd.NewListNamespacesPaginator(sdApi.awsFacade, &sd.ListNamespacesInput{})
@@ -91,6 +105,11 @@ func (sdApi *serviceDiscoveryApi) GetNamespaceMap(ctx context.Context) (map[stri
 }
 
 func (sdApi *serviceDiscoveryApi) GetServiceIdMap(ctx context.Context, nsId string) (map[string]string, error) {
+	err := sdApi.svcRateLimiter.Wait(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	serviceIdMap := make(map[string]string)
 
 	filter := types.ServiceFilter{
@@ -155,6 +174,11 @@ func (sdApi *serviceDiscoveryApi) ListOperations(ctx context.Context, opFilters 
 }
 
 func (sdApi *serviceDiscoveryApi) GetOperation(ctx context.Context, opId string) (operation *types.Operation, err error) {
+	err = sdApi.opRateLimiter.Wait(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	opResp, err := sdApi.awsFacade.GetOperation(ctx, &sd.GetOperationInput{OperationId: &opId})
 
 	if err != nil {
