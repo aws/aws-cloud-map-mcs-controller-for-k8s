@@ -26,7 +26,10 @@ import (
 
 func TestCloudMapReconciler_Reconcile(t *testing.T) {
 	// create a fake controller client and add some objects
-	fakeClient := fake.NewClientBuilder().WithScheme(getCloudMapReconcilerScheme()).WithObjects(k8sNamespaceForTest(), test.ClusterIdForTest(), test.ClusterSetIdForTest()).Build()
+	svcImportToBeDeleted := serviceImportForTest("svc1")
+	fakeClient := fake.NewClientBuilder().WithScheme(getCloudMapReconcilerScheme()).
+		WithObjects(k8sNamespaceForTest(), serviceImportForTest(test.SvcName), svcImportToBeDeleted,
+			test.ClusterIdForTest(), test.ClusterSetIdForTest()).Build()
 
 	// create a mock cloudmap service discovery client
 	mockController := gomock.NewController(t)
@@ -63,11 +66,19 @@ func TestCloudMapReconciler_Reconcile(t *testing.T) {
 	assert.NoError(t, err)
 	endpointSlice := endpointSliceList.Items[0]
 	assertEndpointSlice(t, &endpointSlice, test.Port1, test.EndptIp1, test.ClusterId1)
+
+	// assert svcImportToBeDeleted is not found in list
+	serviceImports := &multiclusterv1alpha1.ServiceImportList{}
+	err = fakeClient.List(context.TODO(), serviceImports, client.InNamespace(test.HttpNsName))
+	assert.NoError(t, err)
+	assert.True(t, len(serviceImports.Items) == 1)
+	assert.Equal(t, serviceImports.Items[0].Name, test.SvcName)
 }
 
 func TestCloudMapReconciler_Reconcile_MulticlusterService(t *testing.T) {
 	// create a fake controller client and add some objects
-	fakeClient := fake.NewClientBuilder().WithScheme(getCloudMapReconcilerScheme()).WithObjects(k8sNamespaceForTest(), test.ClusterIdForTest(), test.ClusterSetIdForTest()).Build()
+	fakeClient := fake.NewClientBuilder().WithScheme(getCloudMapReconcilerScheme()).
+		WithObjects(k8sNamespaceForTest(), test.ClusterIdForTest(), test.ClusterSetIdForTest()).Build()
 
 	// create a mock cloudmap service discovery client
 	mockController := gomock.NewController(t)

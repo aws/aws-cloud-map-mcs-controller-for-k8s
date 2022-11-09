@@ -121,7 +121,7 @@ build: test ## Build manager binary.
 	go build -ldflags="-s -w -X ${PKG}.GitVersion=${GIT_TAG} -X ${PKG}.GitCommit=${GIT_COMMIT}" -o bin/manager main.go
 
 run: test ## Run a controller from your host.
-	go run -ldflags="-s -w -X ${PKG}.GitVersion=${GIT_TAG} -X ${PKG}.GitCommit=${GIT_COMMIT}" ./main.go --zap-devel=true $(ARGS)
+	go run -ldflags="-s -w -X ${PKG}.GitVersion=${GIT_TAG} -X ${PKG}.GitCommit=${GIT_COMMIT}" ./main.go --zap-devel=true --zap-time-encoding=rfc3339 $(ARGS)
 
 docker-build: test ## Build docker image with the manager.
 	docker build --no-cache -t ${IMG} .

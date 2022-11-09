@@ -43,7 +43,8 @@ func TestServiceExportReconciler_Reconcile_NewServiceExport(t *testing.T) {
 	// expected interactions with the Cloud Map client
 	// The first get call is expected to return nil, then second call after the creation of service is
 	// supposed to return the value
-	first := mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName).Return(nil, nil)
+	first := mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName).
+		Return(nil, common.NotFoundError(""))
 	second := mock.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName).
 		Return(&model.Service{Namespace: test.HttpNsName, Name: test.SvcName}, nil)
 	gomock.InOrder(first, second)

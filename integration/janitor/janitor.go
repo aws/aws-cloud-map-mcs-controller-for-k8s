@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/cloudmap"
+
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -81,7 +82,7 @@ func (j *cloudMapJanitor) deregisterInstances(ctx context.Context, nsName string
 		model.ClusterSetIdAttr: j.clusterSetId,
 	}
 
-	insts, err := j.sdApi.DiscoverInstances(ctx, nsName, svcName, &queryParameters)
+	insts, err := j.sdApi.DiscoverInstances(ctx, nsName, svcName, queryParameters)
 	j.checkOrFail(err,
 		fmt.Sprintf("service has %d instances to clean", len(insts)),
 		"could not list instances to cleanup")

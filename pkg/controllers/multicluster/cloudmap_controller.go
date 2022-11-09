@@ -54,7 +54,7 @@ func (r *CloudMapReconciler) Start(ctx context.Context) error {
 }
 
 // Reconcile triggers a single reconciliation round
-func (r *CloudMapReconciler) Reconcile(ctx context.Context) error {
+func (r *CloudMapReconciler) Reconcile(ctx context.Context) (err error) {
 	clusterProperties, err := r.ClusterUtils.GetClusterProperties(ctx)
 	if err != nil {
 		r.Log.Error(err, "unable to retrieve ClusterId and ClusterSetId")
@@ -63,21 +63,22 @@ func (r *CloudMapReconciler) Reconcile(ctx context.Context) error {
 	r.Log.Debug("clusterProperties found", "ClusterId", clusterProperties.ClusterId(), "ClusterSetId", clusterProperties.ClusterSetId())
 
 	namespaces := v1.NamespaceList{}
-	if err := r.Client.List(ctx, &namespaces); err != nil {
+	if err = r.Client.List(ctx, &namespaces); err != nil {
 		r.Log.Error(err, "unable to list cluster namespaces")
 		return err
 	}
 
 	for _, ns := range namespaces.Items {
-		if err := r.reconcileNamespace(ctx, ns.Name); err != nil {
-			return err
+		reconErr := r.reconcileNamespace(ctx, ns.Name)
+		if reconErr != nil {
+			err = common.Wrap(err, reconErr)
 		}
 	}
 
-	return nil
+	return err
 }
 
-func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceName string) error {
+func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceName string) (err error) {
 	r.Log.Debug("syncing namespace", "namespace", namespaceName)
 
 	desiredServices, err := r.Cloudmap.ListServices(ctx, namespaceName)
@@ -89,12 +90,12 @@ func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceNa
 	serviceImports := multiclusterv1alpha1.ServiceImportList{}
 	if err = r.Client.List(ctx, &serviceImports, client.InNamespace(namespaceName)); err != nil {
 		r.Log.Error(err, "failed to reconcile namespace", "namespace", namespaceName)
-		return nil
+		return err
 	}
 
 	existingImportsMap := make(map[string]multiclusterv1alpha1.ServiceImport)
 	for _, svc := range serviceImports.Items {
-		existingImportsMap[svc.Namespace+"/"+svc.Name] = svc
+		existingImportsMap[svc.Name] = svc
 	}
 
 	for _, svc := range desiredServices {
@@ -103,22 +104,24 @@ func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceNa
 			continue
 		}
 
-		if err = r.reconcileService(ctx, svc); err != nil {
-			r.Log.Error(err, "error when syncing service", "namespace", svc.Namespace, "name", svc.Name)
+		if reconErr := r.reconcileService(ctx, svc); reconErr != nil {
+			r.Log.Error(reconErr, "error when syncing service", "namespace", svc.Namespace, "name", svc.Name)
+			err = common.Wrap(err, reconErr)
 		}
-		delete(existingImportsMap, svc.Namespace+"/"+svc.Name)
+		delete(existingImportsMap, svc.Name)
 	}
 
 	// delete remaining imports that have not been matched
 	for _, i := range existingImportsMap {
-		if err = r.Client.Delete(ctx, &i); err != nil {
-			r.Log.Error(err, "error deleting ServiceImport", "namespace", i.Namespace, "name", i.Name)
+		r.Log.Info("delete ServiceImport", "namespace", i.Namespace, "name", i.Name)
+		if deleteErr := r.Client.Delete(ctx, &i); deleteErr != nil {
+			r.Log.Error(deleteErr, "error deleting ServiceImport", "namespace", i.Namespace, "name", i.Name)
+			err = common.Wrap(err, deleteErr)
 			continue
 		}
-		r.Log.Info("delete ServiceImport", "namespace", i.Namespace, "name", i.Name)
 	}
 
-	return nil
+	return err
 }
 
 func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Service) error {

@@ -20,7 +20,7 @@ if ! endpts=$(./integration/shared/scripts/poll-endpoints.sh "$EXPECTED_ENDPOINT
 fi
 
 mkdir -p "$LOGS"
-./bin/manager &> "$LOGS/ctl.log" &
+./bin/manager --zap-devel=true --zap-time-encoding=rfc3339 &> "$LOGS/ctl.log" &
 CTL_PID=$!
 echo "controller PID:$CTL_PID"
 
