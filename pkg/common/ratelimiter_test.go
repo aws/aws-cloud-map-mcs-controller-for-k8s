@@ -29,6 +29,15 @@ func TestRateLimiter_Wait(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:   "not_found",
+			fields: fields{RateLimiter: NewDefaultRateLimiter()},
+			args: args{
+				ctx:   context.TODO(),
+				event: "test",
+			},
+			wantErr: true,
+		},
+		{
 			name:   "error_ctx_canceled",
 			fields: fields{RateLimiter: NewDefaultRateLimiter()},
 			args: args{

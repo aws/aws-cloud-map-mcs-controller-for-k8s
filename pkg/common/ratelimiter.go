@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"fmt"
 
 	"golang.org/x/time/rate"
 )
@@ -35,5 +36,8 @@ func NewDefaultRateLimiter() RateLimiter {
 
 // Wait blocks until limit permits an event to happen. It returns an error if the Context is canceled, or the expected wait time exceeds the Context's Deadline.
 func (r RateLimiter) Wait(ctx context.Context, event Event) error {
-	return r.rateLimiters[event].Wait(ctx)
+	if limiter, ok := r.rateLimiters[event]; ok {
+		return limiter.Wait(ctx)
+	}
+	return fmt.Errorf("event %s not found in the list of limiters", event)
 }
