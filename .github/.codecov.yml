@@ -26,3 +26,4 @@ ignore:
   - "mocks/**/*"
   - "integration/shared/scenarios/**/*"
   - "pkg/common/logger.go"
+  - "test/*"

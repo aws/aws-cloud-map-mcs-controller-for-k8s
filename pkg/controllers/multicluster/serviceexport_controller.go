@@ -168,11 +168,11 @@ func (r *ServiceExportReconciler) addFinalizerAndOwnerRef(ctx context.Context, s
 
 func (r *ServiceExportReconciler) createOrGetCloudMapService(ctx context.Context, service *v1.Service) (*model.Service, error) {
 	cmService, err := r.CloudMap.GetService(ctx, service.Namespace, service.Name)
-	if err != nil {
+	if common.IsUnknown(err) {
 		return nil, err
 	}
 
-	if cmService == nil {
+	if common.IsNotFound(err) {
 		err = r.CloudMap.CreateService(ctx, service.Namespace, service.Name)
 		if err != nil {
 			r.Log.Error(err, "error creating a new Service in Cloud Map", "namespace", service.Namespace, "name", service.Name)
@@ -191,7 +191,7 @@ func (r *ServiceExportReconciler) handleDelete(ctx context.Context, serviceExpor
 		r.Log.Info("removing service export", "namespace", serviceExport.Namespace, "name", serviceExport.Name)
 
 		cmService, err := r.CloudMap.GetService(ctx, serviceExport.Namespace, serviceExport.Name)
-		if err != nil {
+		if common.IsUnknown(err) {
 			r.Log.Error(err, "error fetching Service from Cloud Map", "namespace", serviceExport.Namespace, "name", serviceExport.Name)
 			return ctrl.Result{}, err
 		}

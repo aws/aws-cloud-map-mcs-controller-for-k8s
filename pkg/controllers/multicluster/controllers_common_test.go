@@ -56,6 +56,15 @@ func serviceExportForTest() *multiclusterv1alpha1.ServiceExport {
 	}
 }
 
+func serviceImportForTest(svcName string) *multiclusterv1alpha1.ServiceImport {
+	return &multiclusterv1alpha1.ServiceImport{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      svcName,
+			Namespace: test.HttpNsName,
+		},
+	}
+}
+
 func endpointSliceForTest() *discovery.EndpointSlice {
 	port := int32(test.Port1)
 	protocol := v1.ProtocolTCP
