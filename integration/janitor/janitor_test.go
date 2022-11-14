@@ -32,7 +32,7 @@ func TestCleanupHappyCase(t *testing.T) {
 		Return(map[string]*model.Namespace{test.HttpNsName: test.GetTestHttpNamespace()}, nil)
 	tj.mockApi.EXPECT().GetServiceIdMap(context.TODO(), test.HttpNsId).
 		Return(map[string]string{test.SvcName: test.SvcId}, nil)
-	tj.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, &map[string]string{
+	tj.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, map[string]string{
 		model.ClusterSetIdAttr: test.ClusterSet,
 	}).
 		Return([]types.HttpInstanceSummary{{InstanceId: aws.String(test.EndptId1)}}, nil)

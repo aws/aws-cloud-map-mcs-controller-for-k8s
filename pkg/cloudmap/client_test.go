@@ -48,7 +48,7 @@ func TestServiceDiscoveryClient_ListServices_HappyCase(t *testing.T) {
 	tc.mockCache.EXPECT().CacheServiceIdMap(test.HttpNsName, getServiceIdMapForTest())
 
 	tc.mockCache.EXPECT().GetEndpoints(test.HttpNsName, test.SvcName).Return(nil, false)
-	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, &map[string]string{
+	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, map[string]string{
 		model.ClusterSetIdAttr: test.ClusterSet,
 	}).Return(getHttpInstanceSummaryForTest(), nil)
 
@@ -117,7 +117,7 @@ func TestServiceDiscoveryClient_ListServices_InstanceError(t *testing.T) {
 
 	endptErr := errors.New("error listing endpoints")
 	tc.mockCache.EXPECT().GetEndpoints(test.HttpNsName, test.SvcName).Return(nil, false)
-	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, &map[string]string{
+	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, map[string]string{
 		model.ClusterSetIdAttr: test.ClusterSet,
 	}).
 		Return([]types.HttpInstanceSummary{}, endptErr)
@@ -178,6 +178,23 @@ func TestServiceDiscoveryClient_CreateService_NamespaceError(t *testing.T) {
 
 	err := tc.client.CreateService(context.TODO(), test.HttpNsName, test.SvcName)
 	assert.Equal(t, nsErr, err)
+}
+
+func TestServiceDiscoveryClient_CreateService_NamespaceNotFound(t *testing.T) {
+	tc := getTestSdClient(t)
+	defer tc.close()
+
+	tc.mockCache.EXPECT().GetNamespaceMap().Return(map[string]*model.Namespace{}, true)
+	tc.mockApi.EXPECT().CreateHttpNamespace(context.TODO(), test.HttpNsName).Return(test.OpId1, nil)
+	tc.mockApi.EXPECT().PollNamespaceOperation(context.TODO(), test.OpId1).Return(test.HttpNsId, nil)
+	tc.mockCache.EXPECT().EvictNamespaceMap()
+
+	tc.mockApi.EXPECT().CreateService(context.TODO(), *test.GetTestHttpNamespace(), test.SvcName).
+		Return(test.SvcId, nil)
+	tc.mockCache.EXPECT().EvictServiceIdMap(test.HttpNsName)
+
+	err := tc.client.CreateService(context.TODO(), test.HttpNsName, test.SvcName)
+	assert.Nil(t, err)
 }
 
 func TestServiceDiscoveryClient_CreateService_CreateServiceError(t *testing.T) {
@@ -264,7 +281,7 @@ func TestServiceDiscoveryClient_GetService_HappyCase(t *testing.T) {
 	tc.mockCache.EXPECT().CacheServiceIdMap(test.HttpNsName, getServiceIdMapForTest())
 
 	tc.mockCache.EXPECT().GetEndpoints(test.HttpNsName, test.SvcName).Return([]*model.Endpoint{}, false)
-	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, &map[string]string{
+	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, map[string]string{
 		model.ClusterSetIdAttr: test.ClusterSet,
 	}).
 		Return(getHttpInstanceSummaryForTest(), nil)
@@ -286,6 +303,30 @@ func TestServiceDiscoveryClient_GetService_CachedValues(t *testing.T) {
 	svc, err := tc.client.GetService(context.TODO(), test.HttpNsName, test.SvcName)
 	assert.Nil(t, err)
 	assert.Equal(t, test.GetTestService(), svc)
+}
+
+func TestServiceDiscoveryClient_GetService_ServiceNotFound(t *testing.T) {
+	tc := getTestSdClient(t)
+	defer tc.close()
+
+	tc.mockCache.EXPECT().GetEndpoints(test.HttpNsName, test.SvcName).Return(nil, false)
+
+	tc.mockCache.EXPECT().GetServiceIdMap(test.HttpNsName).Return(nil, false)
+
+	tc.mockCache.EXPECT().GetNamespaceMap().Return(nil, false)
+	tc.mockApi.EXPECT().GetNamespaceMap(context.TODO()).
+		Return(getNamespaceMapForTest(), nil)
+	tc.mockCache.EXPECT().CacheNamespaceMap(getNamespaceMapForTest())
+
+	// return empty list from CloudMap's api
+	tc.mockApi.EXPECT().GetServiceIdMap(context.TODO(), test.HttpNsId).
+		Return(map[string]string{}, nil)
+	tc.mockCache.EXPECT().CacheServiceIdMap(test.HttpNsName, map[string]string{})
+
+	svc, err := tc.client.GetService(context.TODO(), test.HttpNsName, test.SvcName)
+	assert.NotNil(t, err)
+	assert.True(t, common.IsNotFound(err), svc)
+	assert.Contains(t, err.Error(), test.SvcName)
 }
 
 func TestServiceDiscoveryClient_RegisterEndpoints(t *testing.T) {
