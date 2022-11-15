@@ -39,14 +39,15 @@ func TestCleanupHappyCase(t *testing.T) {
 
 	tj.mockApi.EXPECT().DeregisterInstance(context.TODO(), test.SvcId, test.EndptId1).
 		Return(test.OpId1, nil)
-	tj.mockApi.EXPECT().ListOperations(context.TODO(), gomock.Any()).
-		Return(map[string]types.OperationStatus{test.OpId1: types.OperationStatusSuccess}, nil)
+	tj.mockApi.EXPECT().GetOperation(context.TODO(), test.OpId1).
+		Return(&types.Operation{Status: types.OperationStatusSuccess}, nil)
 	tj.mockApi.EXPECT().DeleteService(context.TODO(), test.SvcId).
 		Return(nil)
 	tj.mockApi.EXPECT().DeleteNamespace(context.TODO(), test.HttpNsId).
 		Return(test.OpId2, nil)
-	tj.mockApi.EXPECT().PollNamespaceOperation(context.TODO(), test.OpId2).
-		Return(test.HttpNsId, nil)
+	tj.mockApi.EXPECT().GetOperation(context.TODO(), test.OpId2).
+		Return(&types.Operation{Status: types.OperationStatusSuccess,
+			Targets: map[string]string{string(types.OperationTargetTypeNamespace): test.HttpNsId}}, nil)
 
 	tj.janitor.Cleanup(context.TODO(), test.HttpNsName)
 	assert.False(t, *tj.failed)

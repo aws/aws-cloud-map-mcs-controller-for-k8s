@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 )
 
 // ServiceDiscoveryClient provides the service endpoint management functionality required by the AWS Cloud Map
@@ -149,27 +150,21 @@ func (sdc *serviceDiscoveryClient) RegisterEndpoints(ctx context.Context, nsName
 		return err
 	}
 
-	opCollector := NewOperationCollector()
-
+	operationPoller := NewOperationPoller(sdc.sdApi)
 	for _, endpt := range endpts {
 		endptId := endpt.Id
 		endptAttrs := endpt.GetCloudMapAttributes()
-		opCollector.Add(func() (opId string, err error) {
+		operationPoller.Submit(ctx, func() (opId string, err error) {
 			return sdc.sdApi.RegisterInstance(ctx, svcId, endptId, endptAttrs)
 		})
 	}
 
-	err = NewRegisterInstancePoller(sdc.sdApi, svcId, opCollector.Collect(), opCollector.GetStartTime()).Poll(ctx)
-
 	// Evict cache entry so next list call reflects changes
 	sdc.cache.EvictEndpoints(nsName, svcName)
 
+	err = operationPoller.Await()
 	if err != nil {
-		return err
-	}
-
-	if !opCollector.IsAllOperationsCreated() {
-		return errors.New("failure while registering endpoints")
+		return common.Wrap(err, errors.New("failure while registering endpoints"))
 	}
 
 	return nil
@@ -188,29 +183,23 @@ func (sdc *serviceDiscoveryClient) DeleteEndpoints(ctx context.Context, nsName s
 		return err
 	}
 
-	opCollector := NewOperationCollector()
-
+	operationPoller := NewOperationPoller(sdc.sdApi)
 	for _, endpt := range endpts {
 		endptId := endpt.Id
-		// add operation to delete endpoint
-		opCollector.Add(func() (opId string, err error) {
+		operationPoller.Submit(ctx, func() (opId string, err error) {
 			return sdc.sdApi.DeregisterInstance(ctx, svcId, endptId)
 		})
 	}
 
-	err = NewDeregisterInstancePoller(sdc.sdApi, svcId, opCollector.Collect(), opCollector.GetStartTime()).Poll(ctx)
-
 	// Evict cache entry so next list call reflects changes
 	sdc.cache.EvictEndpoints(nsName, svcName)
+
+	err = operationPoller.Await()
 	if err != nil {
-		return err
+		return common.Wrap(err, errors.New("failure while de-registering endpoints"))
 	}
 
-	if !opCollector.IsAllOperationsCreated() {
-		return errors.New("failure while de-registering endpoints")
-	}
-
-	return nil
+	return err
 }
 
 func (sdc *serviceDiscoveryClient) getEndpoints(ctx context.Context, nsName string, svcName string) (endpts []*model.Endpoint, err error) {
@@ -315,12 +304,13 @@ func (sdc *serviceDiscoveryClient) createNamespace(ctx context.Context, nsName s
 		return nil, err
 	}
 
-	nsId, err := sdc.sdApi.PollNamespaceOperation(ctx, opId)
+	op, err := NewOperationPoller(sdc.sdApi).Poll(ctx, opId)
 	if err != nil {
 		return nil, err
 	}
+	nsId := op.Targets[string(types.OperationTargetTypeNamespace)]
 
-	sdc.log.Info("namespace created", "nsId", nsId)
+	sdc.log.Info("namespace created", "nsId", nsId, "namespace", nsName)
 
 	// Default namespace type HTTP
 	namespace = &model.Namespace{

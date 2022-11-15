@@ -2,18 +2,12 @@ package cloudmap
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"time"
-
-	"golang.org/x/time/rate"
 
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/common"
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/model"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (
@@ -32,9 +26,6 @@ type ServiceDiscoveryApi interface {
 	// DiscoverInstances returns a list of service instances registered to a given service.
 	DiscoverInstances(ctx context.Context, nsName string, svcName string, queryParameters map[string]string) (insts []types.HttpInstanceSummary, err error)
 
-	// ListOperations returns a map of operations to their status matching a list of filters.
-	ListOperations(ctx context.Context, opFilters []types.OperationFilter) (operationStatusMap map[string]types.OperationStatus, err error)
-
 	// GetOperation returns an operation.
 	GetOperation(ctx context.Context, operationId string) (operation *types.Operation, err error)
 
@@ -49,32 +40,25 @@ type ServiceDiscoveryApi interface {
 
 	// DeregisterInstance de-registers a service instance in Cloud Map.
 	DeregisterInstance(ctx context.Context, serviceId string, instanceId string) (operationId string, err error)
-
-	// PollNamespaceOperation polls a namespace operation, and returns the namespace ID.
-	PollNamespaceOperation(ctx context.Context, operationId string) (namespaceId string, err error)
 }
 
 type serviceDiscoveryApi struct {
-	log            common.Logger
-	awsFacade      AwsFacade
-	nsRateLimiter  *rate.Limiter
-	svcRateLimiter *rate.Limiter
-	opRateLimiter  *rate.Limiter
+	log         common.Logger
+	awsFacade   AwsFacade
+	rateLimiter common.RateLimiter
 }
 
 // NewServiceDiscoveryApiFromConfig creates a new AWS Cloud Map API connection manager from an AWS client config.
 func NewServiceDiscoveryApiFromConfig(cfg *aws.Config) ServiceDiscoveryApi {
 	return &serviceDiscoveryApi{
-		log:            common.NewLogger("cloudmap", "api"),
-		awsFacade:      NewAwsFacadeFromConfig(cfg),
-		nsRateLimiter:  rate.NewLimiter(rate.Every(1*time.Second), 5),     // 1 per second
-		svcRateLimiter: rate.NewLimiter(rate.Every(2*time.Second), 10),    // 2 per second
-		opRateLimiter:  rate.NewLimiter(rate.Every(100*time.Second), 200), // 100 per second
+		log:         common.NewLogger("cloudmap", "api"),
+		awsFacade:   NewAwsFacadeFromConfig(cfg),
+		rateLimiter: common.NewDefaultRateLimiter(),
 	}
 }
 
 func (sdApi *serviceDiscoveryApi) GetNamespaceMap(ctx context.Context) (map[string]*model.Namespace, error) {
-	err := sdApi.nsRateLimiter.Wait(ctx)
+	err := sdApi.rateLimiter.Wait(ctx, common.ListNamespaces)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +89,7 @@ func (sdApi *serviceDiscoveryApi) GetNamespaceMap(ctx context.Context) (map[stri
 }
 
 func (sdApi *serviceDiscoveryApi) GetServiceIdMap(ctx context.Context, nsId string) (map[string]string, error) {
-	err := sdApi.svcRateLimiter.Wait(ctx)
+	err := sdApi.rateLimiter.Wait(ctx, common.ListServices)
 	if err != nil {
 		return nil, err
 	}
@@ -151,30 +135,8 @@ func (sdApi *serviceDiscoveryApi) DiscoverInstances(ctx context.Context, nsName 
 	return out.Instances, nil
 }
 
-func (sdApi *serviceDiscoveryApi) ListOperations(ctx context.Context, opFilters []types.OperationFilter) (map[string]types.OperationStatus, error) {
-	opStatusMap := make(map[string]types.OperationStatus)
-
-	pages := sd.NewListOperationsPaginator(sdApi.awsFacade, &sd.ListOperationsInput{
-		Filters: opFilters,
-	})
-
-	for pages.HasMorePages() {
-		output, err := pages.NextPage(ctx)
-
-		if err != nil {
-			return opStatusMap, err
-		}
-
-		for _, sdOp := range output.Operations {
-			opStatusMap[aws.ToString(sdOp.Id)] = sdOp.Status
-		}
-	}
-
-	return opStatusMap, nil
-}
-
 func (sdApi *serviceDiscoveryApi) GetOperation(ctx context.Context, opId string) (operation *types.Operation, err error) {
-	err = sdApi.opRateLimiter.Wait(ctx)
+	err = sdApi.rateLimiter.Wait(ctx, common.GetOperation)
 	if err != nil {
 		return nil, err
 	}
@@ -236,6 +198,11 @@ func (sdApi *serviceDiscoveryApi) getDnsConfig() types.DnsConfig {
 }
 
 func (sdApi *serviceDiscoveryApi) RegisterInstance(ctx context.Context, svcId string, instId string, instAttrs map[string]string) (opId string, err error) {
+	err = sdApi.rateLimiter.Wait(ctx, common.RegisterInstance)
+	if err != nil {
+		return "", err
+	}
+
 	regResp, err := sdApi.awsFacade.RegisterInstance(ctx, &sd.RegisterInstanceInput{
 		Attributes: instAttrs,
 		InstanceId: &instId,
@@ -250,6 +217,11 @@ func (sdApi *serviceDiscoveryApi) RegisterInstance(ctx context.Context, svcId st
 }
 
 func (sdApi *serviceDiscoveryApi) DeregisterInstance(ctx context.Context, svcId string, instId string) (opId string, err error) {
+	err = sdApi.rateLimiter.Wait(ctx, common.DeregisterInstance)
+	if err != nil {
+		return "", err
+	}
+
 	deregResp, err := sdApi.awsFacade.DeregisterInstance(ctx, &sd.DeregisterInstanceInput{
 		InstanceId: &instId,
 		ServiceId:  &svcId,
@@ -260,32 +232,4 @@ func (sdApi *serviceDiscoveryApi) DeregisterInstance(ctx context.Context, svcId 
 	}
 
 	return aws.ToString(deregResp.OperationId), err
-}
-
-func (sdApi *serviceDiscoveryApi) PollNamespaceOperation(ctx context.Context, opId string) (nsId string, err error) {
-	err = wait.Poll(defaultOperationPollInterval, defaultOperationPollTimeout, func() (done bool, err error) {
-		sdApi.log.Info("polling operation", "opId", opId)
-		op, err := sdApi.GetOperation(ctx, opId)
-
-		if err != nil {
-			return true, err
-		}
-
-		if op.Status == types.OperationStatusFail {
-			return true, fmt.Errorf("failed to create namespace: %s", aws.ToString(op.ErrorMessage))
-		}
-
-		if op.Status == types.OperationStatusSuccess {
-			nsId = op.Targets[string(types.OperationTargetTypeNamespace)]
-			return true, nil
-		}
-
-		return false, nil
-	})
-
-	if err == wait.ErrWaitTimeout {
-		err = errors.New(operationPollTimoutErrorMessage)
-	}
-
-	return nsId, err
 }
