@@ -11,11 +11,10 @@ import (
 )
 
 const (
-	nsKey           = "ns-map"
-	svcKeyPrefix    = "svc-map"
-	endptsKeyPrefix = "endpts"
+	nsKey        = "ns-map"
+	svcKeyPrefix = "svc-map"
 
-	defaultCacheSize = 1024
+	defaultCacheSize = 2048
 	defaultNsTTL     = 10 * time.Second
 	defaultSvcTTL    = 10 * time.Second
 	defaultEndptTTL  = 5 * time.Second
@@ -34,9 +33,10 @@ type ServiceDiscoveryClientCache interface {
 }
 
 type sdCache struct {
-	log    common.Logger
-	cache  *cache.LRUExpireCache
-	config *SdCacheConfig
+	log            common.Logger
+	defaultCache   *cache.LRUExpireCache
+	endpointsCache *cache.LRUExpireCache
+	config         *SdCacheConfig
 }
 
 type SdCacheConfig struct {
@@ -47,9 +47,10 @@ type SdCacheConfig struct {
 
 func NewServiceDiscoveryClientCache(cacheConfig *SdCacheConfig) ServiceDiscoveryClientCache {
 	return &sdCache{
-		log:    common.NewLogger("cloudmap"),
-		cache:  cache.NewLRUExpireCache(defaultCacheSize),
-		config: cacheConfig,
+		log:            common.NewLogger("cloudmap"),
+		defaultCache:   cache.NewLRUExpireCache(defaultCacheSize),
+		endpointsCache: cache.NewLRUExpireCache(defaultCacheSize),
+		config:         cacheConfig,
 	}
 }
 
@@ -63,7 +64,7 @@ func NewDefaultServiceDiscoveryClientCache() ServiceDiscoveryClientCache {
 }
 
 func (sdCache *sdCache) GetNamespaceMap() (namespaceMap map[string]*model.Namespace, found bool) {
-	entry, exists := sdCache.cache.Get(nsKey)
+	entry, exists := sdCache.defaultCache.Get(nsKey)
 	if !exists {
 		return nil, false
 	}
@@ -71,7 +72,7 @@ func (sdCache *sdCache) GetNamespaceMap() (namespaceMap map[string]*model.Namesp
 	namespaceMap, ok := entry.(map[string]*model.Namespace)
 	if !ok {
 		sdCache.log.Error(errors.New("failed to retrieve namespaceMap from cache"), "")
-		sdCache.cache.Remove(nsKey)
+		sdCache.defaultCache.Remove(nsKey)
 		return nil, false
 	}
 
@@ -79,25 +80,25 @@ func (sdCache *sdCache) GetNamespaceMap() (namespaceMap map[string]*model.Namesp
 }
 
 func (sdCache *sdCache) CacheNamespaceMap(namespaces map[string]*model.Namespace) {
-	sdCache.cache.Add(nsKey, namespaces, sdCache.config.NsTTL)
+	sdCache.defaultCache.Add(nsKey, namespaces, sdCache.config.NsTTL)
 }
 
 func (sdCache *sdCache) EvictNamespaceMap() {
-	sdCache.cache.Remove(nsKey)
+	sdCache.defaultCache.Remove(nsKey)
 }
 
 func (sdCache *sdCache) GetServiceIdMap(nsName string) (serviceIdMap map[string]string, found bool) {
 	key := sdCache.buildSvcKey(nsName)
-	entry, exists := sdCache.cache.Get(key)
+	entry, exists := sdCache.defaultCache.Get(key)
 	if !exists {
 		return nil, false
 	}
 
 	serviceIdMap, ok := entry.(map[string]string)
 	if !ok {
-		sdCache.log.Error(errors.New("failed to retrieve service IDs from cache"), "",
-			"nsName", nsName)
-		sdCache.cache.Remove(key)
+		err := fmt.Errorf("failed to retrieve service IDs from cache")
+		sdCache.log.Error(err, err.Error(), "namespace", nsName)
+		sdCache.defaultCache.Remove(key)
 		return nil, false
 	}
 
@@ -106,26 +107,26 @@ func (sdCache *sdCache) GetServiceIdMap(nsName string) (serviceIdMap map[string]
 
 func (sdCache *sdCache) CacheServiceIdMap(nsName string, serviceIdMap map[string]string) {
 	key := sdCache.buildSvcKey(nsName)
-	sdCache.cache.Add(key, serviceIdMap, sdCache.config.SvcTTL)
+	sdCache.defaultCache.Add(key, serviceIdMap, sdCache.config.SvcTTL)
 }
 
 func (sdCache *sdCache) EvictServiceIdMap(nsName string) {
 	key := sdCache.buildSvcKey(nsName)
-	sdCache.cache.Remove(key)
+	sdCache.defaultCache.Remove(key)
 }
 
 func (sdCache *sdCache) GetEndpoints(nsName string, svcName string) (endpts []*model.Endpoint, found bool) {
 	key := sdCache.buildEndptsKey(nsName, svcName)
-	entry, exists := sdCache.cache.Get(key)
+	entry, exists := sdCache.endpointsCache.Get(key)
 	if !exists {
 		return nil, false
 	}
 
 	endpts, ok := entry.([]*model.Endpoint)
 	if !ok {
-		sdCache.log.Error(errors.New("failed to retrieve endpoints from cache"), "",
-			"ns", "nsName", "svc", svcName)
-		sdCache.cache.Remove(key)
+		err := fmt.Errorf("failed to retrieve endpoints from cache")
+		sdCache.log.Error(err, err.Error(), "namespace", nsName, "service", svcName)
+		sdCache.endpointsCache.Remove(key)
 		return nil, false
 	}
 
@@ -134,12 +135,12 @@ func (sdCache *sdCache) GetEndpoints(nsName string, svcName string) (endpts []*m
 
 func (sdCache *sdCache) CacheEndpoints(nsName string, svcName string, endpts []*model.Endpoint) {
 	key := sdCache.buildEndptsKey(nsName, svcName)
-	sdCache.cache.Add(key, endpts, sdCache.config.EndptTTL)
+	sdCache.endpointsCache.Add(key, endpts, sdCache.config.EndptTTL)
 }
 
 func (sdCache *sdCache) EvictEndpoints(nsName string, svcName string) {
 	key := sdCache.buildEndptsKey(nsName, svcName)
-	sdCache.cache.Remove(key)
+	sdCache.endpointsCache.Remove(key)
 }
 
 func (sdCache *sdCache) buildSvcKey(nsName string) (cacheKey string) {
@@ -147,5 +148,5 @@ func (sdCache *sdCache) buildSvcKey(nsName string) (cacheKey string) {
 }
 
 func (sdCache *sdCache) buildEndptsKey(nsName string, svcName string) string {
-	return fmt.Sprintf("%s:%s:%s", endptsKeyPrefix, nsName, svcName)
+	return fmt.Sprintf("%s:%s", nsName, svcName)
 }
