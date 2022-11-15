@@ -1,6 +1,3 @@
-# Silence update recommendations for Ginkgo
-export ACK_GINKGO_DEPRECATIONS:=1.16.5
-
 GIT_COMMIT:=$(shell git describe --dirty --always)
 GIT_TAG:=$(shell git describe --dirty --always --tags)
 PKG:=github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/version
@@ -68,20 +65,10 @@ lint: golangci-lint ## Run linter
 goimports: goimports-bin ## run goimports updating files in place
 	$(GOIMPORTS) -w .
 
-# Run tests
-ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
-KUBEBUILDER_ASSETS?="$(shell $(ENVTEST) use -i $(ENVTEST_KUBERNETES_VERSION) --bin-dir=$(ENVTEST_ASSETS_DIR) -p path)"
-
 .PHONY: test
-test: manifests generate generate-mocks fmt vet test-setup goimports lint ## Run tests
-	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) go test ./... -coverprofile cover.out -covermode=atomic
-
-test-setup: setup-envtest ## Ensure test environment has been downloaded
-ifneq ($(shell test -d $(ENVTEST_ASSETS_DIR); echo $$?), 0)
-	@echo Setting up K8s test environment...
-	mkdir -p ${ENVTEST_ASSETS_DIR}
-	$(ENVTEST) use 1.24.x --bin-dir $(ENVTEST_ASSETS_DIR)
-endif
+test: manifests generate generate-mocks fmt vet goimports lint ## Run tests
+	@echo Testing...
+	go test ./... -coverprofile=cover.out -covermode=atomic
 
 kind-integration-suite: ## Provision and run integration tests with cleanup
 	make kind-integration-setup && \
@@ -133,8 +120,7 @@ docker-push: ## Push docker image with the manager.
 clean:
 	@echo Cleaning...
 	go clean
-	if test -d $(ENVTEST_ASSETS_DIR) ; then chmod -R +w $(ENVTEST_ASSETS_DIR) ; fi
-	rm -rf $(MOCKS_DESTINATION)/ bin/ $(ENVTEST_ASSETS_DIR)/ cover.out
+	rm -rf $(MOCKS_DESTINATION)/ bin/ cover.out
 
 ##@ Deployment
 
@@ -171,10 +157,6 @@ controller-gen: ## Download controller-gen locally if necessary.
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 kustomize: ## Download kustomize locally if necessary.
 	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@v4.5.5)
-
-ENVTEST = $(shell pwd)/bin/setup-envtest
-setup-envtest: ## Download setup-envtest
-	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
 
 MOCKGEN = $(shell pwd)/bin/mockgen
 mockgen: ## Download mockgen
