@@ -72,7 +72,7 @@ func (j *cloudMapJanitor) Cleanup(ctx context.Context, nsName string) {
 	opId, err := j.sdApi.DeleteNamespace(ctx, ns.Id)
 	if err == nil {
 		fmt.Println("namespace delete in progress")
-		_, err = j.sdApi.PollNamespaceOperation(ctx, opId)
+		_, err = cloudmap.NewOperationPoller(j.sdApi).Poll(ctx, opId)
 	}
 	j.checkOrFail(err, "clean up successful", "could not cleanup namespace")
 }
@@ -87,17 +87,17 @@ func (j *cloudMapJanitor) deregisterInstances(ctx context.Context, nsName string
 		fmt.Sprintf("service has %d instances to clean", len(insts)),
 		"could not list instances to cleanup")
 
-	opColl := cloudmap.NewOperationCollector()
+	opPoller := cloudmap.NewOperationPoller(j.sdApi)
 	for _, inst := range insts {
 		instId := aws.ToString(inst.InstanceId)
 		fmt.Printf("found instance to clean: %s\n", instId)
-		opColl.Add(func() (opId string, err error) {
+		opPoller.Submit(ctx, func() (opId string, err error) {
 			return j.sdApi.DeregisterInstance(ctx, svcId, instId)
 		})
 	}
 
-	opErr := cloudmap.NewDeregisterInstancePoller(j.sdApi, svcId, opColl.Collect(), opColl.GetStartTime()).Poll(ctx)
-	j.checkOrFail(opErr, "instances de-registered", "could not cleanup instances")
+	err = opPoller.Await()
+	j.checkOrFail(err, "instances de-registered", "could not cleanup instances")
 }
 
 func (j *cloudMapJanitor) checkOrFail(err error, successMsg string, failMsg string) {

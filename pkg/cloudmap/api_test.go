@@ -5,9 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"testing"
-	"time"
-
-	"golang.org/x/time/rate"
 
 	aboutv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/about/v1alpha1"
 
@@ -129,26 +126,6 @@ func TestServiceDiscoveryApi_DiscoverInstances_HappyCase(t *testing.T) {
 	assert.True(t, len(insts) == 2)
 	assert.Equal(t, test.EndptId1, *insts[0].InstanceId)
 	assert.Equal(t, test.EndptId2, *insts[1].InstanceId)
-}
-
-func TestServiceDiscoveryApi_ListOperations_HappyCase(t *testing.T) {
-	mockController := gomock.NewController(t)
-	defer mockController.Finish()
-
-	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
-	sdApi := getServiceDiscoveryApi(t, awsFacade)
-
-	filters := make([]types.OperationFilter, 0)
-	awsFacade.EXPECT().ListOperations(context.TODO(), &sd.ListOperationsInput{Filters: filters}).
-		Return(&sd.ListOperationsOutput{
-			Operations: []types.OperationSummary{
-				{Id: aws.String(test.OpId1), Status: types.OperationStatusSuccess},
-			}}, nil)
-
-	ops, err := sdApi.ListOperations(context.TODO(), filters)
-	assert.Nil(t, err, "No error for happy case")
-	assert.True(t, len(ops) == 1)
-	assert.Equal(t, ops[test.OpId1], types.OperationStatusSuccess)
 }
 
 func TestServiceDiscoveryApi_GetOperation_HappyCase(t *testing.T) {
@@ -316,33 +293,12 @@ func TestServiceDiscoveryApi_DeregisterInstance_Error(t *testing.T) {
 	assert.Equal(t, sdkErr, err)
 }
 
-func TestServiceDiscoveryApi_PollNamespaceOperation_HappyCase(t *testing.T) {
-	mockController := gomock.NewController(t)
-	defer mockController.Finish()
-
-	awsFacade := cloudmapMock.NewMockAwsFacade(mockController)
-	awsFacade.EXPECT().GetOperation(context.TODO(), &sd.GetOperationInput{OperationId: aws.String(test.OpId1)}).
-		Return(&sd.GetOperationOutput{Operation: &types.Operation{Status: types.OperationStatusPending}}, nil)
-
-	awsFacade.EXPECT().GetOperation(context.TODO(), &sd.GetOperationInput{OperationId: aws.String(test.OpId1)}).
-		Return(&sd.GetOperationOutput{Operation: &types.Operation{Status: types.OperationStatusSuccess,
-			Targets: map[string]string{string(types.OperationTargetTypeNamespace): test.HttpNsId}}}, nil)
-
-	sdApi := getServiceDiscoveryApi(t, awsFacade)
-
-	nsId, err := sdApi.PollNamespaceOperation(context.TODO(), test.OpId1)
-	assert.Nil(t, err)
-	assert.Equal(t, test.HttpNsId, nsId)
-}
-
 func getServiceDiscoveryApi(t *testing.T, awsFacade *cloudmapMock.MockAwsFacade) ServiceDiscoveryApi {
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(aboutv1alpha1.GroupVersion, &aboutv1alpha1.ClusterProperty{})
 	return &serviceDiscoveryApi{
-		log:            common.NewLoggerWithLogr(testr.New(t)),
-		awsFacade:      awsFacade,
-		nsRateLimiter:  rate.NewLimiter(rate.Every(1*time.Second), 2),    // 1 per second
-		svcRateLimiter: rate.NewLimiter(rate.Every(2*time.Second), 4),    // 2 per second
-		opRateLimiter:  rate.NewLimiter(rate.Every(10*time.Second), 100), // 10 per second
+		log:         common.NewLoggerWithLogr(testr.New(t)),
+		awsFacade:   awsFacade,
+		rateLimiter: common.NewDefaultRateLimiter(),
 	}
 }
