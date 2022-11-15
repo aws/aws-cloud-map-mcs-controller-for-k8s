@@ -59,7 +59,7 @@ func TestServiceDiscoveryClientCacheGetNamespaceMap_NotFound(t *testing.T) {
 
 func TestServiceDiscoveryClientCacheGetNamespaceMap_Corrupt(t *testing.T) {
 	sdc := getCacheImpl(t)
-	sdc.cache.Add(nsKey, &model.Plan{}, time.Minute)
+	sdc.defaultCache.Add(nsKey, &model.Plan{}, time.Minute)
 
 	nsMap, found := sdc.GetNamespaceMap()
 	assert.False(t, found)
@@ -99,7 +99,7 @@ func TestServiceDiscoveryClientCacheGetServiceIdMap_NotFound(t *testing.T) {
 
 func TestServiceDiscoveryClientCacheGetServiceIdMap_Corrupt(t *testing.T) {
 	sdc := getCacheImpl(t)
-	sdc.cache.Add(sdc.buildSvcKey(test.HttpNsName), &model.Plan{}, time.Minute)
+	sdc.defaultCache.Add(sdc.buildSvcKey(test.HttpNsName), &model.Plan{}, time.Minute)
 
 	svcIdMap, found := sdc.GetServiceIdMap(test.HttpNsName)
 	assert.False(t, found)
@@ -137,7 +137,7 @@ func TestServiceDiscoveryClientCacheGetEndpoints_NotFound(t *testing.T) {
 
 func TestServiceDiscoveryClientCacheGetEndpoints_Corrupt(t *testing.T) {
 	sdc := getCacheImpl(t)
-	sdc.cache.Add(sdc.buildEndptsKey(test.HttpNsName, test.SvcName), &model.Plan{}, time.Minute)
+	sdc.defaultCache.Add(sdc.buildEndptsKey(test.HttpNsName, test.SvcName), &model.Plan{}, time.Minute)
 
 	endpts, found := sdc.GetEndpoints(test.HttpNsName, test.SvcName)
 	assert.False(t, found)
@@ -156,7 +156,8 @@ func TestServiceDiscoveryClientEvictEndpoints(t *testing.T) {
 
 func getCacheImpl(t *testing.T) sdCache {
 	return sdCache{
-		log:   common.NewLoggerWithLogr(testr.New(t)),
-		cache: cache.NewLRUExpireCache(defaultCacheSize),
+		log:            common.NewLoggerWithLogr(testr.New(t)),
+		defaultCache:   cache.NewLRUExpireCache(defaultCacheSize),
+		endpointsCache: cache.NewLRUExpireCache(defaultCacheSize),
 	}
 }
