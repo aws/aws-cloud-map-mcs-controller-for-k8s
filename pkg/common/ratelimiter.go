@@ -8,11 +8,14 @@ import (
 )
 
 const (
-	ListNamespaces     Event = "ListNamespaces"
-	ListServices       Event = "ListServices"
-	GetOperation       Event = "GetOperation"
-	RegisterInstance   Event = "RegisterInstance"
-	DeregisterInstance Event = "DeregisterInstance"
+	ListNamespaces      Event = "ListNamespaces"
+	ListServices        Event = "ListServices"
+	GetOperation        Event = "GetOperation"
+	DiscoverInstances   Event = "DiscoverInstances"
+	CreateHttpNamespace Event = "CreateHttpNamespace"
+	CreateService       Event = "CreateService"
+	RegisterInstance    Event = "RegisterInstance"
+	DeregisterInstance  Event = "DeregisterInstance"
 )
 
 type Event string
@@ -26,11 +29,14 @@ func NewDefaultRateLimiter() RateLimiter {
 	return RateLimiter{rateLimiters: map[Event]*rate.Limiter{
 		// Below are the default limits for the AWS CloudMap's APIs
 		// TODO: make it customizable in the future
-		ListNamespaces:     rate.NewLimiter(rate.Limit(1), 5),     // 1 ListNamespaces API calls per second
-		ListServices:       rate.NewLimiter(rate.Limit(2), 10),    // 2 ListServices API calls per second
-		GetOperation:       rate.NewLimiter(rate.Limit(100), 200), // 100 GetOperation API calls per second
-		RegisterInstance:   rate.NewLimiter(rate.Limit(50), 100),  // 50 RegisterInstance API calls per second
-		DeregisterInstance: rate.NewLimiter(rate.Limit(50), 100),  // 50 DeregisterInstance API calls per second
+		ListNamespaces:      rate.NewLimiter(rate.Limit(0.5), 5),    // 1 ListNamespaces API calls per second
+		ListServices:        rate.NewLimiter(rate.Limit(2), 10),     // 2 ListServices API calls per second
+		GetOperation:        rate.NewLimiter(rate.Limit(100), 200),  // 100 GetOperation API calls per second
+		DiscoverInstances:   rate.NewLimiter(rate.Limit(500), 1000), // 500 DiscoverInstances API calls per second
+		CreateHttpNamespace: rate.NewLimiter(rate.Limit(0.5), 5),    // 1 CreateHttpNamespace API calls per second
+		CreateService:       rate.NewLimiter(rate.Limit(5), 50),     // 5 CreateService API calls per second
+		RegisterInstance:    rate.NewLimiter(rate.Limit(50), 100),   // 50 RegisterInstance API calls per second
+		DeregisterInstance:  rate.NewLimiter(rate.Limit(50), 100),   // 50 DeregisterInstance API calls per second
 	}}
 }
 

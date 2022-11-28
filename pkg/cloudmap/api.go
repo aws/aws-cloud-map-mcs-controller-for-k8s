@@ -117,6 +117,11 @@ func (sdApi *serviceDiscoveryApi) GetServiceIdMap(ctx context.Context, nsId stri
 }
 
 func (sdApi *serviceDiscoveryApi) DiscoverInstances(ctx context.Context, nsName string, svcName string, queryParameters map[string]string) (insts []types.HttpInstanceSummary, err error) {
+	err = sdApi.rateLimiter.Wait(ctx, common.DiscoverInstances)
+	if err != nil {
+		return nil, err
+	}
+
 	input := &sd.DiscoverInstancesInput{
 		NamespaceName: aws.String(nsName),
 		ServiceName:   aws.String(svcName),
@@ -151,6 +156,11 @@ func (sdApi *serviceDiscoveryApi) GetOperation(ctx context.Context, opId string)
 }
 
 func (sdApi *serviceDiscoveryApi) CreateHttpNamespace(ctx context.Context, nsName string) (opId string, err error) {
+	err = sdApi.rateLimiter.Wait(ctx, common.CreateHttpNamespace)
+	if err != nil {
+		return "", err
+	}
+
 	output, err := sdApi.awsFacade.CreateHttpNamespace(ctx, &sd.CreateHttpNamespaceInput{
 		Name: &nsName,
 	})
@@ -163,6 +173,11 @@ func (sdApi *serviceDiscoveryApi) CreateHttpNamespace(ctx context.Context, nsNam
 }
 
 func (sdApi *serviceDiscoveryApi) CreateService(ctx context.Context, namespace model.Namespace, svcName string) (svcId string, err error) {
+	err = sdApi.rateLimiter.Wait(ctx, common.CreateService)
+	if err != nil {
+		return "", err
+	}
+
 	var output *sd.CreateServiceOutput
 	if namespace.Type == model.DnsPrivateNamespaceType {
 		dnsConfig := sdApi.getDnsConfig()
