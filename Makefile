@@ -167,7 +167,7 @@ golangci-lint: ## Download golangci-lint
 ifneq ($(shell test -f $(GOLANGCI_LINT); echo $$?), 0)
 	@echo Getting golangci-lint...
 	@mkdir -p $(shell pwd)/bin
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell pwd)/bin v1.46.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell pwd)/bin v1.50.1
 endif
 
 GOIMPORTS = $(shell pwd)/bin/goimports
