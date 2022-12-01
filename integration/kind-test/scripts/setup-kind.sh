@@ -9,7 +9,7 @@ source ./integration/kind-test/scripts/common.sh
 
 ./integration/kind-test/scripts/ensure-jq.sh
 
-$KIND_BIN create cluster --name "$KIND_SHORT" --image "$IMAGE"
+$KIND_BIN create cluster --name "$KIND_SHORT" --image "$IMAGE" --config=./integration/kind-test/configs/ipv6.yaml
 $KUBECTL_BIN config use-context "$CLUSTER"
 make install
 
