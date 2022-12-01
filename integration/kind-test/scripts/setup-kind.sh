@@ -9,7 +9,17 @@ source ./integration/kind-test/scripts/common.sh
 
 ./integration/kind-test/scripts/ensure-jq.sh
 
-$KIND_BIN create cluster --name "$KIND_SHORT" --image "$IMAGE" --config=./integration/kind-test/configs/ipv6.yaml
+# If the IP Type env var is not set, default it to IPV4
+if [[ -z "${IP_TYPE}" ]]; then
+  IP_TYPE="IPV4Type"
+fi
+
+if [[ IP_TYPE == "IPV4Type" ]]; then
+  $KIND_BIN create cluster --name "$KIND_SHORT" --image "$IMAGE"
+elif [[ IP_TYPE == "IPV6Type" ]]; then
+  $KIND_BIN create cluster --name "$KIND_SHORT" --image "$IMAGE" --config=./integration/kind-test/configs/ipv6.yaml
+fi
+
 $KUBECTL_BIN config use-context "$CLUSTER"
 make install
 
