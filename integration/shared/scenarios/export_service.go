@@ -33,7 +33,7 @@ type exportServiceScenario struct {
 	expectedSvc model.Service
 }
 
-func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, clusterId string, clusterSetId string, portStr string, servicePortStr string, serviceType string, ips string) (ExportServiceScenario, error) {
+func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, clusterId string, clusterSetId string, portStr string, servicePortStr string, serviceType string, ips string, ipTypeStr string) (ExportServiceScenario, error) {
 	endpts := make([]*model.Endpoint, 0)
 
 	port, parseError := strconv.ParseUint(portStr, 10, 16)
@@ -44,6 +44,10 @@ func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, cl
 	if parseError != nil {
 		return nil, parseError
 	}
+	ipType, parseError := model.GetIPTypeFromString(ipTypeStr)
+	if parseError != nil {
+		return nil, parseError
+	}
 
 	for _, ip := range strings.Split(ips, ",") {
 		endpointPort := model.Port{
@@ -51,8 +55,9 @@ func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, cl
 			Protocol: string(v1.ProtocolTCP),
 		}
 		endpts = append(endpts, &model.Endpoint{
-			Id: model.EndpointIdFromIPAddressAndPort(ip, endpointPort),
-			IP: ip,
+			Id:     model.EndpointIdFromIPAddressAndPort(ip, endpointPort),
+			IP:     ip,
+			IPType: ipType,
 			ServicePort: model.Port{
 				Port:       int32(servicePort),
 				TargetPort: portStr,
@@ -110,6 +115,7 @@ func (e *exportServiceScenario) compareEndpoints(cmEndpoints []*model.Endpoint) 
 
 	for _, expected := range e.expectedSvc.Endpoints {
 		match := false
+		fmt.Printf("*****LOOKING FOR EXPECTED: %+v\n", expected)
 		for _, actual := range cmEndpoints {
 			// Ignore K8S instance attribute for the purpose of this test.
 			delete(actual.Attributes, model.K8sVersionAttr)
@@ -118,10 +124,13 @@ func (e *exportServiceScenario) compareEndpoints(cmEndpoints []*model.Endpoint) 
 			// Ignore Nodename and Hostname, as they can be platform dependent
 			actual.Nodename = ""
 			actual.Hostname = ""
+			fmt.Printf("*****ACTUAL: %+v\n", actual)
 			if expected.Equals(actual) {
+				fmt.Println("*****MATCHED*****")
 				match = true
 				break
 			}
+			fmt.Println("*****DID NOT MATCH*****")
 		}
 		if !match {
 			fmt.Println("Endpoints do not match.")

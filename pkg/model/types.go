@@ -325,3 +325,14 @@ func (p *Port) GetID() string {
 func (p *Port) Equals(other *Port) bool {
 	return reflect.DeepEqual(p, other)
 }
+
+func GetIPTypeFromString(ipTypeStr string) (IPType, error) {
+	switch ipTypeStr {
+	case string(IPV4Type):
+		return IPV4Type, nil
+	case string(IPV6Type):
+		return IPV6Type, nil
+	default:
+		return "", fmt.Errorf("Invalid IPType, could not parse from string: %s", ipTypeStr)
+	}
+}

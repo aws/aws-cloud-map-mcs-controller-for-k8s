@@ -494,3 +494,49 @@ func TestEndpoint_Equals(t *testing.T) {
 		})
 	}
 }
+
+func TestGetIPTypeFromString(t *testing.T) {
+	tests := []struct {
+		name      string
+		ipTypeStr string
+		want      IPType
+		wantErr   bool
+	}{
+		{
+			name:      "happy case ipv4",
+			ipTypeStr: "IPV4Type",
+			want:      IPV4Type,
+			wantErr:   false,
+		},
+		{
+			name:      "happy case ipv6",
+			ipTypeStr: "IPV6Type",
+			want:      IPV6Type,
+			wantErr:   false,
+		},
+		{
+			name:      "empty string",
+			ipTypeStr: "",
+			want:      "",
+			wantErr:   true,
+		},
+		{
+			name:      "case wrong",
+			ipTypeStr: "ipv6type",
+			want:      "",
+			wantErr:   true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetIPTypeFromString(tt.ipTypeStr)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetIPTypeFromString() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("GetIPTypeFromString() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
