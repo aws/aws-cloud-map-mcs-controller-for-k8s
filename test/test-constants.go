@@ -22,8 +22,10 @@ const (
 	ClusterId2                       = "test-mcs-clusterid-2"
 	EndptId1                         = "tcp-192_168_0_1-1"
 	EndptId2                         = "tcp-192_168_0_2-2"
+	EndptIdIpv6                      = "tcp-2001_0db8_0001_0000_0000_0ab9_C0A8:0102-1"
 	EndptIp1                         = "192.168.0.1"
 	EndptIp2                         = "192.168.0.2"
+	EndptIpv6                        = "2001:0db8:0001:0000:0000:0ab9:C0A8:0102"
 	EndptReadyTrue                   = "true"
 	EndptReadyFalse                  = "false"
 	Port1                            = 1
@@ -98,8 +100,9 @@ func GetTestMulticlusterService() *model.Service {
 
 func GetTestEndpoint1() *model.Endpoint {
 	return &model.Endpoint{
-		Id: EndptId1,
-		IP: EndptIp1,
+		Id:     EndptId1,
+		IP:     EndptIp1,
+		IPType: model.IPV4Type,
 		EndpointPort: model.Port{
 			Name:     PortName1,
 			Port:     Port1,
@@ -124,8 +127,36 @@ func GetTestEndpoint1() *model.Endpoint {
 
 func GetTestEndpoint2() *model.Endpoint {
 	return &model.Endpoint{
-		Id: EndptId2,
-		IP: EndptIp2,
+		Id:     EndptId2,
+		IP:     EndptIp2,
+		IPType: model.IPV4Type,
+		EndpointPort: model.Port{
+			Name:     PortName2,
+			Port:     Port2,
+			Protocol: Protocol2,
+		},
+		ServicePort: model.Port{
+			Name:       PortName2,
+			Port:       ServicePort2,
+			TargetPort: PortStr2,
+			Protocol:   Protocol2,
+		},
+		Ready:                          true,
+		Hostname:                       Hostname,
+		Nodename:                       Nodename,
+		ClusterId:                      ClusterId1,
+		ClusterSetId:                   ClusterSet,
+		ServiceType:                    model.ClusterSetIPType,
+		ServiceExportCreationTimestamp: SvcExportCreationTimestamp,
+		Attributes:                     map[string]string{model.K8sVersionAttr: PackageVersion},
+	}
+}
+
+func GetTestEndpointIpv6() *model.Endpoint {
+	return &model.Endpoint{
+		Id:     EndptId2,
+		IP:     EndptIpv6,
+		IPType: model.IPV6Type,
 		EndpointPort: model.Port{
 			Name:     PortName2,
 			Port:     Port2,

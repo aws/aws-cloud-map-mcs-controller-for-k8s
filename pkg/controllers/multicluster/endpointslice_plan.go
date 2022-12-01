@@ -39,6 +39,11 @@ type EndpointSlicePlan struct {
 	ClusterId string
 }
 
+func (p *EndpointSlicePlan) CheckIPType() model.IPType {
+	// Peek at the first endpoint for its IPType. All endpoints in a slice will be of the same IPType.
+	return p.Desired[0].IPType
+}
+
 // CalculateChanges returns list of EndpointSlice Changes that need to applied
 func (p *EndpointSlicePlan) CalculateChanges() EndpointSliceChanges {
 	// populate map of desired endpoints for lookup efficiency
@@ -147,7 +152,7 @@ func (p *EndpointSlicePlan) getOrCreateUnfilledEndpointSlice(changes *EndpointSl
 	}
 
 	// No existing slices can fill new endpoint requirements so create a new slice
-	sliceToCreate := CreateEndpointSliceStruct(p.Service, p.ServiceImportName, p.ClusterId)
+	sliceToCreate := CreateEndpointSliceStruct(p.Service, p.ServiceImportName, p.ClusterId, p.CheckIPType())
 	changes.Create = append(changes.Create, sliceToCreate)
 	return sliceToCreate, true
 }

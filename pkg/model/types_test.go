@@ -9,7 +9,8 @@ import (
 )
 
 var instId = "my-instance"
-var ip = "192.168.0.1"
+var ipv4 = "192.168.0.1"
+var ipv6 = "2001:0db8:0001:0000:0000:0ab9:C0A8:0102"
 var clusterId = "test-mcs-clusterId"
 var clusterSetId = "test-mcs-clusterSetId"
 var serviceType = ClusterSetIPType.String()
@@ -23,13 +24,13 @@ func TestNewEndpointFromInstance(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "happy case",
+			name: "happy case ipv4",
 			inst: &types.HttpInstanceSummary{
 				InstanceId: &instId,
 				Attributes: map[string]string{
 					ClusterIdAttr:             clusterId,
 					ClusterSetIdAttr:          clusterSetId,
-					EndpointIpv4Attr:          ip,
+					EndpointIpv4Attr:          ipv4,
 					EndpointPortAttr:          "80",
 					EndpointProtocolAttr:      "TCP",
 					EndpointPortNameAttr:      "http",
@@ -44,8 +45,55 @@ func TestNewEndpointFromInstance(t *testing.T) {
 				},
 			},
 			want: &Endpoint{
-				Id: instId,
-				IP: ip,
+				Id:     instId,
+				IP:     ipv4,
+				IPType: IPV4Type,
+				EndpointPort: Port{
+					Name:     "http",
+					Port:     80,
+					Protocol: "TCP",
+				},
+				ServicePort: Port{
+					Name:       "http",
+					Port:       65535,
+					TargetPort: "80",
+					Protocol:   "TCP",
+				},
+				ClusterId:                      clusterId,
+				ClusterSetId:                   clusterSetId,
+				ServiceType:                    ServiceType(serviceType),
+				ServiceExportCreationTimestamp: svcExportCreationTimestamp,
+				Ready:                          true,
+				Attributes: map[string]string{
+					"custom-attr": "custom-val",
+				},
+			},
+		},
+		{
+			name: "happy case ipv6",
+			inst: &types.HttpInstanceSummary{
+				InstanceId: &instId,
+				Attributes: map[string]string{
+					ClusterIdAttr:             clusterId,
+					ClusterSetIdAttr:          clusterSetId,
+					EndpointIpv6Attr:          ipv6,
+					EndpointPortAttr:          "80",
+					EndpointProtocolAttr:      "TCP",
+					EndpointPortNameAttr:      "http",
+					EndpointReadyAttr:         "true",
+					ServicePortNameAttr:       "http",
+					ServiceProtocolAttr:       "TCP",
+					ServicePortAttr:           "65535",
+					ServiceTargetPortAttr:     "80",
+					ServiceTypeAttr:           serviceType,
+					ServiceExportCreationAttr: strconv.FormatInt(svcExportCreationTimestamp, 10),
+					"custom-attr":             "custom-val",
+				},
+			},
+			want: &Endpoint{
+				Id:     instId,
+				IP:     ipv6,
+				IPType: IPV6Type,
 				EndpointPort: Port{
 					Name:     "http",
 					Port:     80,
@@ -72,7 +120,7 @@ func TestNewEndpointFromInstance(t *testing.T) {
 			inst: &types.HttpInstanceSummary{
 				InstanceId: &instId,
 				Attributes: map[string]string{
-					EndpointIpv4Attr:      ip,
+					EndpointIpv4Attr:      ipv4,
 					EndpointPortAttr:      "80",
 					EndpointProtocolAttr:  "TCP",
 					EndpointPortNameAttr:  "http",
@@ -103,7 +151,7 @@ func TestNewEndpointFromInstance(t *testing.T) {
 			inst: &types.HttpInstanceSummary{
 				InstanceId: &instId,
 				Attributes: map[string]string{
-					EndpointIpv4Attr: ip,
+					EndpointIpv4Attr: ipv4,
 					"custom-attr":    "custom-val",
 				},
 			},
@@ -115,7 +163,7 @@ func TestNewEndpointFromInstance(t *testing.T) {
 				InstanceId: &instId,
 				Attributes: map[string]string{
 					ClusterSetIdAttr:      clusterSetId,
-					EndpointIpv4Attr:      ip,
+					EndpointIpv4Attr:      ipv4,
 					EndpointPortAttr:      "80",
 					EndpointProtocolAttr:  "TCP",
 					EndpointPortNameAttr:  "http",
@@ -135,7 +183,7 @@ func TestNewEndpointFromInstance(t *testing.T) {
 				InstanceId: &instId,
 				Attributes: map[string]string{
 					ClusterIdAttr:         clusterId,
-					EndpointIpv4Attr:      ip,
+					EndpointIpv4Attr:      ipv4,
 					EndpointPortAttr:      "80",
 					EndpointProtocolAttr:  "TCP",
 					EndpointPortNameAttr:  "http",
@@ -156,7 +204,7 @@ func TestNewEndpointFromInstance(t *testing.T) {
 				Attributes: map[string]string{
 					ClusterIdAttr:         clusterId,
 					ClusterSetIdAttr:      clusterSetId,
-					EndpointIpv4Attr:      ip,
+					EndpointIpv4Attr:      ipv4,
 					EndpointPortAttr:      "80",
 					EndpointProtocolAttr:  "TCP",
 					EndpointPortNameAttr:  "http",
@@ -192,9 +240,10 @@ func TestEndpoint_GetAttributes(t *testing.T) {
 		want     map[string]string
 	}{
 		{
-			name: "happy case",
+			name: "happy case ipv4",
 			endpoint: Endpoint{
-				IP: ip,
+				IP:     ipv4,
+				IPType: IPV4Type,
 				EndpointPort: Port{
 					Name:     "http",
 					Port:     80,
@@ -218,7 +267,51 @@ func TestEndpoint_GetAttributes(t *testing.T) {
 			want: map[string]string{
 				ClusterIdAttr:             clusterId,
 				ClusterSetIdAttr:          clusterSetId,
-				EndpointIpv4Attr:          ip,
+				EndpointIpv4Attr:          ipv4,
+				EndpointPortAttr:          "80",
+				EndpointProtocolAttr:      "TCP",
+				EndpointPortNameAttr:      "http",
+				EndpointReadyAttr:         "true",
+				EndpointHostnameAttr:      "",
+				EndpointNodeNameAttr:      "",
+				ServicePortNameAttr:       "http",
+				ServiceProtocolAttr:       "TCP",
+				ServicePortAttr:           "30",
+				ServiceTargetPortAttr:     "80",
+				ServiceTypeAttr:           serviceType,
+				ServiceExportCreationAttr: strconv.FormatInt(svcExportCreationTimestamp, 10),
+				"custom-attr":             "custom-val",
+			},
+		},
+		{
+			name: "happy case ipv6",
+			endpoint: Endpoint{
+				IP:     ipv6,
+				IPType: IPV6Type,
+				EndpointPort: Port{
+					Name:     "http",
+					Port:     80,
+					Protocol: "TCP",
+				},
+				ServicePort: Port{
+					Name:       "http",
+					Port:       30,
+					TargetPort: "80",
+					Protocol:   "TCP",
+				},
+				Ready:                          true,
+				ClusterId:                      clusterId,
+				ClusterSetId:                   clusterSetId,
+				ServiceType:                    ServiceType(serviceType),
+				ServiceExportCreationTimestamp: svcExportCreationTimestamp,
+				Attributes: map[string]string{
+					"custom-attr": "custom-val",
+				},
+			},
+			want: map[string]string{
+				ClusterIdAttr:             clusterId,
+				ClusterSetIdAttr:          clusterSetId,
+				EndpointIpv6Attr:          ipv6,
 				EndpointPortAttr:          "80",
 				EndpointProtocolAttr:      "TCP",
 				EndpointPortNameAttr:      "http",
@@ -252,14 +345,24 @@ func TestEndpointIdFromIPAddressAndPort(t *testing.T) {
 		want    string
 	}{
 		{
-			name:    "happy case",
-			address: ip,
+			name:    "happy case ipv4",
+			address: ipv4,
 			port: Port{
 				Name:     "http",
 				Port:     80,
 				Protocol: "TCP",
 			},
 			want: "tcp-192_168_0_1-80",
+		},
+		{
+			name:    "happy case ipv6",
+			address: ipv6,
+			port: Port{
+				Name:     "http",
+				Port:     80,
+				Protocol: "TCP",
+			},
+			want: "tcp-2001_0db8_0001_0000_0000_0ab9_C0A8_0102-80",
 		},
 	}
 	for _, tt := range tests {
@@ -272,9 +375,10 @@ func TestEndpointIdFromIPAddressAndPort(t *testing.T) {
 }
 
 func TestEndpoint_Equals(t *testing.T) {
-	firstEndpoint := Endpoint{
-		Id: instId,
-		IP: ip,
+	firstEndpointIpv4 := Endpoint{
+		Id:     instId,
+		IP:     ipv4,
+		IPType: IPV4Type,
 		ServicePort: Port{
 			Port: 80,
 		},
@@ -283,9 +387,10 @@ func TestEndpoint_Equals(t *testing.T) {
 		},
 	}
 
-	secondEndpoint := Endpoint{
-		Id: instId,
-		IP: ip,
+	secondEndpointIpv4 := Endpoint{
+		Id:     instId,
+		IP:     ipv4,
+		IPType: IPV4Type,
 		ServicePort: Port{
 			Port: 80,
 			Name: "",
@@ -295,9 +400,47 @@ func TestEndpoint_Equals(t *testing.T) {
 		},
 	}
 
-	thirdEndpoint := Endpoint{
-		Id: instId,
-		IP: ip,
+	thirdEndpointIpv4 := Endpoint{
+		Id:     instId,
+		IP:     ipv4,
+		IPType: IPV4Type,
+		ServicePort: Port{
+			Port: 80,
+		},
+		Attributes: map[string]string{
+			"custom-key": "different-val",
+		},
+	}
+
+	firstEndpointIpv6 := Endpoint{
+		Id:     instId,
+		IP:     ipv6,
+		IPType: IPV6Type,
+		ServicePort: Port{
+			Port: 80,
+		},
+		Attributes: map[string]string{
+			"custom-key": "custom-val",
+		},
+	}
+
+	secondEndpointIpv6 := Endpoint{
+		Id:     instId,
+		IP:     ipv6,
+		IPType: IPV6Type,
+		ServicePort: Port{
+			Port: 80,
+			Name: "",
+		},
+		Attributes: map[string]string{
+			"custom-key": "custom-val",
+		},
+	}
+
+	thirdEndpointIpv6 := Endpoint{
+		Id:     instId,
+		IP:     ipv6,
+		IPType: IPV6Type,
 		ServicePort: Port{
 			Port: 80,
 		},
@@ -313,15 +456,33 @@ func TestEndpoint_Equals(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "identical",
-			x:    firstEndpoint,
-			y:    secondEndpoint,
+			name: "identical ipv4",
+			x:    firstEndpointIpv4,
+			y:    secondEndpointIpv4,
 			want: true,
 		},
 		{
-			name: "different",
-			x:    firstEndpoint,
-			y:    thirdEndpoint,
+			name: "identical ipv6",
+			x:    firstEndpointIpv6,
+			y:    secondEndpointIpv6,
+			want: true,
+		},
+		{
+			name: "different ipv4",
+			x:    firstEndpointIpv4,
+			y:    thirdEndpointIpv4,
+			want: false,
+		},
+		{
+			name: "different ipv6",
+			x:    firstEndpointIpv6,
+			y:    thirdEndpointIpv6,
+			want: false,
+		},
+		{
+			name: "different ipv4 and ipv6",
+			x:    firstEndpointIpv4,
+			y:    firstEndpointIpv6,
 			want: false,
 		},
 	}

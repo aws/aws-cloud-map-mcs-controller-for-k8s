@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base32"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	multiclusterv1alpha1 "github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/apis/multicluster/v1alpha1"
@@ -39,6 +40,28 @@ const (
 	// ValueEndpointSliceManagedBy indicates the name of the entity that manages the EndpointSlice.
 	ValueEndpointSliceManagedBy = "aws-cloud-map-mcs-controller-for-k8s"
 )
+
+func AddressTypeToIPType(addressType discovery.AddressType) (model.IPType, error) {
+	switch addressType {
+	case discovery.AddressTypeIPv6:
+		return model.IPV6Type, nil
+	case discovery.AddressTypeIPv4:
+		return model.IPV4Type, nil
+	default:
+		return "", fmt.Errorf("unsupported address type %s", addressType)
+	}
+}
+
+func IPTypeToAddressType(ipType model.IPType) discovery.AddressType {
+	switch ipType {
+	case model.IPV6Type:
+		return discovery.AddressTypeIPv6
+	case model.IPV4Type:
+		return discovery.AddressTypeIPv4
+	default:
+		return discovery.AddressTypeIPv4
+	}
+}
 
 // ServicePortToPort converts a k8s service port to internal model port
 func ServicePortToPort(svcPort v1.ServicePort) model.Port {
@@ -251,7 +274,7 @@ func CreateEndpointForSlice(svc *v1.Service, endpoint *model.Endpoint) discovery
 	return ep
 }
 
-func CreateEndpointSliceStruct(svc *v1.Service, svcImportName string, clusterId string) *discovery.EndpointSlice {
+func CreateEndpointSliceStruct(svc *v1.Service, svcImportName string, clusterId string, ipType model.IPType) *discovery.EndpointSlice {
 	return &discovery.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
@@ -271,7 +294,7 @@ func CreateEndpointSliceStruct(svc *v1.Service, svcImportName string, clusterId 
 			})},
 			Namespace: svc.Namespace,
 		},
-		AddressType: discovery.AddressTypeIPv4,
+		AddressType: IPTypeToAddressType(ipType),
 	}
 }
 

@@ -40,10 +40,18 @@ const (
 
 type ServiceType string
 
+const (
+	IPV4Type IPType = "IPV4Type"
+	IPV6Type IPType = "IPV6Type"
+)
+
+type IPType string
+
 // Endpoint holds basic values and attributes for an endpoint.
 type Endpoint struct {
 	Id                             string
 	IP                             string
+	IPType                         IPType
 	EndpointPort                   Port
 	ServicePort                    Port
 	ClusterId                      string
@@ -67,6 +75,7 @@ type Port struct {
 // Rest are custom attributes
 const (
 	EndpointIpv4Attr          = "AWS_INSTANCE_IPV4"
+	EndpointIpv6Attr          = "AWS_INSTANCE_IPV6"
 	EndpointPortAttr          = "AWS_INSTANCE_PORT"
 	EndpointPortNameAttr      = "ENDPOINT_PORT_NAME"
 	EndpointProtocolAttr      = "ENDPOINT_PROTOCOL"
@@ -96,11 +105,23 @@ func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (*Endpoint, error)
 	}
 
 	// Remove and set the IP, Port, Service Port, ServiceType, ClusterId, ClusterSetId
-	ip, err := removeStringAttr(attributes, EndpointIpv4Attr)
-	if err != nil {
-		return nil, err
+
+	// ASSUMPTION: Endpoints have either IPV4 OR IPV6, not both.
+	if _, exists := attributes[EndpointIpv6Attr]; exists {
+		ip, err := removeStringAttr(attributes, EndpointIpv6Attr)
+		if err != nil {
+			return nil, err
+		}
+		endpoint.IP = ip
+		endpoint.IPType = IPV6Type
+	} else {
+		ip, err := removeStringAttr(attributes, EndpointIpv4Attr)
+		if err != nil {
+			return nil, err
+		}
+		endpoint.IP = ip
+		endpoint.IPType = IPV4Type
 	}
-	endpoint.IP = ip
 
 	endpointPort, err := endpointPortFromAttr(attributes)
 	if err != nil {
@@ -226,9 +247,14 @@ func removeTimestampAttr(attributes map[string]string, attr string) (int64, erro
 func (e *Endpoint) GetCloudMapAttributes() map[string]string {
 	attrs := make(map[string]string)
 
+	if e.IPType == IPV4Type {
+		attrs[EndpointIpv4Attr] = e.IP
+	} else if e.IPType == IPV6Type {
+		attrs[EndpointIpv6Attr] = e.IP
+	}
+
 	attrs[ClusterIdAttr] = e.ClusterId
 	attrs[ClusterSetIdAttr] = e.ClusterSetId
-	attrs[EndpointIpv4Attr] = e.IP
 	attrs[EndpointPortAttr] = strconv.Itoa(int(e.EndpointPort.Port))
 	attrs[EndpointProtocolAttr] = e.EndpointPort.Protocol
 	attrs[EndpointPortNameAttr] = e.EndpointPort.Name
