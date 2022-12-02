@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 9 {
+	if len(os.Args) != 10 {
 		fmt.Println("Expected namespace, service, clusterId, clusterSetId, endpoint port, service port, serviceType, endpoint IP, and endpoint IPType list as arguments")
 		os.Exit(1)
 	}

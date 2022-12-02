@@ -115,7 +115,6 @@ func (e *exportServiceScenario) compareEndpoints(cmEndpoints []*model.Endpoint) 
 
 	for _, expected := range e.expectedSvc.Endpoints {
 		match := false
-		fmt.Printf("*****LOOKING FOR EXPECTED: %+v\n", expected)
 		for _, actual := range cmEndpoints {
 			// Ignore K8S instance attribute for the purpose of this test.
 			delete(actual.Attributes, model.K8sVersionAttr)
@@ -124,13 +123,10 @@ func (e *exportServiceScenario) compareEndpoints(cmEndpoints []*model.Endpoint) 
 			// Ignore Nodename and Hostname, as they can be platform dependent
 			actual.Nodename = ""
 			actual.Hostname = ""
-			fmt.Printf("*****ACTUAL: %+v\n", actual)
 			if expected.Equals(actual) {
-				fmt.Println("*****MATCHED*****")
 				match = true
 				break
 			}
-			fmt.Println("*****DID NOT MATCH*****")
 		}
 		if !match {
 			fmt.Println("Endpoints do not match.")

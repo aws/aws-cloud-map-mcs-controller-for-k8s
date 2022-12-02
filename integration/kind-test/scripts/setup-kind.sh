@@ -14,10 +14,13 @@ if [[ -z "${IP_TYPE}" ]]; then
   IP_TYPE="IPV4Type"
 fi
 
-if [[ IP_TYPE == "IPV4Type" ]]; then
+echo "IP_TYPE: $IP_TYPE"
+if [[ $IP_TYPE == "IPV4Type" ]]; then
   $KIND_BIN create cluster --name "$KIND_SHORT" --image "$IMAGE"
-elif [[ IP_TYPE == "IPV6Type" ]]; then
+elif [[ $IP_TYPE == "IPV6Type" ]]; then
   $KIND_BIN create cluster --name "$KIND_SHORT" --image "$IMAGE" --config=./integration/kind-test/configs/ipv6.yaml
+else
+  echo "IP_TYPE invalid"
 fi
 
 $KUBECTL_BIN config use-context "$CLUSTER"
