@@ -269,6 +269,9 @@ func TestServiceDiscoveryClient_CreateService_CreatesNamespace_CreateNsError(t *
 func TestServiceDiscoveryClient_GetService_HappyCase(t *testing.T) {
 	tc := getTestSdClient(t)
 	defer tc.close()
+
+	tc.mockCache.EXPECT().GetEndpoints(test.HttpNsName, test.SvcName).Return(nil, false)
+
 	tc.mockCache.EXPECT().GetServiceIdMap(test.HttpNsName).Return(nil, false)
 
 	tc.mockCache.EXPECT().GetNamespaceMap().Return(nil, false)
@@ -280,10 +283,24 @@ func TestServiceDiscoveryClient_GetService_HappyCase(t *testing.T) {
 		Return(map[string]string{test.SvcName: test.SvcId}, nil)
 	tc.mockCache.EXPECT().CacheServiceIdMap(test.HttpNsName, getServiceIdMapForTest())
 
+	tc.mockCache.EXPECT().GetEndpoints(test.HttpNsName, test.SvcName).Return([]*model.Endpoint{}, false)
 	tc.mockApi.EXPECT().DiscoverInstances(context.TODO(), test.HttpNsName, test.SvcName, map[string]string{
 		model.ClusterSetIdAttr: test.ClusterSet,
-		model.ClusterIdAttr:    test.ClusterId1,
 	}).Return(getHttpInstanceSummaryForTest(), nil)
+	tc.mockCache.EXPECT().CacheEndpoints(test.HttpNsName, test.SvcName,
+		[]*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()})
+
+	svc, err := tc.client.GetService(context.TODO(), test.HttpNsName, test.SvcName)
+	assert.Nil(t, err)
+	assert.Equal(t, test.GetTestService(), svc)
+}
+
+func TestServiceDiscoveryClient_GetService_CachedValues(t *testing.T) {
+	tc := getTestSdClient(t)
+	defer tc.close()
+
+	tc.mockCache.EXPECT().GetEndpoints(test.HttpNsName, test.SvcName).
+		Return([]*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()}, true)
 
 	svc, err := tc.client.GetService(context.TODO(), test.HttpNsName, test.SvcName)
 	assert.Nil(t, err)
@@ -293,6 +310,8 @@ func TestServiceDiscoveryClient_GetService_HappyCase(t *testing.T) {
 func TestServiceDiscoveryClient_GetService_ServiceNotFound(t *testing.T) {
 	tc := getTestSdClient(t)
 	defer tc.close()
+
+	tc.mockCache.EXPECT().GetEndpoints(test.HttpNsName, test.SvcName).Return(nil, false)
 
 	tc.mockCache.EXPECT().GetServiceIdMap(test.HttpNsName).Return(nil, false)
 

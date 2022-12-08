@@ -112,13 +112,20 @@ func (sdc *serviceDiscoveryClient) CreateService(ctx context.Context, nsName str
 
 func (sdc *serviceDiscoveryClient) GetService(ctx context.Context, nsName string, svcName string) (svc *model.Service, err error) {
 	sdc.log.Info("fetching a service", "namespace", nsName, "name", svcName)
+	if endpts, found := sdc.cache.GetEndpoints(nsName, svcName); found {
+		return &model.Service{
+			Namespace: nsName,
+			Name:      svcName,
+			Endpoints: endpts,
+		}, nil
+	}
 
 	_, err = sdc.getServiceId(ctx, nsName, svcName)
 	if err != nil {
 		return nil, err
 	}
 
-	endpts, err := sdc.getEndpointsInThisCluster(ctx, nsName, svcName, true)
+	endpts, err := sdc.getEndpoints(ctx, nsName, svcName)
 	if err != nil {
 		return nil, err
 	}
@@ -201,17 +208,6 @@ func (sdc *serviceDiscoveryClient) getEndpoints(ctx context.Context, nsName stri
 		return endpts, nil
 	}
 
-	endpts, err = sdc.getEndpointsInThisCluster(ctx, nsName, svcName, false)
-	if err != nil {
-		sdc.log.Error(err, "failed to retrieve clusterSetId")
-		return nil, err
-	}
-	sdc.cache.CacheEndpoints(nsName, svcName, endpts)
-
-	return endpts, nil
-}
-
-func (sdc *serviceDiscoveryClient) getEndpointsInThisCluster(ctx context.Context, nsName string, svcName string, inThisCluster bool) (endpts []*model.Endpoint, err error) {
 	clusterProperties, err := sdc.clusterUtils.GetClusterProperties(ctx)
 	if err != nil {
 		sdc.log.Error(err, "failed to retrieve clusterSetId")
@@ -220,9 +216,6 @@ func (sdc *serviceDiscoveryClient) getEndpointsInThisCluster(ctx context.Context
 
 	queryParameters := map[string]string{
 		model.ClusterSetIdAttr: clusterProperties.ClusterSetId(),
-	}
-	if inThisCluster {
-		queryParameters[model.ClusterIdAttr] = clusterProperties.ClusterId()
 	}
 	insts, err := sdc.sdApi.DiscoverInstances(ctx, nsName, svcName, queryParameters)
 	if err != nil {
@@ -237,6 +230,7 @@ func (sdc *serviceDiscoveryClient) getEndpointsInThisCluster(ctx context.Context
 		}
 		endpts = append(endpts, endpt)
 	}
+	sdc.cache.CacheEndpoints(nsName, svcName, endpts)
 
 	return endpts, nil
 }
