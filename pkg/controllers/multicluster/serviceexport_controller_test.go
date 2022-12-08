@@ -141,7 +141,7 @@ func TestServiceExportReconciler_Reconcile_DeleteExistingService(t *testing.T) {
 		Return(test.GetTestService(), nil)
 	// call to delete the endpoint in the cloudmap
 	mock.EXPECT().DeleteEndpoints(gomock.Any(), test.HttpNsName, test.SvcName,
-		[]*model.Endpoint{test.GetTestEndpoint1(), test.GetTestEndpoint2()}).Return(nil).Times(1)
+		test.GetTestService().GetEndpoints(test.ClusterId1)).Return(nil).Times(1)
 
 	request := ctrl.Request{
 		NamespacedName: types.NamespacedName{
@@ -177,8 +177,6 @@ func TestServiceExportReconciler_Reconcile_NoClusterProperty(t *testing.T) {
 	defer mockController.Finish()
 
 	mockSDClient := cloudmapMock.NewMockServiceDiscoveryClient(mockController)
-
-	mockSDClient.EXPECT().GetService(gomock.Any(), test.HttpNsName, test.SvcName).Return(test.GetTestService(), nil)
 
 	reconciler := getServiceExportReconciler(t, mockSDClient, fakeClient)
 
