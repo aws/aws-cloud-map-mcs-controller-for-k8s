@@ -287,6 +287,15 @@ func ConvertNamespaceType(nsType types.NamespaceType) (namespaceType NamespaceTy
 	}
 }
 
+func (svc *Service) GetEndpoints(clusterId string) (endpts []*Endpoint) {
+	for _, endpt := range svc.Endpoints {
+		if endpt.ClusterId == clusterId {
+			endpts = append(endpts, endpt)
+		}
+	}
+	return endpts
+}
+
 func (namespaceType *NamespaceType) IsUnsupported() bool {
 	return *namespaceType == UnsupportedNamespaceType
 }
