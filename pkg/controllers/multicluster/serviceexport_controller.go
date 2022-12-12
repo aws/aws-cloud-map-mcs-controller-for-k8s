@@ -85,15 +85,21 @@ func (r *ServiceExportReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 	}
 
-	// Check if the service export is marked to be deleted
-	if isServiceExportMarkedForDelete {
-		return r.handleDelete(ctx, &serviceExport)
+	clusterProperties, err := r.ClusterUtils.GetClusterProperties(ctx)
+	if err != nil {
+		r.Log.Error(err, "unable to retrieve ClusterId and ClusterSetId")
+		return ctrl.Result{}, err
 	}
 
-	return r.handleUpdate(ctx, &serviceExport, &service)
+	// Check if the service export is marked to be deleted
+	if isServiceExportMarkedForDelete {
+		return r.handleDelete(ctx, clusterProperties.ClusterId(), &serviceExport)
+	}
+
+	return r.handleUpdate(ctx, clusterProperties.ClusterId(), &serviceExport, &service)
 }
 
-func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, serviceExport *multiclusterv1alpha1.ServiceExport, service *v1.Service) (ctrl.Result, error) {
+func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, clusterId string, serviceExport *multiclusterv1alpha1.ServiceExport, service *v1.Service) (ctrl.Result, error) {
 	err := r.addFinalizerAndOwnerRef(ctx, serviceExport, service)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -114,7 +120,7 @@ func (r *ServiceExportReconciler) handleUpdate(ctx context.Context, serviceExpor
 
 	// Compute diff between Cloud Map and K8s endpoints, and apply changes
 	plan := model.Plan{
-		Current: cmService.Endpoints,
+		Current: cmService.GetEndpoints(clusterId),
 		Desired: endpoints,
 	}
 	changes := plan.CalculateChanges()
@@ -186,7 +192,7 @@ func (r *ServiceExportReconciler) createOrGetCloudMapService(ctx context.Context
 	return cmService, nil
 }
 
-func (r *ServiceExportReconciler) handleDelete(ctx context.Context, serviceExport *multiclusterv1alpha1.ServiceExport) (ctrl.Result, error) {
+func (r *ServiceExportReconciler) handleDelete(ctx context.Context, clusterId string, serviceExport *multiclusterv1alpha1.ServiceExport) (ctrl.Result, error) {
 	if controllerutil.ContainsFinalizer(serviceExport, ServiceExportFinalizer) {
 		r.Log.Info("removing service export", "namespace", serviceExport.Namespace, "name", serviceExport.Name)
 
@@ -196,7 +202,7 @@ func (r *ServiceExportReconciler) handleDelete(ctx context.Context, serviceExpor
 			return ctrl.Result{}, err
 		}
 		if cmService != nil {
-			if err := r.CloudMap.DeleteEndpoints(ctx, cmService.Namespace, cmService.Name, cmService.Endpoints); err != nil {
+			if err := r.CloudMap.DeleteEndpoints(ctx, cmService.Namespace, cmService.Name, cmService.GetEndpoints(clusterId)); err != nil {
 				r.Log.Error(err, "error deleting Endpoints from Cloud Map", "namespace", cmService.Namespace, "name", cmService.Name)
 				return ctrl.Result{}, err
 			}

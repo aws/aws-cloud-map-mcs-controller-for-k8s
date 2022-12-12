@@ -6,12 +6,17 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
+	"github.com/google/go-cmp/cmp"
 )
 
 var instId = "my-instance"
 var ipv4 = "192.168.0.1"
 var ipv6 = "2001:0db8:0001:0000:0000:0ab9:C0A8:0102"
 var clusterId = "test-mcs-clusterId"
+var clusterId2 = "test-mcs-clusterid-2"
+var clusterId3 = "test-mcs-clusterid-3"
+var namespaceName = "test-mcs-namespace"
+var serviceName = "test-mcs-service"
 var clusterSetId = "test-mcs-clusterSetId"
 var serviceType = ClusterSetIPType.String()
 var svcExportCreationTimestamp int64 = 1640995200000
@@ -536,6 +541,72 @@ func TestGetIPTypeFromString(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("GetIPTypeFromString() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+        
+func TestGetEndpoints(t *testing.T) {
+	firstEndpoint := Endpoint{
+		Id: instId + "-1",
+		IP: ip,
+		ServicePort: Port{
+			Port: 80,
+		},
+		ClusterId: clusterId,
+	}
+	secondEndpoint := Endpoint{
+		Id: instId + "2",
+		IP: ip,
+		ServicePort: Port{
+			Port: 80,
+			Name: "",
+		},
+		ClusterId: clusterId2,
+	}
+	thirdEndpoint := Endpoint{
+		Id: instId + "3",
+		IP: ip,
+		ServicePort: Port{
+			Port: 80,
+			Name: "",
+		},
+		ClusterId: clusterId2,
+	}
+
+	svc := Service{
+		Namespace: namespaceName,
+		Name:      serviceName,
+		Endpoints: []*Endpoint{
+			&firstEndpoint, &secondEndpoint, &thirdEndpoint,
+		},
+	}
+
+	tests := []struct {
+		name       string
+		x          string
+		wantEndpts []*Endpoint
+	}{
+		{
+			name:       "return-first-endpoint",
+			x:          clusterId,
+			wantEndpts: []*Endpoint{&firstEndpoint},
+		},
+		{
+			name:       "return-two-endpoints",
+			x:          clusterId2,
+			wantEndpts: []*Endpoint{&secondEndpoint, &thirdEndpoint},
+		},
+		{
+			name:       "return-nil",
+			x:          clusterId3,
+			wantEndpts: nil,  
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotEndpts := svc.GetEndpoints(tt.x); !cmp.Equal(gotEndpts, tt.wantEndpts) {
+				t.Errorf("Equals() = %v, Want = %v", gotEndpts, tt.wantEndpts)
 			}
 		})
 	}
