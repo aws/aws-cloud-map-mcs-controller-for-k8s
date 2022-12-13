@@ -11,8 +11,8 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 9 {
-		fmt.Println("Expected namespace, service, clusterId, clusterSetId, endpoint port, service port, serviceType, and endpoint IP list as arguments")
+	if len(os.Args) != 10 {
+		fmt.Println("Expected namespace, service, clusterId, clusterSetId, endpoint port, service port, serviceType, endpoint AddressType, and endpoint IP list as arguments")
 		os.Exit(1)
 	}
 
@@ -23,15 +23,16 @@ func main() {
 	port := os.Args[5]
 	servicePort := os.Args[6]
 	serviceType := os.Args[7]
-	ips := os.Args[8]
+	addressType := os.Args[8]
+	ips := os.Args[9]
 
-	testServiceExport(nsName, svcName, clusterId, clusterSetId, port, servicePort, serviceType, ips)
+	testServiceExport(nsName, svcName, clusterId, clusterSetId, port, servicePort, serviceType, addressType, ips)
 }
 
-func testServiceExport(nsName string, svcName string, clusterId string, clusterSetId string, port string, servicePort string, serviceType string, ips string) {
+func testServiceExport(nsName string, svcName string, clusterId string, clusterSetId string, port string, servicePort string, serviceType string, addressType string, ips string) {
 	fmt.Printf("Testing service export integration for namespace %s and service %s\n", nsName, svcName)
 
-	export, err := scenarios.NewExportServiceScenario(getAwsConfig(), nsName, svcName, clusterId, clusterSetId, port, servicePort, serviceType, ips)
+	export, err := scenarios.NewExportServiceScenario(getAwsConfig(), nsName, svcName, clusterId, clusterSetId, port, servicePort, serviceType, addressType, ips)
 	if err != nil {
 		fmt.Printf("Failed to setup service export integration test scenario: %s", err.Error())
 		os.Exit(1)

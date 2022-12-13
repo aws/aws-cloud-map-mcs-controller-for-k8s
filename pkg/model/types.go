@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	discovery "k8s.io/api/discovery/v1"
+
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 )
 
@@ -44,6 +46,7 @@ type ServiceType string
 type Endpoint struct {
 	Id                             string
 	IP                             string
+	AddressType                    discovery.AddressType
 	EndpointPort                   Port
 	ServicePort                    Port
 	ClusterId                      string
@@ -67,6 +70,7 @@ type Port struct {
 // Rest are custom attributes
 const (
 	EndpointIpv4Attr          = "AWS_INSTANCE_IPV4"
+	EndpointIpv6Attr          = "AWS_INSTANCE_IPV6"
 	EndpointPortAttr          = "AWS_INSTANCE_PORT"
 	EndpointPortNameAttr      = "ENDPOINT_PORT_NAME"
 	EndpointProtocolAttr      = "ENDPOINT_PROTOCOL"
@@ -96,11 +100,29 @@ func NewEndpointFromInstance(inst *types.HttpInstanceSummary) (*Endpoint, error)
 	}
 
 	// Remove and set the IP, Port, Service Port, ServiceType, ClusterId, ClusterSetId
-	ip, err := removeStringAttr(attributes, EndpointIpv4Attr)
-	if err != nil {
-		return nil, err
+
+	// ASSUMPTION: Endpoints have either IPV4 OR IPV6, not both. Defaults to IPV4 if both are present.
+	ipv4, ipv4Exists := attributes[EndpointIpv4Attr]
+	ipv6, ipv6Exists := attributes[EndpointIpv6Attr]
+	if ipv6Exists {
+		ip, err := removeStringAttr(attributes, EndpointIpv6Attr)
+		if err != nil {
+			return nil, err
+		}
+		endpoint.IP = ip
+		endpoint.AddressType = discovery.AddressTypeIPv6
 	}
-	endpoint.IP = ip
+	if ipv4Exists {
+		ip, err := removeStringAttr(attributes, EndpointIpv4Attr)
+		if err != nil {
+			return nil, err
+		}
+		endpoint.IP = ip
+		endpoint.AddressType = discovery.AddressTypeIPv4
+	}
+	if ipv4Exists && ipv6Exists {
+		fmt.Printf("WARNING: Found both address types in one Endpoint... IPv4: %s  IPv6: %s\n", ipv4, ipv6)
+	}
 
 	endpointPort, err := endpointPortFromAttr(attributes)
 	if err != nil {
@@ -226,9 +248,14 @@ func removeTimestampAttr(attributes map[string]string, attr string) (int64, erro
 func (e *Endpoint) GetCloudMapAttributes() map[string]string {
 	attrs := make(map[string]string)
 
+	if e.AddressType == discovery.AddressTypeIPv4 {
+		attrs[EndpointIpv4Attr] = e.IP
+	} else if e.AddressType == discovery.AddressTypeIPv6 {
+		attrs[EndpointIpv6Attr] = e.IP
+	}
+
 	attrs[ClusterIdAttr] = e.ClusterId
 	attrs[ClusterSetIdAttr] = e.ClusterSetId
-	attrs[EndpointIpv4Attr] = e.IP
 	attrs[EndpointPortAttr] = strconv.Itoa(int(e.EndpointPort.Port))
 	attrs[EndpointProtocolAttr] = e.EndpointPort.Protocol
 	attrs[EndpointPortNameAttr] = e.EndpointPort.Name
@@ -307,4 +334,15 @@ func (p *Port) GetID() string {
 // Equals evaluates if two Ports are "deeply equal" (including all fields).
 func (p *Port) Equals(other *Port) bool {
 	return reflect.DeepEqual(p, other)
+}
+
+func GetAddressTypeFromString(addressTypeStr string) (discovery.AddressType, error) {
+	switch addressTypeStr {
+	case string(discovery.AddressTypeIPv4):
+		return discovery.AddressTypeIPv4, nil
+	case string(discovery.AddressTypeIPv6):
+		return discovery.AddressTypeIPv6, nil
+	default:
+		return "", fmt.Errorf("Invalid AddressType, could not parse from string: %s", addressTypeStr)
+	}
 }

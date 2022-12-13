@@ -5,6 +5,7 @@
 source ./integration/kind-test/scripts/common.sh
 export SERVICE=$1
 export SERVICE_TYPE=$2
+export IP_TYPE=$3
 
 # Deploy pods
 $KUBECTL_BIN apply -f "$KIND_CONFIGS/e2e-deployment.yaml"
@@ -24,7 +25,7 @@ mkdir -p "$LOGS"
 CTL_PID=$!
 echo "controller PID:$CTL_PID"
 
-go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $CLUSTERID1 $CLUSTERSETID1 $ENDPT_PORT $SERVICE_PORT $SERVICE_TYPE "$endpts"
+go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $CLUSTERID1 $CLUSTERSETID1 $ENDPT_PORT $SERVICE_PORT $SERVICE_TYPE $IP_TYPE "$endpts"
 exit_code=$?
 
 if [ "$exit_code" -eq 0 ] ; then
@@ -58,7 +59,7 @@ if [ "$exit_code" -eq 0 ] ; then
 fi
 
 if [ "$exit_code" -eq 0 ] ; then
-  go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $CLUSTERID1 $CLUSTERSETID1 $ENDPT_PORT $SERVICE_PORT $SERVICE_TYPE "$updated_endpoints"
+  go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $CLUSTERID1 $CLUSTERSETID1 $ENDPT_PORT $SERVICE_PORT $SERVICE_TYPE $IP_TYPE "$updated_endpoints"
   exit_code=$?
 fi
 

@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# If the IP Type env var is not set, default it to IPv4
+if [[ -z "${ADDRESS_TYPE}" ]]; then
+  ADDRESS_TYPE="IPv4"
+fi
+
 # Helper function to verify DNS results
 checkDNS() {
     dns_addresses_count=$(echo "$1" | wc -l | xargs)
@@ -31,10 +36,20 @@ $KUBECTL_BIN wait --for=condition=ready pod/dnsutils # wait until pod is deploye
 
 # Perform a dig to cluster-local CoreDNS
 # TODO: parse dig outputs for more precise verification - check specifics IPs?
-echo "performing dig for A/AAAA records..."
-addresses=$($KUBECTL_BIN exec dnsutils -- dig +all +ans $SERVICE.$NAMESPACE.svc.clusterset.local +short)
-exit_code=$?
-echo "$addresses"
+if [[ $ADDRESS_TYPE == "IPv4" ]]; then
+    echo "performing dig for A records for IPv4..."
+    addresses=$($KUBECTL_BIN exec dnsutils -- dig +all +ans $SERVICE.$NAMESPACE.svc.clusterset.local +short)
+    exit_code=$?
+    echo "$addresses"
+elif [[ $ADDRESS_TYPE == "IPv6" ]]; then
+    echo "performing dig for AAAA records for IPv6..."
+    addresses=$($KUBECTL_BIN exec dnsutils -- dig AAAA +all +ans $SERVICE.$NAMESPACE.svc.clusterset.local +short)
+    exit_code=$?
+    echo "$addresses"
+else
+    echo "ADDRESS_TYPE invalid"
+    exit 1
+fi
 
 if [ "$exit_code" -ne 0 ]; then
     echo "ERROR: Unable to dig service $SERVICE.$NAMESPACE.svc.clusterset.local"
