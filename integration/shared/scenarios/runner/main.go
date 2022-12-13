@@ -23,8 +23,8 @@ func main() {
 	port := os.Args[5]
 	servicePort := os.Args[6]
 	serviceType := os.Args[7]
-	ips := os.Args[8]
-	addressType := os.Args[9]
+	addressType := os.Args[8]
+	ips := os.Args[9]
 
 	testServiceExport(nsName, svcName, clusterId, clusterSetId, port, servicePort, serviceType, addressType, ips)
 }
