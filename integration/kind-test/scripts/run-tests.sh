@@ -25,7 +25,7 @@ mkdir -p "$LOGS"
 CTL_PID=$!
 echo "controller PID:$CTL_PID"
 
-go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $CLUSTERID1 $CLUSTERSETID1 $ENDPT_PORT $SERVICE_PORT $SERVICE_TYPE "$endpts" $IP_TYPE
+go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $CLUSTERID1 $CLUSTERSETID1 $ENDPT_PORT $SERVICE_PORT $SERVICE_TYPE $IP_TYPE "$endpts"
 exit_code=$?
 
 if [ "$exit_code" -eq 0 ] ; then
@@ -59,7 +59,7 @@ if [ "$exit_code" -eq 0 ] ; then
 fi
 
 if [ "$exit_code" -eq 0 ] ; then
-  go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $CLUSTERID1 $CLUSTERSETID1 $ENDPT_PORT $SERVICE_PORT $SERVICE_TYPE "$updated_endpoints" $IP_TYPE
+  go run $SCENARIOS/runner/main.go $NAMESPACE $SERVICE $CLUSTERID1 $CLUSTERSETID1 $ENDPT_PORT $SERVICE_PORT $SERVICE_TYPE $IP_TYPE "$updated_endpoints"
   exit_code=$?
 fi
 

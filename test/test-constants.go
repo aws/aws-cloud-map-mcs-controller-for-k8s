@@ -3,6 +3,8 @@ package test
 import (
 	"fmt"
 
+	discovery "k8s.io/api/discovery/v1"
+
 	"github.com/aws/aws-cloud-map-mcs-controller-for-k8s/pkg/version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -100,9 +102,9 @@ func GetTestMulticlusterService() *model.Service {
 
 func GetTestEndpoint1() *model.Endpoint {
 	return &model.Endpoint{
-		Id:     EndptId1,
-		IP:     EndptIp1,
-		IPType: model.IPV4Type,
+		Id:          EndptId1,
+		IP:          EndptIp1,
+		AddressType: discovery.AddressTypeIPv4,
 		EndpointPort: model.Port{
 			Name:     PortName1,
 			Port:     Port1,
@@ -127,9 +129,9 @@ func GetTestEndpoint1() *model.Endpoint {
 
 func GetTestEndpoint2() *model.Endpoint {
 	return &model.Endpoint{
-		Id:     EndptId2,
-		IP:     EndptIp2,
-		IPType: model.IPV4Type,
+		Id:          EndptId2,
+		IP:          EndptIp2,
+		AddressType: discovery.AddressTypeIPv4,
 		EndpointPort: model.Port{
 			Name:     PortName2,
 			Port:     Port2,
@@ -154,9 +156,9 @@ func GetTestEndpoint2() *model.Endpoint {
 
 func GetTestEndpointIpv6() *model.Endpoint {
 	return &model.Endpoint{
-		Id:     EndptId2,
-		IP:     EndptIpv6,
-		IPType: model.IPV6Type,
+		Id:          EndptId2,
+		IP:          EndptIpv6,
+		AddressType: discovery.AddressTypeIPv6,
 		EndpointPort: model.Port{
 			Name:     PortName2,
 			Port:     Port2,

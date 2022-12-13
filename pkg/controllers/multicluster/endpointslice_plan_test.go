@@ -11,15 +11,15 @@ import (
 	discovery "k8s.io/api/discovery/v1"
 )
 
-func TestCheckIPType(t *testing.T) {
+func TestCheckAddressType(t *testing.T) {
 	tests := []struct {
 		name      string
-		want      model.IPType
+		want      discovery.AddressType
 		slicePlan EndpointSlicePlan
 	}{
 		{
 			name: "happy case ipv4",
-			want: model.IPV4Type,
+			want: discovery.AddressTypeIPv4,
 			slicePlan: EndpointSlicePlan{
 				maxEndpointsPerSlice: 0,
 				Service:              nil,
@@ -31,7 +31,7 @@ func TestCheckIPType(t *testing.T) {
 		},
 		{
 			name: "happy case ipv6",
-			want: model.IPV6Type,
+			want: discovery.AddressTypeIPv6,
 			slicePlan: EndpointSlicePlan{
 				maxEndpointsPerSlice: 0,
 				Service:              nil,
@@ -44,8 +44,8 @@ func TestCheckIPType(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.slicePlan.CheckIPType(); got != tt.want {
-				t.Errorf("CheckIPType() = %v, want %v", got, tt.want)
+			if got := tt.slicePlan.CheckAddressType(); got != tt.want {
+				t.Errorf("CheckAddressType() = %v, want %v", got, tt.want)
 			}
 		})
 	}

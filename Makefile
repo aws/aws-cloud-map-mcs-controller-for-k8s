@@ -71,12 +71,12 @@ test: manifests generate generate-mocks fmt vet goimports lint ## Run tests
 	go test ./... -coverprofile=cover.out -covermode=atomic
 
 kind-integration-suite: ## Provision and run integration tests with cleanup
-	export IP_TYPE="IPV4Type" && \
+	export IP_TYPE="IPv4" && \
 	make kind-integration-setup && \
 	make kind-integration-run && \
 	make kind-integration-cleanup
 
-	export IP_TYPE="IPV6Type" && \
+	export IP_TYPE="IPv6" && \
 	make kind-integration-setup && \
 	make kind-integration-run && \
 	make kind-integration-cleanup

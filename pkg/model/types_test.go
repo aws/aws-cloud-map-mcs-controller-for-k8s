@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"testing"
 
+	discovery "k8s.io/api/discovery/v1"
+
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	"github.com/google/go-cmp/cmp"
 )
@@ -50,9 +52,9 @@ func TestNewEndpointFromInstance(t *testing.T) {
 				},
 			},
 			want: &Endpoint{
-				Id:     instId,
-				IP:     ipv4,
-				IPType: IPV4Type,
+				Id:          instId,
+				IP:          ipv4,
+				AddressType: discovery.AddressTypeIPv4,
 				EndpointPort: Port{
 					Name:     "http",
 					Port:     80,
@@ -96,9 +98,56 @@ func TestNewEndpointFromInstance(t *testing.T) {
 				},
 			},
 			want: &Endpoint{
-				Id:     instId,
-				IP:     ipv6,
-				IPType: IPV6Type,
+				Id:          instId,
+				IP:          ipv6,
+				AddressType: discovery.AddressTypeIPv6,
+				EndpointPort: Port{
+					Name:     "http",
+					Port:     80,
+					Protocol: "TCP",
+				},
+				ServicePort: Port{
+					Name:       "http",
+					Port:       65535,
+					TargetPort: "80",
+					Protocol:   "TCP",
+				},
+				ClusterId:                      clusterId,
+				ClusterSetId:                   clusterSetId,
+				ServiceType:                    ServiceType(serviceType),
+				ServiceExportCreationTimestamp: svcExportCreationTimestamp,
+				Ready:                          true,
+				Attributes: map[string]string{
+					"custom-attr": "custom-val",
+				},
+			},
+		},
+		{
+			name: "ipv4 and ipv6 defaults to ipv4",
+			inst: &types.HttpInstanceSummary{
+				InstanceId: &instId,
+				Attributes: map[string]string{
+					ClusterIdAttr:             clusterId,
+					ClusterSetIdAttr:          clusterSetId,
+					EndpointIpv4Attr:          ipv4,
+					EndpointIpv6Attr:          ipv6,
+					EndpointPortAttr:          "80",
+					EndpointProtocolAttr:      "TCP",
+					EndpointPortNameAttr:      "http",
+					EndpointReadyAttr:         "true",
+					ServicePortNameAttr:       "http",
+					ServiceProtocolAttr:       "TCP",
+					ServicePortAttr:           "65535",
+					ServiceTargetPortAttr:     "80",
+					ServiceTypeAttr:           serviceType,
+					ServiceExportCreationAttr: strconv.FormatInt(svcExportCreationTimestamp, 10),
+					"custom-attr":             "custom-val",
+				},
+			},
+			want: &Endpoint{
+				Id:          instId,
+				IP:          ipv4,
+				AddressType: discovery.AddressTypeIPv4,
 				EndpointPort: Port{
 					Name:     "http",
 					Port:     80,
@@ -247,8 +296,8 @@ func TestEndpoint_GetAttributes(t *testing.T) {
 		{
 			name: "happy case ipv4",
 			endpoint: Endpoint{
-				IP:     ipv4,
-				IPType: IPV4Type,
+				IP:          ipv4,
+				AddressType: discovery.AddressTypeIPv4,
 				EndpointPort: Port{
 					Name:     "http",
 					Port:     80,
@@ -291,8 +340,8 @@ func TestEndpoint_GetAttributes(t *testing.T) {
 		{
 			name: "happy case ipv6",
 			endpoint: Endpoint{
-				IP:     ipv6,
-				IPType: IPV6Type,
+				IP:          ipv6,
+				AddressType: discovery.AddressTypeIPv6,
 				EndpointPort: Port{
 					Name:     "http",
 					Port:     80,
@@ -381,9 +430,9 @@ func TestEndpointIdFromIPAddressAndPort(t *testing.T) {
 
 func TestEndpoint_Equals(t *testing.T) {
 	firstEndpointIpv4 := Endpoint{
-		Id:     instId,
-		IP:     ipv4,
-		IPType: IPV4Type,
+		Id:          instId,
+		IP:          ipv4,
+		AddressType: discovery.AddressTypeIPv4,
 		ServicePort: Port{
 			Port: 80,
 		},
@@ -393,9 +442,9 @@ func TestEndpoint_Equals(t *testing.T) {
 	}
 
 	secondEndpointIpv4 := Endpoint{
-		Id:     instId,
-		IP:     ipv4,
-		IPType: IPV4Type,
+		Id:          instId,
+		IP:          ipv4,
+		AddressType: discovery.AddressTypeIPv4,
 		ServicePort: Port{
 			Port: 80,
 			Name: "",
@@ -406,9 +455,9 @@ func TestEndpoint_Equals(t *testing.T) {
 	}
 
 	thirdEndpointIpv4 := Endpoint{
-		Id:     instId,
-		IP:     ipv4,
-		IPType: IPV4Type,
+		Id:          instId,
+		IP:          ipv4,
+		AddressType: discovery.AddressTypeIPv4,
 		ServicePort: Port{
 			Port: 80,
 		},
@@ -418,9 +467,9 @@ func TestEndpoint_Equals(t *testing.T) {
 	}
 
 	firstEndpointIpv6 := Endpoint{
-		Id:     instId,
-		IP:     ipv6,
-		IPType: IPV6Type,
+		Id:          instId,
+		IP:          ipv6,
+		AddressType: discovery.AddressTypeIPv6,
 		ServicePort: Port{
 			Port: 80,
 		},
@@ -430,9 +479,9 @@ func TestEndpoint_Equals(t *testing.T) {
 	}
 
 	secondEndpointIpv6 := Endpoint{
-		Id:     instId,
-		IP:     ipv6,
-		IPType: IPV6Type,
+		Id:          instId,
+		IP:          ipv6,
+		AddressType: discovery.AddressTypeIPv6,
 		ServicePort: Port{
 			Port: 80,
 			Name: "",
@@ -443,9 +492,9 @@ func TestEndpoint_Equals(t *testing.T) {
 	}
 
 	thirdEndpointIpv6 := Endpoint{
-		Id:     instId,
-		IP:     ipv6,
-		IPType: IPV6Type,
+		Id:          instId,
+		IP:          ipv6,
+		AddressType: discovery.AddressTypeIPv6,
 		ServicePort: Port{
 			Port: 80,
 		},
@@ -500,64 +549,66 @@ func TestEndpoint_Equals(t *testing.T) {
 	}
 }
 
-func TestGetIPTypeFromString(t *testing.T) {
+func TestGetAddressTypeFromString(t *testing.T) {
 	tests := []struct {
-		name      string
-		ipTypeStr string
-		want      IPType
-		wantErr   bool
+		name           string
+		addressTypeStr string
+		want           discovery.AddressType
+		wantErr        bool
 	}{
 		{
-			name:      "happy case ipv4",
-			ipTypeStr: "IPV4Type",
-			want:      IPV4Type,
-			wantErr:   false,
+			name:           "happy case ipv4",
+			addressTypeStr: "IPv4",
+			want:           discovery.AddressTypeIPv4,
+			wantErr:        false,
 		},
 		{
-			name:      "happy case ipv6",
-			ipTypeStr: "IPV6Type",
-			want:      IPV6Type,
-			wantErr:   false,
+			name:           "happy case ipv6",
+			addressTypeStr: "IPv6",
+			want:           discovery.AddressTypeIPv6,
+			wantErr:        false,
 		},
 		{
-			name:      "empty string",
-			ipTypeStr: "",
-			want:      "",
-			wantErr:   true,
+			name:           "empty string",
+			addressTypeStr: "",
+			want:           "",
+			wantErr:        true,
 		},
 		{
-			name:      "case wrong",
-			ipTypeStr: "ipv6type",
-			want:      "",
-			wantErr:   true,
+			name:           "case wrong",
+			addressTypeStr: "IPV6",
+			want:           "",
+			wantErr:        true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetIPTypeFromString(tt.ipTypeStr)
+			got, err := GetAddressTypeFromString(tt.addressTypeStr)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetIPTypeFromString() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetAddressTypeFromString() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("GetIPTypeFromString() = %v, want %v", got, tt.want)
+				t.Errorf("GetAddressTypeFromString() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
-        
+
 func TestGetEndpoints(t *testing.T) {
 	firstEndpoint := Endpoint{
-		Id: instId + "-1",
-		IP: ip,
+		Id:          instId + "-1",
+		IP:          ipv4,
+		AddressType: discovery.AddressTypeIPv4,
 		ServicePort: Port{
 			Port: 80,
 		},
 		ClusterId: clusterId,
 	}
 	secondEndpoint := Endpoint{
-		Id: instId + "2",
-		IP: ip,
+		Id:          instId + "2",
+		IP:          ipv4,
+		AddressType: discovery.AddressTypeIPv4,
 		ServicePort: Port{
 			Port: 80,
 			Name: "",
@@ -565,8 +616,9 @@ func TestGetEndpoints(t *testing.T) {
 		ClusterId: clusterId2,
 	}
 	thirdEndpoint := Endpoint{
-		Id: instId + "3",
-		IP: ip,
+		Id:          instId + "3",
+		IP:          ipv4,
+		AddressType: discovery.AddressTypeIPv4,
 		ServicePort: Port{
 			Port: 80,
 			Name: "",
@@ -600,7 +652,7 @@ func TestGetEndpoints(t *testing.T) {
 		{
 			name:       "return-nil",
 			x:          clusterId3,
-			wantEndpts: nil,  
+			wantEndpts: nil,
 		},
 	}
 	for _, tt := range tests {
