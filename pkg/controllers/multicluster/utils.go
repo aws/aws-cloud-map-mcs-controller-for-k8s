@@ -251,7 +251,7 @@ func CreateEndpointForSlice(svc *v1.Service, endpoint *model.Endpoint) discovery
 	return ep
 }
 
-func CreateEndpointSliceStruct(svc *v1.Service, svcImportName string, clusterId string) *discovery.EndpointSlice {
+func CreateEndpointSliceStruct(svc *v1.Service, svcImportName string, clusterId string, addressType discovery.AddressType) *discovery.EndpointSlice {
 	return &discovery.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
@@ -271,7 +271,7 @@ func CreateEndpointSliceStruct(svc *v1.Service, svcImportName string, clusterId 
 			})},
 			Namespace: svc.Namespace,
 		},
-		AddressType: discovery.AddressTypeIPv4,
+		AddressType: addressType,
 	}
 }
 

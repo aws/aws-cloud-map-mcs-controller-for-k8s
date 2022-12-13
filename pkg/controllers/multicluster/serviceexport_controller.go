@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -251,9 +250,6 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 
 	endpoints := make([]*model.Endpoint, 0)
 	for _, slice := range endpointSlices.Items {
-		if slice.AddressType != discovery.AddressTypeIPv4 {
-			return nil, fmt.Errorf("unsupported address type %s for service %s", slice.AddressType, svc.Name)
-		}
 		for _, endpointPort := range slice.Ports {
 			for _, endpoint := range slice.Endpoints {
 				port := EndpointPortToPort(endpointPort)
@@ -263,6 +259,7 @@ func (r *ServiceExportReconciler) extractEndpoints(ctx context.Context, svc *v1.
 					endpoints = append(endpoints, &model.Endpoint{
 						Id:                             model.EndpointIdFromIPAddressAndPort(IP, port),
 						IP:                             IP,
+						AddressType:                    slice.AddressType,
 						EndpointPort:                   port,
 						ServicePort:                    servicePortMap[*endpointPort.Name],
 						ClusterId:                      clusterProperties.ClusterId(),

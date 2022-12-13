@@ -11,6 +11,46 @@ import (
 	discovery "k8s.io/api/discovery/v1"
 )
 
+func TestCheckAddressType(t *testing.T) {
+	tests := []struct {
+		name      string
+		want      discovery.AddressType
+		slicePlan EndpointSlicePlan
+	}{
+		{
+			name: "happy case ipv4",
+			want: discovery.AddressTypeIPv4,
+			slicePlan: EndpointSlicePlan{
+				maxEndpointsPerSlice: 0,
+				Service:              nil,
+				ServiceImportName:    "",
+				Current:              nil,
+				Desired:              []*model.Endpoint{test.GetTestEndpoint1()},
+				ClusterId:            "",
+			},
+		},
+		{
+			name: "happy case ipv6",
+			want: discovery.AddressTypeIPv6,
+			slicePlan: EndpointSlicePlan{
+				maxEndpointsPerSlice: 0,
+				Service:              nil,
+				ServiceImportName:    "",
+				Current:              nil,
+				Desired:              []*model.Endpoint{test.GetTestEndpointIpv6()},
+				ClusterId:            "",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.slicePlan.CheckAddressType(); got != tt.want {
+				t.Errorf("CheckAddressType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestEndpointSlicePlan_CalculateChanges(t *testing.T) {
 	type fields struct {
 		Current []*discovery.EndpointSlice

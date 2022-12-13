@@ -39,6 +39,15 @@ type EndpointSlicePlan struct {
 	ClusterId string
 }
 
+// CheckAddressType TODO: Will need to improve how IP Type is determined when we implement dual stack.
+func (p *EndpointSlicePlan) CheckAddressType() discovery.AddressType {
+	// Peek at the first endpoint for its AddressType. All endpoints in a slice will be of the same AddressType.
+	if len(p.Desired) == 0 {
+		return discovery.AddressTypeIPv4
+	}
+	return p.Desired[0].AddressType
+}
+
 // CalculateChanges returns list of EndpointSlice Changes that need to applied
 func (p *EndpointSlicePlan) CalculateChanges() EndpointSliceChanges {
 	// populate map of desired endpoints for lookup efficiency
@@ -147,7 +156,7 @@ func (p *EndpointSlicePlan) getOrCreateUnfilledEndpointSlice(changes *EndpointSl
 	}
 
 	// No existing slices can fill new endpoint requirements so create a new slice
-	sliceToCreate := CreateEndpointSliceStruct(p.Service, p.ServiceImportName, p.ClusterId)
+	sliceToCreate := CreateEndpointSliceStruct(p.Service, p.ServiceImportName, p.ClusterId, p.CheckAddressType())
 	changes.Create = append(changes.Create, sliceToCreate)
 	return sliceToCreate, true
 }

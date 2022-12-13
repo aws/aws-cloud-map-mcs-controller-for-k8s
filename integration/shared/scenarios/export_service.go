@@ -33,7 +33,7 @@ type exportServiceScenario struct {
 	expectedSvc model.Service
 }
 
-func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, clusterId string, clusterSetId string, portStr string, servicePortStr string, serviceType string, ips string) (ExportServiceScenario, error) {
+func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, clusterId string, clusterSetId string, portStr string, servicePortStr string, serviceType string, addressTypeStr string, ips string) (ExportServiceScenario, error) {
 	endpts := make([]*model.Endpoint, 0)
 
 	port, parseError := strconv.ParseUint(portStr, 10, 16)
@@ -44,6 +44,10 @@ func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, cl
 	if parseError != nil {
 		return nil, parseError
 	}
+	addressType, parseError := model.GetAddressTypeFromString(addressTypeStr)
+	if parseError != nil {
+		return nil, parseError
+	}
 
 	for _, ip := range strings.Split(ips, ",") {
 		endpointPort := model.Port{
@@ -51,8 +55,9 @@ func NewExportServiceScenario(cfg *aws.Config, nsName string, svcName string, cl
 			Protocol: string(v1.ProtocolTCP),
 		}
 		endpts = append(endpts, &model.Endpoint{
-			Id: model.EndpointIdFromIPAddressAndPort(ip, endpointPort),
-			IP: ip,
+			Id:          model.EndpointIdFromIPAddressAndPort(ip, endpointPort),
+			IP:          ip,
+			AddressType: addressType,
 			ServicePort: model.Port{
 				Port:       int32(servicePort),
 				TargetPort: portStr,
