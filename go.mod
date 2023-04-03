@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.17.7
 	github.com/aws/aws-sdk-go-v2/config v1.18.19
 	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.21.0
-	github.com/go-logr/logr v1.2.3
+	github.com/go-logr/logr v1.2.4
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.9
 	github.com/pkg/errors v0.9.1
