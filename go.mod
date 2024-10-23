@@ -1,6 +1,6 @@
 module github.com/aws/aws-cloud-map-mcs-controller-for-k8s
 
-go 1.17
+go 1.19
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.18.1

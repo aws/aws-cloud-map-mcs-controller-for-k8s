@@ -58,7 +58,7 @@ make clean
 
 In order to build and run locally:
 
-* Make sure to have `kubectl` [installed](https://kubernetes.io/docs/tasks/tools/install-kubectl/), at least version `1.17` or above.
+* Make sure to have `kubectl` [installed](https://kubernetes.io/docs/tasks/tools/install-kubectl/), at least version `1.19` or above.
 * Make sure to have `kind` [installed](https://kind.sigs.k8s.io/docs/user/quick-start/#installation).
 * Make sure, you have access to AWS Cloud Map. As per exercise below, AWS Cloud Map namespace `example` of the type [HttpNamespace](https://docs.aws.amazon.com/cloud-map/latest/api/API_CreateHttpNamespace.html) will be automatically created.
 
