@@ -13,9 +13,11 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/aws/aws-cloud-map-mcs-controller-for-k8s)](https://goreportcard.com/report/github.com/aws/aws-cloud-map-mcs-controller-for-k8s)
 
 ## Introduction
-The AWS Cloud Map Multi-cluster Service Discovery Controller for Kubernetes (K8s) implements the Kubernetes [KEP-1645: Multi-Cluster Services API](https://github.com/kubernetes/enhancements/tree/master/keps/sig-multicluster/1645-multi-cluster-services-api) and [KEP-2149: ClusterId for ClusterSet identification](https://github.com/kubernetes/enhancements/tree/master/keps/sig-multicluster/2149-clusterid), which allows services to communicate across multiple clusters. The implementation relies on [AWS Cloud Map](https://aws.amazon.com/cloud-map/) for enabling cross-cluster service discovery. We have detailed [step-by-step setup guide](https://aws.github.io/aws-cloud-map-mcs-controller-for-k8s/)!
+The AWS Cloud Map Multi-cluster Service Discovery Controller for Kubernetes (K8s) implements the Kubernetes [KEP-1645: Multi-Cluster Services API](https://github.com/kubernetes/enhancements/tree/master/keps/sig-multicluster/1645-multi-cluster-services-api) and [KEP-2149: ClusterId for ClusterSet identification](https://github.com/kubernetes/enhancements/tree/master/keps/sig-multicluster/2149-clusterid), which allows services to communicate across multiple clusters. The implementation relies on [AWS Cloud Map](https://aws.amazon.com/cloud-map/) for enabling cross-cluster service discovery. We have detailed [step-by-step setup guide](https://aws.amazon.com/blogs/opensource/kubernetes-multi-cluster-service-discovery-using-open-source-aws-cloud-map-mcs-controller/)!
 
-**NOTE: The current version [![GitHub Release](https://img.shields.io/github/release/aws/aws-cloud-map-mcs-controller-for-k8s.svg?style=flat&label=)]() is in *Alpha* phase, checkout the [Graduation Criteria](#graduation-criteria) for the next steps.**
+**⚠ NOTE: The current version [![GitHub Release](https://img.shields.io/github/release/aws/aws-cloud-map-mcs-controller-for-k8s.svg?style=flat&label=)]() is in *Alpha* phase, and NOT intended for production use. The support will be limited to critical bug fixes.** 
+
+*Checkout the [Graduation Criteria](#graduation-criteria) for moving the project to the next phase.*
 
 ## Installation
 
@@ -28,7 +30,7 @@ Perform the following installation steps on each participating cluster.
 
 #### Network
 
-> ⚠ **The AWS Cloud Map MCS Controller for K8s provides service discovery and communication across multiple clusters, therefore implementations depend on end-end network connectivity between workloads provisioned within each participating cluster.** 
+> **The AWS Cloud Map MCS Controller for K8s provides service discovery and communication across multiple clusters, therefore implementations depend on end-end network connectivity between workloads provisioned within each participating cluster.** 
 
 - In deployment scenarios where participating clusters are provisioned into separate VPCs, connectivity will depend on correctly configured  [VPC Peering](https://docs.aws.amazon.com/vpc/latest/peering/create-vpc-peering-connection.html), [inter-VPC routing](https://docs.aws.amazon.com/vpc/latest/peering/vpc-peering-routing.html), and Security Group configuration. The [VPC Reachability Analyzer](https://docs.aws.amazon.com/vpc/latest/reachability/getting-started.html) can be used to test and validate end-end connectivity between worker nodes within each cluster.
 - Undefined behavior may occur if controllers are deployed without the required network connectivity between clusters.
