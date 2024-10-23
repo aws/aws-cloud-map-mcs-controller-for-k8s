@@ -1,0 +1,1543 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+      
+      <link rel="icon" href="images/cloudmap.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.42">
+    
+    
+      
+        <title>AWS Cloud Map MCS Controller</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.0253249f.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#_1" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="." title="AWS Cloud Map MCS Controller" class="md-header__button md-logo" aria-label="AWS Cloud Map MCS Controller" data-md-component="logo">
+      
+  <img src="images/cloudmap.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            AWS Cloud Map MCS Controller
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Home
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    aws/aws-cloud-map-mcs-controller-for-k8s
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="." title="AWS Cloud Map MCS Controller" class="md-nav__button md-logo" aria-label="AWS Cloud Map MCS Controller" data-md-component="logo">
+      
+  <img src="images/cloudmap.svg" alt="logo">
+
+    </a>
+    AWS Cloud Map MCS Controller
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    aws/aws-cloud-map-mcs-controller-for-k8s
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="." class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Introduction
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Introduction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#about-the-multi-cluster-services-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      About the Multi-cluster Services API
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="About the Multi-cluster Services API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-cloud-map-mcs-controller-for-kubernetes" class="md-nav__link">
+    <span class="md-ellipsis">
+      AWS Cloud Map MCS Controller for Kubernetes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aws-cloud-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      AWS Cloud Map
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tutorial" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tutorial
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tutorial">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solution-baseline" class="md-nav__link">
+    <span class="md-ellipsis">
+      Solution Baseline
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service-provisioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Service Provisioning
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service-consumption" class="md-nav__link">
+    <span class="md-ellipsis">
+      Service Consumption
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Implementation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solution-baseline_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Solution Baseline
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Solution Baseline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#clone-the-aws-cloud-map-mcs-controller-for-k8s-git-repository" class="md-nav__link">
+    <span class="md-ellipsis">
+      Clone the aws-cloud-map-mcs-controller-for-k8s git repository
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-eks-clusters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create EKS Clusters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-vpc-peering-connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create VPC Peering Connection
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enable-eks-oidc-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      Enable EKS OIDC Provider
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implement-coredns-multicluster-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      Implement CoreDNS multicluster plugin
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implement CoreDNS multicluster plugin">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#update-coredns-rbac" class="md-nav__link">
+    <span class="md-ellipsis">
+      Update CoreDNS RBAC
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update-the-coredns-configmap" class="md-nav__link">
+    <span class="md-ellipsis">
+      Update the CoreDNS configmap
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update-the-coredns-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Update the CoreDNS deployment
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-the-aws-cloud-map-mcs-controller-for-k8s" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install the aws-cloud-map-mcs-controller-for-k8s
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Install the aws-cloud-map-mcs-controller-for-k8s">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configure-mcs-controller-rbac" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configure MCS-Controller RBAC
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-the-mcs-controller" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install the MCS-Controller
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assign-mcs-api-clusterset-membership-and-cluster-identifier" class="md-nav__link">
+    <span class="md-ellipsis">
+      Assign mcs-api ClusterSet membership and Cluster identifier
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-nginx-hello-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create nginx-hello Service
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service-provisioning_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Service Provisioning
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Service Provisioning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create-nginx-hello-serviceexport" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create nginx-hello ServiceExport
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verify-nginx-hello-serviceexport" class="md-nav__link">
+    <span class="md-ellipsis">
+      Verify nginx-hello ServiceExport
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Verify nginx-hello ServiceExport">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cluster-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cluster 1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cluster-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cluster 2
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service-consumption_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Service Consumption
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Service Consumption">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create-client-hello-pod" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create client-hello Pod
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verify-multi-cluster-service-consumption" class="md-nav__link">
+    <span class="md-ellipsis">
+      Verify multi-cluster service consumption
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      Conclusion
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Introduction
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Introduction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#about-the-multi-cluster-services-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      About the Multi-cluster Services API
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="About the Multi-cluster Services API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-cloud-map-mcs-controller-for-kubernetes" class="md-nav__link">
+    <span class="md-ellipsis">
+      AWS Cloud Map MCS Controller for Kubernetes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aws-cloud-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      AWS Cloud Map
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tutorial" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tutorial
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tutorial">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solution-baseline" class="md-nav__link">
+    <span class="md-ellipsis">
+      Solution Baseline
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service-provisioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Service Provisioning
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service-consumption" class="md-nav__link">
+    <span class="md-ellipsis">
+      Service Consumption
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Implementation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solution-baseline_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Solution Baseline
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Solution Baseline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#clone-the-aws-cloud-map-mcs-controller-for-k8s-git-repository" class="md-nav__link">
+    <span class="md-ellipsis">
+      Clone the aws-cloud-map-mcs-controller-for-k8s git repository
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-eks-clusters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create EKS Clusters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-vpc-peering-connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create VPC Peering Connection
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enable-eks-oidc-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      Enable EKS OIDC Provider
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implement-coredns-multicluster-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      Implement CoreDNS multicluster plugin
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implement CoreDNS multicluster plugin">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#update-coredns-rbac" class="md-nav__link">
+    <span class="md-ellipsis">
+      Update CoreDNS RBAC
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update-the-coredns-configmap" class="md-nav__link">
+    <span class="md-ellipsis">
+      Update the CoreDNS configmap
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update-the-coredns-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Update the CoreDNS deployment
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-the-aws-cloud-map-mcs-controller-for-k8s" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install the aws-cloud-map-mcs-controller-for-k8s
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Install the aws-cloud-map-mcs-controller-for-k8s">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configure-mcs-controller-rbac" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configure MCS-Controller RBAC
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-the-mcs-controller" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install the MCS-Controller
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assign-mcs-api-clusterset-membership-and-cluster-identifier" class="md-nav__link">
+    <span class="md-ellipsis">
+      Assign mcs-api ClusterSet membership and Cluster identifier
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-nginx-hello-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create nginx-hello Service
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service-provisioning_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Service Provisioning
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Service Provisioning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create-nginx-hello-serviceexport" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create nginx-hello ServiceExport
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verify-nginx-hello-serviceexport" class="md-nav__link">
+    <span class="md-ellipsis">
+      Verify nginx-hello ServiceExport
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Verify nginx-hello ServiceExport">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cluster-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cluster 1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cluster-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cluster 2
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service-consumption_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Service Consumption
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Service Consumption">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create-client-hello-pod" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create client-hello Pod
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verify-multi-cluster-service-consumption" class="md-nav__link">
+    <span class="md-ellipsis">
+      Verify multi-cluster service consumption
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      Conclusion
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="_1"></h1>
+<h2 id="introduction">Introduction</h2>
+<p>Kubernetes, with it's implementation of the cluster construct has simplified the ability to schedule workloads across a collection of VMs or nodes. Declarative configuration, immutability, auto-scaling, and self healing have vastly simplified the paradigm of workload management within the cluster - which has enabled teams to move at increasing velocities.</p>
+<p>As the rate of Kubernetes adoption continues to increase, there has been a corresponding increase in the number of use cases that require workloads to break through the perimeter of the single cluster construct. Requirements concerning workload location/proximity, isolation, and reliability have been the primary catalyst for the emergence of deployment scenarios where a single logical workload will span multiple Kubernetes clusters:</p>
+<ul>
+<li><strong>Location</strong> based concerns include network latency requirements (e.g. bringing the application as close to users as possible), data gravity requirements (e.g. bringing elements of the application as close to fixed data sources as possible), and jurisdiction based requirements (e.g. data residency limitations imposed via governing bodies);</li>
+<li><strong>Isolation</strong> based concerns include performance (e.g. reduction in "noisy-neighbor" influence in mixed workload clusters), environmental (e.g. by staged or sandboxed workload constructs such as "dev", "test", and "prod" environments), security (e.g. separating untrusted code or sensitive data), organisational (e.g. teams fall under different business units or management domains), and cost based (e.g. teams are subject to separate budgetary constraints);</li>
+<li><strong>Reliability</strong> based concerns include blast radius and infrastructure diversity (e.g. preventing an application based or underlying infrastructure issue in one cluster or provider zone from impacting the entire solution), and scale based (e.g. the workload may outgrow a single cluster)</li>
+</ul>
+<p><img alt="alt text" src="images/solution-overview.png" title="Solution Overview" /></p>
+<p>Multi-cluster application architectures tend to be designed to either be <strong>replicated</strong> in nature - with this pattern each participating cluster runs a full copy of each given application; or alternatively they implement more of a <strong>group-by-service</strong> pattern where the services of a single application or system are split or divided amongst multiple clusters.</p>
+<p>When it comes to the configuration of Kubernetes (and the surrounding infrastructure) to support a given multi-cluster application architecture - the space has evolved over time to include a number of approaches. Implementations tend draw upon a combination of components at various levels of the stack, and generally speaking they also vary in terms of the "weight" or complexity of the implementation, number and scope of features offered, as well as the associated management overhead. In simple terms these approaches can be loosely grouped into two main categories:</p>
+<ul>
+<li><strong>Network-centric</strong> approaches focus on network interconnection tooling to implement connectivity between clusters in order to facilitate cross-cluster application communication. The various network-centric approaches include those that are tightly coupled with the CNI (e.g. Cillium Mesh), as well as more CNI agnostic implementations such as Submariner and Skupper. Service mesh implementations also fall into the network-centric category, and these include Istio’s multi-cluster support, Linkerd service mirroring, Kuma from Kong, AWS App Mesh, and Consul’s mesh gateway. There are also various multi-cluster ingress approaches, as well as virtual-kubelet based approaches including Admiralty, Tensile-kube, and Liqo.</li>
+<li><strong>Kubernetes-centric</strong> approaches focus on supporting and extending the core Kubernetes primitives in order to support multi-cluster use cases. These approaches fall under the stewardship of the Kubernetes <a href="https://github.com/kubernetes/community/tree/master/sig-multicluster">Multicluster Special Interest Group</a> whose charter is focused on designing, implementing, and maintaining API’s, tools, and documentation related to multi-cluster administration and application management. Subprojects include:<ul>
+<li><strong><a href="https://github.com/kubernetes-sigs/kubefed">kubefed</a></strong> (Kubernetes Cluster Federation) which implements a mechanism to coordinate the configuration of multiple Kubernetes clusters from a single set of APIs in a hosting cluster. kubefed is considered to be foundational for more complex multi-cluster use cases such as deploying multi-geo applications, and disaster recovery.</li>
+<li><strong><a href="https://github.com/kubernetes-sigs/work-api">work-api</a></strong> (Multi-Cluster Works API) aims to group a set of Kubernetes API resources to be applied to one or multiple clusters together as a concept of “work” or “workload” for the purpose of multi-cluster workload lifecycle mangement.</li>
+<li><strong><a href="https://github.com/kubernetes-sigs/mcs-api">mcs-api</a></strong> (Multi-cluster Services APIs) implements an API specification to extend the single-cluster bounded Kubernetes service concept to function across multiple clusters.</li>
+</ul>
+</li>
+</ul>
+<h3 id="about-the-multi-cluster-services-api">About the Multi-cluster Services API</h3>
+<p>Kubernetes' familiar <a href="https://cloud.google.com/kubernetes-engine/docs/concepts/service">Service</a> object lets you discover and access services within the boundary of a single Kubernetes cluster. The mcs-api implements a Kubernetes-native extension to the Service API, extending the scope of the service resource concept beyond the cluster boundary - providing a mechanism to weave multiple clusters together using standard (and familiar) DNS based service discovery.</p>
+<blockquote>
+<p><em><a href="https://github.com/kubernetes/enhancements/tree/master/keps/sig-multicluster/1645-multi-cluster-services-api#kep-1645-multi-cluster-services-api">KEP-1645: Multi-Cluster Services API</a> provides the formal description of the Multi Cluster Service API. KEP-1645 doesn't define a complete implementation - it serves to define how an implementation should behave.At the time of writing the mcs-api version is: <code>multicluster.k8s.io/v1alpha1</code></em></p>
+</blockquote>
+<p>The primary deployment scenarios covered by the mcs-api include:</p>
+<ul>
+<li><strong>Different services each deployed to separate clusters:</strong> I have 2 clusters, each running different services managed by different teams, where services from one team depend on services from the other team. I want to ensure that a service from one team can discover a service from the other team (via DNS resolving to VIP), regardless of the cluster that they reside in. In addition, I want to make sure that if the dependent service is migrated to another cluster, the dependee is not impacted.</li>
+<li><strong>Single service deployed to multiple clusters:</strong> I have deployed my stateless service to multiple clusters for redundancy or scale. Now I want to propagate topologically-aware service endpoints (local, regional, global) to all clusters, so that other services in my clusters can access instances of this service in priority order based on availability and locality.</li>
+</ul>
+<p>The mcs-api is able to support these use cases through the described properties of a <code>ClusterSet</code>, which is a group of clusters with a high degree of mutual trust and shared ownership that share services amongst themselves - along with two additional API objects: the <code>ServiceExport</code> and the <code>ServiceImport</code>.</p>
+<p>Services are not visible to other clusters in the <code>ClusterSet</code> by default, they must be explicitly marked for export by the user. Creating a <code>ServiceExport</code> object for a given service specifies that the service should be exposed across all clusters in the <code>ClusterSet</code>. The mcs-api implementation (typically a controller) will automatically generate a corresponding <code>ServiceImport</code> object (which serves as the in-cluster representation of a multi-cluster service) in each importing cluster - for consumer workloads to be able to locate and consume the exported service.</p>
+<p>DNS-based service discovery for <code>ServiceImport</code> objects is facilitated by the <a href="https://github.com/kubernetes/enhancements/pull/2577">Kubernetes DNS-Based Multicluster Service Discovery Specification</a> which extends the standard Kubernetes DNS paradigms by implementing records named by service and namespace for <code>ServiceImport</code> objects, but as differentiated from regular in-cluster DNS service names by using the special zone <code>.clusterset.local</code>. I.e. When a <code>ServiceExport</code> is created, this will cause a FQDN for the multi-cluster service to become available from within the <code>ClusterSet</code>. The domain name will be of the format <code>&lt;service&gt;.&lt;ns&gt;.svc.clusterset.local</code>.</p>
+<h4 id="aws-cloud-map-mcs-controller-for-kubernetes">AWS Cloud Map MCS Controller for Kubernetes</h4>
+<p>The <a href="https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s">AWS Cloud Map MCS Controller for Kubernetes</a> (MCS-Controller) is an open source project that implements the multi-cluster services API specification.</p>
+<p>The MCS-Controller is a controller that syncs services across clusters and makes them available for multi-cluster service discovery and connectivity. The implementation model is decentralized, and utilises AWS Cloud Map as registry for management and distribution of multi-cluster service data.</p>
+<blockquote>
+<p><em>At the time of writing, the MCS-Controller release version is <a href="https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s/releases/tag/v0.3.0">v0.3.0</a> which introduces new features including the <a href="https://github.com/kubernetes/enhancements/tree/master/keps/sig-multicluster/2149-clusterid#-crd">ClusterProperty CRD</a>, and support for headless services. Milestones are currently in place to bring the project up to v1.0 (GA), which will include full compliance with the mcs-api specification, support for multiple AWS accounts, and Cloud Map client-side traffic shaping.</em></p>
+</blockquote>
+<h4 id="aws-cloud-map">AWS Cloud Map</h4>
+<p><a href="https://aws.amazon.com/cloud-map">AWS Cloud Map</a> is a cloud resource discovery service that allows applications to discover web-based services via the AWS SDK, API calls, or DNS queries. Cloud Map is a fully managed service which eliminates the need to set up, update, and manage your own service discovery tools and software..</p>
+<h2 id="tutorial">Tutorial</h2>
+<h3 id="overview">Overview</h3>
+<p>Let's consider a deployment scenario where we provision a Service into a single EKS cluster, then make the service available from within a second EKS cluster using the AWS Cloud Map MCS Controller.</p>
+<blockquote>
+<p><em>This tutorial will take you through the end-end implementation of the solution as outlined herein, including a functional implementation of the AWS Cloud Map MCS Controller across x2 EKS clusters situated in separate VPCs.</em></p>
+</blockquote>
+<h4 id="solution-baseline">Solution Baseline</h4>
+<p><img alt="alt text" src="images/solution-baseline.png" title="Solution Baseline" /></p>
+<p>In reference to the <strong>Solution Baseline</strong> diagram:</p>
+<ul>
+<li>We have x2 EKS clusters (Cluster 1 &amp; Cluster 2), each deployed into separate VPCs within a single AWS region.<ul>
+<li>Cluster 1 VPC CIDR: 10.10.0.0/16, Kubernetes service IPv4 CIDR: 172.20.0.0/16</li>
+<li>Cluster 2 VPC CIDR: 10.12.0.0/16, Kubernetes service IPv4 CIDR: 172.20.0.0/16</li>
+</ul>
+</li>
+<li>VPC peering is configured to permit network connectivity between workloads within each cluster.</li>
+<li>The CoreDNS multicluster plugin is deployed to each cluster.</li>
+<li>The AWS Cloud Map MCS Controller for Kubernetes is deployed to each cluster.</li>
+<li>Clusters 1 &amp; 2 are each configured as members of the same mcs-api <code>ClusterSet</code>.<ul>
+<li>Cluster 1 mcs-api <code>ClusterSet</code>: clusterset1, <code>Cluster</code> Id: cls1.</li>
+<li>Cluster 2 mcs-api <code>ClusterSet</code>: clusterset1, <code>Cluster</code> Id: cls2.</li>
+</ul>
+</li>
+<li>Clusters 1 &amp; 2 are both provisioned with the namespace <code>demo</code>.</li>
+<li>Cluster 1 has a <code>ClusterIP</code> Service <code>nginx-hello</code> deployed to the <code>demo</code> namespace which frontends a x3 replica Nginx deployment <code>nginx-demo</code>.<ul>
+<li>Service | nginx-hello: 172.20.150.33:80</li>
+<li>Endpoints | nginx-hello: 10.10.66.181:80,10.10.78.125:80,10.10.86.76:80</li>
+</ul>
+</li>
+</ul>
+<h4 id="service-provisioning">Service Provisioning</h4>
+<p>With the required dependencies in place, the admin user is able to create a <code>ServiceExport</code> object in Cluster 1 for the <code>nginx-hello</code> Service, such that the MCS-Controller implementation will automatically provision a corresponding <code>ServiceImport</code> in Cluster 2 for consumer workloads to be able to locate and consume the exported service.</p>
+<p><img alt="alt text" src="images/service-provisioning.png" title="Service Provisioning" /></p>
+<p>In reference to the <strong>Service Provisioning</strong> diagram:</p>
+<ol>
+<li>The administrator submits the request to the Cluster 1 Kube API server for a <code>ServiceExport</code> object to be created for ClusterIP Service <code>nginx-hello</code> in the <code>demo</code> Namespace.</li>
+<li>The MCS-Controller in Cluster 1, watching for <code>ServiceExport</code> object creation provisions a corresponding <code>nginx-hello</code> service in the Cloud Map <code>demo</code> namespace. The Cloud Map service is provisioned with sufficient detail for the Service object and corresponding Endpoint Slice to be provisioned within additional clusters in the <code>ClusterSet</code>.</li>
+<li>The MCS-Controller in Cluster 2 responds to the creation of the <code>nginx-hello</code> Cloud Map Service by provisioning the <code>ServiceImport</code> object and corresponding <code>EndpointSlice</code> objects via the Kube API Server.</li>
+<li>The CoreDNS multicluster plugin, watching for <code>ServiceImport</code> and <code>EndpointSlice</code> creation provisions corresponding DNS records within the <code>.clusterset.local</code> zone.</li>
+</ol>
+<h4 id="service-consumption">Service Consumption</h4>
+<p><img alt="alt text" src="images/service-consumption.png" title="Service Consumption" /></p>
+<p>In reference to the <strong>Service Consumption</strong> diagram:</p>
+<ol>
+<li>The <code>client-hello</code> pod in Cluster 2 needs to consume the <code>nginx-hello</code> service, for which all Endpoints are deployed in Cluster 1. The <code>client-hello</code> pod requests the resource http://nginx-hello.demo.svc.clusterset.local:80. DNS based service discovery [1b] responds with the IP address of the local <code>nginx-hello</code> <code>ServiceExport</code> Service <code>ClusterSetIP</code>.</li>
+<li>Requests to the local <code>ClusterSetIP</code> at <code>nginx-hello.demo.svc.clusterset.local</code> are proxied to the Endpoints located on Cluster 1.</li>
+</ol>
+<blockquote>
+<p><em>Note: In accordance with the mcs-api specification, a multi-cluster service will be imported by all clusters in which the service's namespace exists, meaning that each exporting cluster will also import the corresponding multi-cluster service. As such, the <code>nginx-hello</code> service will also be accessible via <code>ServiceExport</code> Service <code>ClusterSetIP</code> on Cluster 1. Identical to Cluster 2, the <code>ServiceExport</code> Service is resolvable by name at <code>nginx-hello.demo.svc.clusterset.local</code>.</em></p>
+</blockquote>
+<h3 id="implementation">Implementation</h3>
+<h3 id="solution-baseline_1">Solution Baseline</h3>
+<p>To prepare your environment to match the Solution Baseline deployment scenario, the following prerequisites should be addressed.</p>
+<h4 id="clone-the-aws-cloud-map-mcs-controller-for-k8s-git-repository">Clone the <code>aws-cloud-map-mcs-controller-for-k8s</code> git repository</h4>
+<p>Sample configuration files will be used through the course of the tutorial, which have been made available in the <code>aws-cloud-map-mcs-controller-for-k8s</code> repository.</p>
+<p>Clone the repository to the host from which you will be bootstrapping the clusters:</p>
+<pre><code class="language-bash">git clone https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s.git
+</code></pre>
+<blockquote>
+<p><em>Note: All commands as provided should be run from the root directory of the cloned git repository.</em></p>
+<p><em>Note: Certain values located within the provided configuration files have been configured for substitution with OS environment variables. Work instructions below will identify which environment variables should be set before issuing any commands which will depend on variable substitution.</em></p>
+</blockquote>
+<h4 id="create-eks-clusters">Create EKS Clusters</h4>
+<p>x2 EKS clusters should be provisioned, each deployed into separate VPCs within a single AWS region.</p>
+<ul>
+<li>VPCs and clusters should be provisioned with non-overlapping CIDRs.</li>
+<li>For compatibility with the remainder of the tutorial, it is recommended that <code>eksctl</code> be used to provision the clusters and associated security configuration. <em>By default, the <code>eksctl create cluster</code> command will create a dedicated VPC.</em></li>
+</ul>
+<p>Sample <code>eksctl</code> config file <code>samples/eksctl-cluster.yaml</code> has been provided:</p>
+<ul>
+<li>Environment variables AWS_REGION, CLUSTER_NAME, NODEGROUP_NAME, and VPC_CIDR should be configured. Example values have been provided in the below command reference - substitute values to suit your preference.</li>
+<li>Example VPC CIDRs match the values provided in the Baseline Configuration description.</li>
+</ul>
+<p>Run the following commands to create clusters using <code>eksctl</code>.</p>
+<p>Cluster 1:</p>
+<pre><code class="language-bash">export AWS_REGION=ap-southeast-2
+export CLUSTER_NAME=cls1
+export NODEGROUP_NAME=cls1-nodegroup1
+export VPC_CIDR=10.10.0.0/16
+envsubst &lt; samples/eksctl-cluster.yaml | eksctl create cluster -f -
+</code></pre>
+<p>Cluster 2:</p>
+<pre><code class="language-bash">export AWS_REGION=ap-southeast-2
+export CLUSTER_NAME=cls2
+export NODEGROUP_NAME=cls2-nodegroup1
+export VPC_CIDR=10.12.0.0/16
+envsubst &lt; samples/eksctl-cluster.yaml | eksctl create cluster -f -
+</code></pre>
+<h4 id="create-vpc-peering-connection">Create VPC Peering Connection</h4>
+<p>VPC peering is required to permit network connectivity between workloads provisioned within each cluster.</p>
+<ul>
+<li>To create the VPC Peering connection, follow the instruction <a href="https://docs.aws.amazon.com/vpc/latest/peering/create-vpc-peering-connection.html">Create a VPC peering connection with another VPC in your account</a> for guidance.</li>
+<li>
+<p>VPC route tables in each VPC require updating, follow the instruction <a href="https://docs.aws.amazon.com/vpc/latest/peering/vpc-peering-routing.html">Update your route tables for a VPC peering connection</a> for guidance. For simplicity, it's recommended to configure route destinations as the IPv4 CIDR block of the peer VPC.</p>
+</li>
+<li>
+<p>Security Groups require updating to permit cross-cluster network communication. EKS cluster security groups in each cluster should be updated to permit inbound traffic originating from external clusters. For simplicity, it's recommended the Cluster 1 &amp; Cluster 2 <a href="https://docs.aws.amazon.com/eks/latest/userguide/sec-group-reqs.html">EKS Cluster Security groups</a> be updated to allow inbound traffic from the IPv4 CIDR block of the peer VPC.</p>
+</li>
+</ul>
+<blockquote>
+<p><em>The <a href="https://docs.aws.amazon.com/vpc/latest/reachability/getting-started.html">VPC Reachability Analyzer</a> can be used to test and diagnose end-end connectivity between worker nodes within each cluster.</em></p>
+</blockquote>
+<h4 id="enable-eks-oidc-provider">Enable EKS OIDC Provider</h4>
+<p>In order to map required Cloud Map AWS IAM permissions to the MCS-Controller Kubernetes service account, we need to enable the OpenID Connect (OIDC) identity provider in our EKS clusters using <code>eksctl</code>.</p>
+<ul>
+<li>Environment variables REGION and CLUSTERNAME should be configured.</li>
+</ul>
+<p>Run the following commands to enable OIDC providers using <code>eksctl</code>.</p>
+<p>Cluster 1:</p>
+<pre><code class="language-bash">export AWS_REGION=ap-southeast-2
+export CLUSTER_NAME=cls1
+eksctl utils associate-iam-oidc-provider \
+    --region $AWS_REGION \
+    --cluster $CLUSTER_NAME \
+    --approve
+</code></pre>
+<p>Cluster 2:</p>
+<pre><code class="language-bash">export AWS_REGION=ap-southeast-2
+export CLUSTER_NAME=cls2
+eksctl utils associate-iam-oidc-provider \
+    --region $AWS_REGION \
+    --cluster $CLUSTER_NAME \
+    --approve
+</code></pre>
+<h4 id="implement-coredns-multicluster-plugin">Implement CoreDNS multicluster plugin</h4>
+<p>The CoreDNS multicluster plugin implements the <a href="https://github.com/kubernetes/enhancements/pull/2577">Kubernetes DNS-Based Multicluster Service Discovery Specification</a> which enables CoreDNS to lifecycle manage DNS records for <code>ServiceImport</code> objects. To enable the CoreDNS multicluster plugin within both EKS clusters, perform the following procedure.</p>
+<h5 id="update-coredns-rbac">Update CoreDNS RBAC</h5>
+<p>Run the following command against both clusters to update the <code>system:coredns</code> clusterrole to include access to additional multi-cluster API resources:</p>
+<pre><code class="language-bash">kubectl apply -f samples/coredns-clusterrole.yaml
+</code></pre>
+<h5 id="update-the-coredns-configmap">Update the CoreDNS configmap</h5>
+<p>Run the following command against both clusters to update the default CoreDNS configmap to include the multicluster plugin directive, and <code>clusterset.local</code> zone:</p>
+<pre><code class="language-bash">kubectl apply -f samples/coredns-configmap.yaml
+</code></pre>
+<h5 id="update-the-coredns-deployment">Update the CoreDNS deployment</h5>
+<p>Run the following command against both clusters to update the default CoreDNS deployment to use the container image <code>ghcr.io/aws/aws-cloud-map-mcs-controller-for-k8s/coredns-multicluster/coredns:v1.8.6</code> - which includes the multicluster plugin:</p>
+<pre><code class="language-bash">kubectl apply -f samples/coredns-deployment.yaml
+</code></pre>
+<h4 id="install-the-aws-cloud-map-mcs-controller-for-k8s">Install the aws-cloud-map-mcs-controller-for-k8s</h4>
+<h5 id="configure-mcs-controller-rbac">Configure MCS-Controller RBAC</h5>
+<p>Before the Cloud Map MCS-Controller is installed, we will first pre-provision the controller Service Account, granting IAM access rights <code>AWSCloudMapFullAccess</code> to ensure that the MCS Controller can lifecycle manage Cloud Map resources.</p>
+<ul>
+<li>Environment variable CLUSTER_NAME should be configured.</li>
+</ul>
+<p>Run the following commands to create the MCS-Controller namespace and service accounts in each cluster.</p>
+<blockquote>
+<p><em>Note: Be sure to change the <code>kubectl</code> context to the correct cluster before issuing commands.</em></p>
+</blockquote>
+<p>Cluster 1:</p>
+<pre><code class="language-bash">export CLUSTER_NAME=cls1
+kubectl create namespace cloud-map-mcs-system
+eksctl create iamserviceaccount \
+--cluster $CLUSTER_NAME \
+--namespace cloud-map-mcs-system \
+--name cloud-map-mcs-controller-manager \
+--attach-policy-arn arn:aws:iam::aws:policy/AWSCloudMapFullAccess \
+--override-existing-serviceaccounts \
+--approve
+</code></pre>
+<p>Cluster 2:</p>
+<pre><code class="language-bash">export CLUSTER_NAME=cls2
+kubectl create namespace cloud-map-mcs-system
+eksctl create iamserviceaccount \
+--cluster $CLUSTER_NAME \
+--namespace cloud-map-mcs-system \
+--name cloud-map-mcs-controller-manager \
+--attach-policy-arn arn:aws:iam::aws:policy/AWSCloudMapFullAccess \
+--override-existing-serviceaccounts \
+--approve
+</code></pre>
+<h5 id="install-the-mcs-controller">Install the MCS-Controller</h5>
+<p>Now to install the MCS-Controller.</p>
+<ul>
+<li>Environment variable AWS_REGION should be configured.</li>
+</ul>
+<p>Run the following command against both clusters to install the MCS-Controller latest release:</p>
+<pre><code class="language-bash">export AWS_REGION=ap-southeast-2
+kubectl apply -k &quot;github.com/aws/aws-cloud-map-mcs-controller-for-k8s/config/controller_install_release&quot;
+</code></pre>
+<h5 id="assign-mcs-api-clusterset-membership-and-cluster-identifier">Assign mcs-api <code>ClusterSet</code> membership and <code>Cluster</code> identifier</h5>
+<p>To ensure that  <code>ServiceExport</code> and  <code>ServiceImport</code> objects propagate correctly between clusters, each cluster should be configured as a member of a single mcs-api <code>ClusterSet</code> (clusterset1 in our example deployment scenario), and should be assigned a unique mcs-api <code>Cluster</code> Id within the <code>ClusterSet</code> (cls1 &amp; cls2 in our example deployment scenario).</p>
+<ul>
+<li>Environment variable CLUSTER_ID should be configured.</li>
+<li>Environment variable CLUSTERSET_ID should be configured.</li>
+</ul>
+<p>Run the following commands to configure Cluster  Id and ClusterSet membership.</p>
+<p>Cluster 1:</p>
+<pre><code class="language-bash">export CLUSTER_ID=cls1
+export CLUSTERSET_ID=clusterset1
+envsubst &lt; samples/mcsapi-clusterproperty.yaml | kubectl apply -f -
+</code></pre>
+<p>Cluster 2:</p>
+<pre><code class="language-bash">export CLUSTER_ID=cls2
+export CLUSTERSET_ID=clusterset1
+envsubst &lt; samples/mcsapi-clusterproperty.yaml | kubectl apply -f -
+</code></pre>
+<h4 id="create-nginx-hello-service">Create <code>nginx-hello</code> Service</h4>
+<p>Now that the clusters, CoreDNS and the MCS-Controller have been configured, we can create the <code>demo</code> namespace in both clusters and implement the <code>nginx-hello</code> Service and associated Deployment into Cluster 1.</p>
+<p>Run the following commands to prepare the demo environment on both clusters.</p>
+<blockquote>
+<p><em>Note: be sure to change the <code>kubectl</code> context to the correct cluster before issuing commands.</em></p>
+</blockquote>
+<p>Cluster 1:</p>
+<pre><code class="language-bash">kubectl create namespace demo
+kubectl apply -f samples/nginx-deployment.yaml
+kubectl apply -f samples/nginx-service.yaml
+</code></pre>
+<p>Cluster 2:</p>
+<pre><code class="language-bash">kubectl create namespace demo
+</code></pre>
+<h3 id="service-provisioning_1">Service Provisioning</h3>
+<p>With the Solution Baseline in place, let's continue by implementing the Service Provisioning scenario. We'll create a <code>ServiceExport</code> object in Cluster 1 for the <code>nginx-hello</code> Service. This will trigger the Cluster 1 MCS-Controller to complete service provisioning and propagation into Cloud Map, and subsequent import and provisioning by the MCS-Controller in Cluster 2.</p>
+<h4 id="create-nginx-hello-serviceexport">Create <code>nginx-hello</code> ServiceExport</h4>
+<p>Run the following command against Cluster 1 to to create the <code>ServiceExport</code> object for the <code>nginx-hello</code> Service:</p>
+<pre><code class="language-bash">kubectl apply -f \config\nginx-serviceexport.yaml
+</code></pre>
+<h4 id="verify-nginx-hello-serviceexport">Verify <code>nginx-hello</code> ServiceExport</h4>
+<p>Let's verify the <code>ServiceExport</code> creation has succeeded, and that corresponding objects have been created in Cluster 1, Cloud Map, and Cluster 2.</p>
+<h5 id="cluster-1">Cluster 1</h5>
+<p>Inspecting the MCS-Controller logs in Cluster 1, we see that the controller has detected the <code>ServiceExport</code> object, and created the corresponding <code>demo</code> Namespace and <code>nginx-hello</code> Service in Cloud Map:</p>
+<pre><code class="language-bash">$ kubectl logs cloud-map-mcs-controller-manager-5b9f959fc9-hmz88 -c manager --namespace cloud-map-mcs-system
+{&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1665108812.7046816,&quot;logger&quot;:&quot;cloudmap&quot;,&quot;msg&quot;:&quot;namespace created&quot;,&quot;nsId&quot;:&quot;ns-nlnawwa2wa3ajoh3&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1665108812.7626762,&quot;logger&quot;:&quot;cloudmap&quot;,&quot;msg&quot;:&quot;service created&quot;,&quot;namespace&quot;:&quot;demo&quot;,&quot;name&quot;:&quot;nginx-hello&quot;,&quot;id&quot;:&quot;srv-xqirlhajwua5vkvo&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1665108812.7627065,&quot;logger&quot;:&quot;cloudmap&quot;,&quot;msg&quot;:&quot;fetching a service&quot;,&quot;namespace&quot;:&quot;demo&quot;,&quot;name&quot;:&quot;nginx-hello&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1665108812.8299918,&quot;logger&quot;:&quot;cloudmap&quot;,&quot;msg&quot;:&quot;registering endpoints&quot;,&quot;namespaceName&quot;:&quot;demo&quot;,&quot;serviceName&quot;:&quot;nginx-hello&quot;,&quot;endpoints&quot;:[{&quot;Id&quot;:&quot;tcp-10_10_86_76-80&quot;,&quot;IP&quot;:&quot;10.10.86.76&quot;,&quot;EndpointPort&quot;:{&quot;Name&quot;:&quot;&quot;,&quot;Port&quot;:80,&quot;TargetPort&quot;:&quot;&quot;,&quot;Protocol&quot;:&quot;TCP&quot;},&quot;ServicePort&quot;:{&quot;Name&quot;:&quot;&quot;,&quot;Port&quot;:80,&quot;TargetPort&quot;:&quot;80&quot;,&quot;Protocol&quot;:&quot;TCP&quot;},&quot;ClusterId&quot;:&quot;cls1&quot;,&quot;ClusterSetId&quot;:&quot;clusterset1&quot;,&quot;ServiceType&quot;:&quot;ClusterSetIP&quot;,&quot;ServiceExportCreationTimestamp&quot;:1665108776000,&quot;Ready&quot;:true,&quot;Hostname&quot;:&quot;&quot;,&quot;Nodename&quot;:&quot;ip-10-10-77-143.ap-southeast-2.compute.internal&quot;,&quot;Attributes&quot;:{&quot;K8S_CONTROLLER&quot;:&quot;aws-cloud-map-mcs-controller-for-k8s d07e680 (d07e680)&quot;}},{&quot;Id&quot;:&quot;tcp-10_10_66_181-80&quot;,&quot;IP&quot;:&quot;10.10.66.181&quot;,&quot;EndpointPort&quot;:{&quot;Name&quot;:&quot;&quot;,&quot;Port&quot;:80,&quot;TargetPort&quot;:&quot;&quot;,&quot;Protocol&quot;:&quot;TCP&quot;},&quot;ServicePort&quot;:{&quot;Name&quot;:&quot;&quot;,&quot;Port&quot;:80,&quot;TargetPort&quot;:&quot;80&quot;,&quot;Protocol&quot;:&quot;TCP&quot;},&quot;ClusterId&quot;:&quot;cls1&quot;,&quot;ClusterSetId&quot;:&quot;clusterset1&quot;,&quot;ServiceType&quot;:&quot;ClusterSetIP&quot;,&quot;ServiceExportCreationTimestamp&quot;:1665108776000,&quot;Ready&quot;:true,&quot;Hostname&quot;:&quot;&quot;,&quot;Nodename&quot;:&quot;ip-10-10-77-143.ap-southeast-2.compute.internal&quot;,&quot;Attributes&quot;:{&quot;K8S_CONTROLLER&quot;:&quot;aws-cloud-map-mcs-controller-for-k8s d07e680 (d07e680)&quot;}},{&quot;Id&quot;:&quot;tcp-10_10_78_125-80&quot;,&quot;IP&quot;:&quot;10.10.78.125&quot;,&quot;EndpointPort&quot;:{&quot;Name&quot;:&quot;&quot;,&quot;Port&quot;:80,&quot;TargetPort&quot;:&quot;&quot;,&quot;Protocol&quot;:&quot;TCP&quot;},&quot;ServicePort&quot;:{&quot;Name&quot;:&quot;&quot;,&quot;Port&quot;:80,&quot;TargetPort&quot;:&quot;80&quot;,&quot;Protocol&quot;:&quot;TCP&quot;},&quot;ClusterId&quot;:&quot;cls1&quot;,&quot;ClusterSetId&quot;:&quot;clusterset1&quot;,&quot;ServiceType&quot;:&quot;ClusterSetIP&quot;,&quot;ServiceExportCreationTimestamp&quot;:1665108776000,&quot;Ready&quot;:true,&quot;Hostname&quot;:&quot;&quot;,&quot;Nodename&quot;:&quot;ip-10-10-77-143.ap-southeast-2.compute.internal&quot;,&quot;Attributes&quot;:{&quot;K8S_CONTROLLER&quot;:&quot;aws-cloud-map-mcs-controller-for-k8s d07e680 (d07e680)&quot;}}]}
+</code></pre>
+<p>Using the AWS CLI we can verify Namespace and Service resources provisioned to Cloud Map by the Cluster 1 MCS-Controller:</p>
+<pre><code class="language-bash">$ aws servicediscovery list-namespaces
+{
+    &quot;Namespaces&quot;: [
+        {
+            &quot;Id&quot;: &quot;ns-nlnawwa2wa3ajoh3&quot;,
+            &quot;Arn&quot;: &quot;arn:aws:servicediscovery:ap-southeast-2:911483634971:namespace/ns-nlnawwa2wa3ajoh3&quot;,
+            &quot;Name&quot;: &quot;demo&quot;,
+            &quot;Type&quot;: &quot;HTTP&quot;,
+            &quot;Properties&quot;: {
+                &quot;DnsProperties&quot;: {
+                    &quot;SOA&quot;: {}
+                },
+                &quot;HttpProperties&quot;: {
+                    &quot;HttpName&quot;: &quot;demo&quot;
+                }
+            },
+            &quot;CreateDate&quot;: &quot;2022-10-07T02:13:32.310000+00:00&quot;
+        }
+    ]
+}
+$ aws servicediscovery list-services
+{
+    &quot;Services&quot;: [
+        {
+            &quot;Id&quot;: &quot;srv-xqirlhajwua5vkvo&quot;,
+            &quot;Arn&quot;: &quot;arn:aws:servicediscovery:ap-southeast-2:911483634971:service/srv-xqirlhajwua5vkvo&quot;,
+            &quot;Name&quot;: &quot;nginx-hello&quot;,
+            &quot;Type&quot;: &quot;HTTP&quot;,
+            &quot;DnsConfig&quot;: {},
+            &quot;CreateDate&quot;: &quot;2022-10-07T02:13:32.744000+00:00&quot;
+        }
+    ]
+}
+$ aws servicediscovery discover-instances --namespace-name demo --service-name nginx-hello
+{
+    &quot;Instances&quot;: [
+        {
+            &quot;InstanceId&quot;: &quot;tcp-10_10_78_125-80&quot;,
+            &quot;NamespaceName&quot;: &quot;demo&quot;,
+            &quot;ServiceName&quot;: &quot;nginx-hello&quot;,
+            &quot;HealthStatus&quot;: &quot;UNKNOWN&quot;,
+            &quot;Attributes&quot;: {
+                &quot;AWS_INSTANCE_IPV4&quot;: &quot;10.10.78.125&quot;,
+                &quot;AWS_INSTANCE_PORT&quot;: &quot;80&quot;,
+                &quot;CLUSTERSET_ID&quot;: &quot;clusterset1&quot;,
+                &quot;CLUSTER_ID&quot;: &quot;cls1&quot;,
+                &quot;ENDPOINT_PORT_NAME&quot;: &quot;&quot;,
+                &quot;ENDPOINT_PROTOCOL&quot;: &quot;TCP&quot;,
+                &quot;HOSTNAME&quot;: &quot;&quot;,
+                &quot;K8S_CONTROLLER&quot;: &quot;aws-cloud-map-mcs-controller-for-k8s d07e680 (d07e680)&quot;,
+                &quot;NODENAME&quot;: &quot;ip-10-10-77-143.ap-southeast-2.compute.internal&quot;,
+                &quot;READY&quot;: &quot;true&quot;,
+                &quot;SERVICE_EXPORT_CREATION_TIMESTAMP&quot;: &quot;1665108776000&quot;,
+                &quot;SERVICE_PORT&quot;: &quot;80&quot;,
+                &quot;SERVICE_PORT_NAME&quot;: &quot;&quot;,
+                &quot;SERVICE_PROTOCOL&quot;: &quot;TCP&quot;,
+                &quot;SERVICE_TARGET_PORT&quot;: &quot;80&quot;,
+                &quot;SERVICE_TYPE&quot;: &quot;ClusterSetIP&quot;
+            }
+        },
+        {
+            &quot;InstanceId&quot;: &quot;tcp-10_10_66_181-80&quot;,
+            &quot;NamespaceName&quot;: &quot;demo&quot;,
+            &quot;ServiceName&quot;: &quot;nginx-hello&quot;,
+            &quot;HealthStatus&quot;: &quot;UNKNOWN&quot;,
+            &quot;Attributes&quot;: {
+                &quot;AWS_INSTANCE_IPV4&quot;: &quot;10.10.66.181&quot;,
+                &quot;AWS_INSTANCE_PORT&quot;: &quot;80&quot;,
+                &quot;CLUSTERSET_ID&quot;: &quot;clusterset1&quot;,
+                &quot;CLUSTER_ID&quot;: &quot;cls1&quot;,
+                &quot;ENDPOINT_PORT_NAME&quot;: &quot;&quot;,
+                &quot;ENDPOINT_PROTOCOL&quot;: &quot;TCP&quot;,
+                &quot;HOSTNAME&quot;: &quot;&quot;,
+                &quot;K8S_CONTROLLER&quot;: &quot;aws-cloud-map-mcs-controller-for-k8s d07e680 (d07e680)&quot;,
+                &quot;NODENAME&quot;: &quot;ip-10-10-77-143.ap-southeast-2.compute.internal&quot;,
+                &quot;READY&quot;: &quot;true&quot;,
+                &quot;SERVICE_EXPORT_CREATION_TIMESTAMP&quot;: &quot;1665108776000&quot;,
+                &quot;SERVICE_PORT&quot;: &quot;80&quot;,
+                &quot;SERVICE_PORT_NAME&quot;: &quot;&quot;,
+                &quot;SERVICE_PROTOCOL&quot;: &quot;TCP&quot;,
+                &quot;SERVICE_TARGET_PORT&quot;: &quot;80&quot;,
+                &quot;SERVICE_TYPE&quot;: &quot;ClusterSetIP&quot;
+            }
+        },
+        {
+            &quot;InstanceId&quot;: &quot;tcp-10_10_86_76-80&quot;,
+            &quot;NamespaceName&quot;: &quot;demo&quot;,
+            &quot;ServiceName&quot;: &quot;nginx-hello&quot;,
+            &quot;HealthStatus&quot;: &quot;UNKNOWN&quot;,
+            &quot;Attributes&quot;: {
+                &quot;AWS_INSTANCE_IPV4&quot;: &quot;10.10.86.76&quot;,
+                &quot;AWS_INSTANCE_PORT&quot;: &quot;80&quot;,
+                &quot;CLUSTERSET_ID&quot;: &quot;clusterset1&quot;,
+                &quot;CLUSTER_ID&quot;: &quot;cls1&quot;,
+                &quot;ENDPOINT_PORT_NAME&quot;: &quot;&quot;,
+                &quot;ENDPOINT_PROTOCOL&quot;: &quot;TCP&quot;,
+                &quot;HOSTNAME&quot;: &quot;&quot;,
+                &quot;K8S_CONTROLLER&quot;: &quot;aws-cloud-map-mcs-controller-for-k8s d07e680 (d07e680)&quot;,
+                &quot;NODENAME&quot;: &quot;ip-10-10-77-143.ap-southeast-2.compute.internal&quot;,
+                &quot;READY&quot;: &quot;true&quot;,
+                &quot;SERVICE_EXPORT_CREATION_TIMESTAMP&quot;: &quot;1665108776000&quot;,
+                &quot;SERVICE_PORT&quot;: &quot;80&quot;,
+                &quot;SERVICE_PORT_NAME&quot;: &quot;&quot;,
+                &quot;SERVICE_PROTOCOL&quot;: &quot;TCP&quot;,
+                &quot;SERVICE_TARGET_PORT&quot;: &quot;80&quot;,
+                &quot;SERVICE_TYPE&quot;: &quot;ClusterSetIP&quot;
+            }
+        }
+    ]
+}
+</code></pre>
+<h5 id="cluster-2">Cluster 2</h5>
+<p>Inspecting the MCS-Controller logs in Cluster 2, we see that the controller has detected the <code>nginx-hello</code> Cloud Map Service, and created the corresponding Kubernetes <code>ServiceImport</code>:</p>
+<pre><code class="language-bash">$ kubectl logs cloud-map-mcs-controller-manager-5b9f959fc9-v72s4 -c manager --namespace cloud-map-mcs-system
+{&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1665108822.2781157,&quot;logger&quot;:&quot;controllers.Cloudmap&quot;,&quot;msg&quot;:&quot;created ServiceImport&quot;,&quot;namespace&quot;:&quot;demo&quot;,&quot;name&quot;:&quot;nginx-hello&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1665108824.2420218,&quot;logger&quot;:&quot;controllers.Cloudmap&quot;,&quot;msg&quot;:&quot;created derived Service&quot;,&quot;namespace&quot;:&quot;demo&quot;,&quot;name&quot;:&quot;imported-9cfu7k5mkr&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1665108824.2501283,&quot;logger&quot;:&quot;controllers.Cloudmap&quot;,&quot;msg&quot;:&quot;ServiceImport IPs need update&quot;,&quot;ServiceImport IPs&quot;:[],&quot;cluster IPs&quot;:[&quot;172.20.80.119&quot;]}
+{&quot;level&quot;:&quot;info&quot;,&quot;ts&quot;:1665108824.2618752,&quot;logger&quot;:&quot;controllers.Cloudmap&quot;,&quot;msg&quot;:&quot;updated ServiceImport&quot;,&quot;namespace&quot;:&quot;demo&quot;,&quot;name&quot;:&quot;nginx-hello&quot;,&quot;IP&quot;:[&quot;172.20.80.119&quot;],&quot;ports&quot;:[{&quot;protocol&quot;:&quot;TCP&quot;,&quot;port&quot;:80}]}
+</code></pre>
+<p>Inspecting the Cluster 2 Kubernetes <code>ServiceImport</code> object:</p>
+<pre><code class="language-bash">$ kubectl get serviceimports.multicluster.x-k8s.io nginx-hello -n demo -o yaml
+apiVersion: multicluster.x-k8s.io/v1alpha1
+kind: ServiceImport
+metadata:
+  annotations:
+    multicluster.k8s.aws/derived-service: '[{&quot;cluster&quot;:&quot;cls1&quot;,&quot;derived-service&quot;:&quot;imported-9cfu7k5mkr&quot;}]'
+  creationTimestamp: &quot;2022-10-07T02:13:42Z&quot;
+  generation: 2
+  name: nginx-hello
+  namespace: demo
+  resourceVersion: &quot;12787&quot;
+  uid: a53901af-57a8-49c7-aeb1-f67c4a44c2d2
+spec:
+  ips:
+  - 172.20.80.119
+  ports:
+  - port: 80
+    protocol: TCP
+  type: ClusterSetIP
+status:
+  clusters:
+  - cluster: cls1
+</code></pre>
+<p>And the corresponding Cluster 2 Kubernetes Endpoint Slice:</p>
+<pre><code class="language-bash">$ kubectl get endpointslices.discovery.k8s.io -n demo
+NAME                        ADDRESSTYPE   PORTS   ENDPOINTS                               AGE
+imported-9cfu7k5mkr-dc7q9   IPv4          80      10.10.78.125,10.10.86.76,10.10.66.181   14m
+</code></pre>
+<p>Important points to note:</p>
+<ul>
+<li>the <code>ServiceImport</code> Service is assigned an IP address from the local Kubernetes service IPv4 CIDR: 172.22.0.0/16 (172.20.80.119) so as to permit service discovery and access to the remote service endpoints from within the local cluster.</li>
+<li>the <code>EndpointSlice</code> IP addresses match those of the <code>nginx-demo</code> Endpoints in Cluster 1 (i.e. from the Cluster 1 VPC CIDR: 10.10.0.0/16).</li>
+</ul>
+<h3 id="service-consumption_1">Service Consumption</h3>
+<p>With the Solution Baseline and Service Provisioning in place, workloads in Cluster 2 are now able to consume the nginx-hello Service Endpoints located in Cluster 1 via the locally provisioned ServiceImport object. To complete the Service Consumption scenario we'll deploy the client-hello Pod into Cluster 2, and observe how it's able to perform cross-cluster service discovery, and access each of the nginx-hello Service Endpoints in Cluster 1.</p>
+<h4 id="create-client-hello-pod">Create <code>client-hello</code> Pod</h4>
+<p>Run the following command against Cluster 2 create the <code>client-hello</code> Pod:</p>
+<pre><code class="language-bash">kubectl apply -f samples/client-hello.yaml
+</code></pre>
+<h4 id="verify-multi-cluster-service-consumption">Verify multi-cluster service consumption</h4>
+<p>Let's exec into the <code>client-hello</code> Pod and perform an <code>nslookup</code> to cluster-local CoreDNS for the <code>ServiceImport</code> Service <code>nginx-hello.demo.svc.clusterset.local</code>:</p>
+<pre><code class="language-bash">$ kubectl exec -it client-hello -n demo /bin/sh
+/ # nslookup nginx-hello.demo.svc.clusterset.local
+Server:         172.20.0.10
+Address:        172.20.0.10:53
+
+Name:   nginx-hello.demo.svc.clusterset.local
+Address: 172.20.80.119
+</code></pre>
+<p>Note that the Pod resolves the address of the <code>ServiceImport</code> object on Cluster 2.</p>
+<p>Finally, we generate HTTP requests from the <code>client-hello</code> Pod to the local <code>nginx-hello</code> <code>ServiceImport</code> Service:</p>
+<pre><code class="language-bash">/ # apk --no-cache add curl
+/ # curl nginx-hello.demo.svc.clusterset.local
+Server address: 10.10.86.76:80
+Server name: nginx-demo-59c6cb8d7b-m4ktw
+Date: 07/Oct/2022:02:31:45 +0000
+URI: /
+Request ID: 17d43e6e8801a98d05059dfaf88d0abe
+/ # 
+/ # curl nginx-hello.demo.svc.clusterset.local
+Server address: 10.10.78.125:80
+Server name: nginx-demo-59c6cb8d7b-8w6rp
+Date: 07/Oct/2022:02:32:26 +0000
+URI: /
+Request ID: 0ddc09ffe7fd45c52903ce34c955f555
+/ # 
+/ # curl nginx-hello.demo.svc.clusterset.local
+Server address: 10.10.66.181:80
+Server name: nginx-demo-59c6cb8d7b-mtm8l
+Date: 07/Oct/2022:02:32:53 +0000
+URI: /
+Request ID: 2fde1c34008a5ec18b8ae23797489c3a
+</code></pre>
+<p>Note that the responding Server Names and Server addresses are those of the <code>nginx-demo</code> Pods on Cluster 1 - confirming that the requests to the local <code>ClusterSetIP</code> at <code>nginx-hello.demo.svc.clusterset.local</code> originating on Cluster 2 are proxied cross-cluster to the Endpoints located on Cluster 1!</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>The proliferation of container adoption is presenting new challenges in supporting workloads that have broken through the perimeter of the single cluster construct.</p>
+<p>For teams that are looking to implement a Kubenetes-centric approach to managing multi-cluster workloads, the mcs-api describes an effective approach to extending the scope of the service resource concept beyond the cluster boundary - providing a mechanism to weave multiple clusters together using standard (and familiar) DNS based service discovery.</p>
+<p>The <a href="https://github.com/aws/aws-cloud-map-mcs-controller-for-k8s">AWS Cloud Map MCS Controller for Kubernetes</a> is an open source project that integrates with AWS Cloud Map to offer a decentralised implementation of the multi-cluster services API specification that's particularly suited for teams looking for a lightweight and effective Kubenetes-centric mechanism to deploy multi-cluster workloads to the AWS cloud.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": ".", "features": [], "search": "assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="assets/javascripts/bundle.83f73b43.min.js"></script>
+      
+    
+  </body>
+</html>
