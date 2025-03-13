@@ -88,9 +88,18 @@ func (p *EndpointSlicePlan) trimSlices(desiredEndpoints map[string]*model.Endpoi
 	// remove all undesired existing endpoints in slices
 	for _, existingSlice := range p.Current {
 		updatedEndpointList := make([]discovery.Endpoint, 0)
+
+		sliceNeedsUpdateConditions := false
+
 		for _, existingEndpoint := range existingSlice.Endpoints {
 			key := existingEndpoint.Addresses[0]
+
 			if _, found := desiredEndpoints[key]; found {
+				// if different ready status, set sliceNeedsUpdateConditions to true
+				if existingEndpoint.Conditions.Ready != &desiredEndpoints[key].Ready {
+					sliceNeedsUpdateConditions = true
+					existingEndpoint.Conditions.Ready = &desiredEndpoints[key].Ready
+				}
 				updatedEndpointList = append(updatedEndpointList, existingEndpoint)
 				delete(desiredEndpoints, key)
 			}
@@ -111,7 +120,7 @@ func (p *EndpointSlicePlan) trimSlices(desiredEndpoints map[string]*model.Endpoi
 		}
 
 		// slice needs to be updated if endpoint list changed
-		if len(updatedEndpointList) != len(existingSlice.Endpoints) {
+		if len(updatedEndpointList) != len(existingSlice.Endpoints) || sliceNeedsUpdateConditions {
 			existingSlice.Endpoints = updatedEndpointList
 			sliceNeedsUpdate = true
 		}

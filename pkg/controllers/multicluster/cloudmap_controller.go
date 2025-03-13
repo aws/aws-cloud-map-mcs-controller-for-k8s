@@ -125,7 +125,7 @@ func (r *CloudMapReconciler) reconcileNamespace(ctx context.Context, namespaceNa
 }
 
 func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Service) error {
-	r.Log.Debug("syncing service", "namespace", svc.Namespace, "service", svc.Name)
+	r.Log.Info("syncing service", "namespace", svc.Namespace, "service", svc.Name)
 
 	importedSvcPorts := ExtractServicePorts(svc.Endpoints)
 
@@ -158,6 +158,7 @@ func (r *CloudMapReconciler) reconcileService(ctx context.Context, svc *model.Se
 		clusterImportedSvcPorts := ExtractServicePorts(endpoints)
 
 		derivedService, err := r.getDerivedService(ctx, svc.Namespace, svc.Name, clusterId)
+
 		if err != nil {
 			if !errors.IsNotFound(err) {
 				return err
@@ -256,6 +257,9 @@ func (r *CloudMapReconciler) updateEndpointSlices(ctx context.Context, svcImport
 	}
 
 	changes := plan.CalculateChanges()
+	// // log changes and endpoints
+	// r.Log.Info("changes", "create", len(changes.Create), "update", len(changes.Update), "delete", len(changes.Delete))
+	// r.Log.Info("desiredEndpoints", "endpoints", desiredEndpoints)
 
 	for _, sliceToUpdate := range changes.Update {
 		r.Log.Debug("updating EndpointSlice", "namespace", sliceToUpdate.Namespace, "name", sliceToUpdate.Name)
