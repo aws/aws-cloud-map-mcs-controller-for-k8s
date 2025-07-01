@@ -1,6 +1,6 @@
 module github.com/aws/aws-cloud-map-mcs-controller-for-k8s
 
-go 1.19
+go 1.23.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.22.0
@@ -11,7 +11,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/time v0.3.0
+	golang.org/x/time v0.12.0
 	k8s.io/api v0.24.3
 	k8s.io/apimachinery v0.24.3
 	k8s.io/client-go v0.24.2
